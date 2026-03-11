@@ -1,6 +1,8 @@
 site_url: https://geoglobe-web.sadeeqmuhammad2320.workers.dev
 backend:
-  name: git-gateway
+  name: github
+  # 👇 IMPORTANT: Make sure this matches your exact GitHub username and repository name!
+  repo: sadeeqmuhammad2320/geoglobe-v2 
   branch: main
 
 media_folder: "public/images"
