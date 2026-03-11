@@ -6,7 +6,7 @@ export const videoData = [
     description: "Disputed border region.",
     lat: 4.9,
     lng: 35.3,
-    videoUrl: "https://youtube.com/watch?v=YOUR_LINK_HERE" 
+    youtubeId: "dQw4w9WgXcQ" // Just the ID of the video
   },
   {
     id: "baarle-hertog",
@@ -14,6 +14,6 @@ export const videoData = [
     description: "The craziest border in Europe.",
     lat: 51.44,
     lng: 4.93,
-    videoUrl: "https://youtube.com/watch?v=YOUR_LINK_HERE"
+    youtubeId: "YOUR_YOUTUBE_ID_HERE"
   }
 ];
