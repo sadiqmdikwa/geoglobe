@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoGlobe | Explore the World</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        geoCyan: '#42C2CB',
+                        geoYellow: '#F4D03F',
+                        geoDark: '#0f172a',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        .drawer-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Sticky header backdrop blur */
+        header {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        /* Logo Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* GeoGlobe Text Style */
+        .geoglobe-text {
+            font-family: 'Times New Roman', serif;
+            -webkit-text-stroke: 0.1px #F4D03F;
+            text-shadow: 0.3px 0.3px 0px rgba(244, 208, 63, 0.15);
+        }
+
+        /* Drawer Enhancements */
+        #drawer-backdrop {
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        #drawer-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .drawer-link {
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.4s ease-out;
+        }
+        #mobile-drawer.open .drawer-link {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        /* Staggered delays */
+        .drawer-link:nth-child(1) { transition-delay: 0.1s; }
+        .drawer-link:nth-child(2) { transition-delay: 0.2s; }
+        .drawer-link:nth-child(3) { transition-delay: 0.3s; }
+        .drawer-link:nth-child(4) { transition-delay: 0.4s; }
+        .drawer-link:nth-child(5) { transition-delay: 0.5s; }
+    </style>
+</head>
+<body class="bg-geoDark text-white min-h-screen flex flex-col font-sans">
+    <!-- Main Content -->
+    <main id="content" class="flex-grow w-full">
+        <!-- React will inject the application here -->
+    </main>
+
+    <!-- React Entry Point -->
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
+

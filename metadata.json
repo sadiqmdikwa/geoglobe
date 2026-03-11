@@ -1,0 +1,5 @@
+{
+  "name": "GeoGlobe",
+  "description": "A professional, premium dark-themed platform for geographic exploration, videos, and interactive maps.",
+  "requestFramePermissions": ["geolocation"]
+}
