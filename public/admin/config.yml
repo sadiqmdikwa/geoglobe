@@ -1,9 +1,26 @@
-# GEMINI_API_KEY: Required for Gemini AI API calls.
-# AI Studio automatically injects this at runtime from user secrets.
-# Users configure this via the Secrets panel in the AI Studio UI.
-GEMINI_API_KEY="MY_GEMINI_API_KEY"
+backend:
+  name: git-gateway
+  branch: main
 
-# APP_URL: The URL where this applet is hosted.
-# AI Studio automatically injects this at runtime with the Cloud Run service URL.
-# Used for self-referential links, OAuth callbacks, and API endpoints.
-APP_URL="MY_APP_URL"
+media_folder: "public/images"
+public_folder: "/images"
+
+collections:
+  - name: "videos"
+    label: "Video Library"
+    folder: "src/content/videos"
+    create: true
+    slug: "{{title}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "YouTube URL", name: "url", widget: "string" }
+      - { label: "Category", name: "category", widget: "select", options: ["Border Mystery", "Country Fact", "Map Animation"] }
+
+  - name: "game"
+    label: "Geography Quiz"
+    folder: "src/content/quiz"
+    create: true
+    fields:
+      - { label: "Country Name", name: "name", widget: "string" }
+      - { label: "Clue/Hint", name: "clue", widget: "text" }
+      - { label: "Fact", name: "fact", widget: "string" }
