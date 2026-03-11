@@ -60,7 +60,7 @@ export default function AboutContact() {
         <div className="bg-gray-800 rounded-2xl p-6 md:p-8 shadow-2xl border border-gray-700 text-center max-w-lg mx-auto md:mx-0 w-full">
           <h2 className="text-lg md:text-2xl text-white font-bold mb-4 md:mb-6">Send a Direct Message</h2>
           
-          <form action="#" method="POST" className="space-y-3 md:space-y-4 text-left">
+          <form action="https://script.google.com/macros/s/AKfycbzd5eaysWfLmtYyJLvzAsW-UN5eUQxD9558X5oTh8LdTovukVEVDpJ6lwZrC0LNM8a22A/exec" method="POST" className="space-y-3 md:space-y-4 text-left">
             <div>
               <label className="block text-gray-400 text-[10px] md:text-sm mb-1 ml-1">Name</label>
               <input 
