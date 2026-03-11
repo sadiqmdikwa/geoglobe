@@ -1,44 +1,56 @@
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
+import { videoData } from "../data/videos"; // Import our master list!
 
-// Declare L globally since it's loaded via CDN
 declare const L: any;
 
 export default function InteractiveMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
-      // Initialize the Leaflet map centered on Africa/Europe
+      // Initialize the map
       mapInstance.current = L.map(mapRef.current).setView([20.0, 20.0], 3);
 
-      // Dark Theme Tiles: CartoDB Dark Matter
+      // Dark Theme Tiles
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 20
       }).addTo(mapInstance.current);
 
-      // Marker 1 (Ilemi Triangle)
-      const marker1 = L.marker([4.9, 35.3]).addTo(mapInstance.current);
-      marker1.bindPopup(`
-        <div class="text-gray-900">
-          <b class="text-lg">Ilemi Triangle</b><br>
-          <span class="text-sm">Disputed border region.</span><br>
-          <a href="#" class="text-blue-600 font-bold hover:underline inline-block mt-1">Watch Video ▶</a>
-        </div>
-      `);
+      // Loop through our master data and create pins automatically!
+      videoData.forEach((video) => {
+        const marker = L.marker([video.lat, video.lng]).addTo(mapInstance.current);
+        
+        // We use a <button> instead of <a> so we can catch the click with JavaScript
+        marker.bindPopup(`
+          <div class="text-gray-900 pb-1">
+            <b class="text-lg">${video.title}</b><br>
+            <span class="text-sm">${video.description}</span><br>
+            <button class="watch-video-btn text-blue-600 font-bold hover:underline inline-block mt-2" data-id="${video.id}">
+              Watch Video ▶
+            </button>
+          </div>
+        `);
+      });
 
-      // Marker 2 (Baarle-Hertog)
-      const marker2 = L.marker([51.44, 4.93]).addTo(mapInstance.current);
-      marker2.bindPopup(`
-        <div class="text-gray-900">
-          <b class="text-lg">Baarle-Hertog</b><br>
-          <span class="text-sm">The craziest border in Europe.</span><br>
-          <a href="#" class="text-blue-600 font-bold hover:underline inline-block mt-1">Watch Video ▶</a>
-        </div>
-      `);
+      // This is the magic bridge between Leaflet's HTML and React Router
+      mapInstance.current.on('popupopen', (e: any) => {
+        const popupNode = e.popup._contentNode;
+        const btn = popupNode.querySelector('.watch-video-btn');
+        
+        if (btn) {
+          btn.onclick = () => {
+            // Send them to the video page! 
+            // (Later, we can make it open the exact video using the data-id)
+            navigate('/videos');
+          };
+        }
+      });
     }
 
     return () => {
@@ -47,7 +59,7 @@ export default function InteractiveMap() {
         mapInstance.current = null;
       }
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <motion.div 
@@ -56,7 +68,6 @@ export default function InteractiveMap() {
       exit={{ opacity: 0, y: -20 }}
       className="w-full pb-20"
     >
-      {/* Page Header */}
       <header className="mb-8">
         <h1 className="text-3xl md:text-5xl text-geoCyan font-bold mb-2">
           Explore the GeoGlobe
@@ -66,7 +77,6 @@ export default function InteractiveMap() {
         </p>
       </header>
 
-      {/* Map Container */}
       <div 
         id="map" 
         ref={mapRef}
