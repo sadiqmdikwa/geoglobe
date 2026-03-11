@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion } from "framer-motion"; // Note: changed to "framer-motion" as it is standard for React
 import { CheckCircle2 } from "lucide-react";
 
 export default function AboutContact() {
@@ -64,8 +64,10 @@ export default function AboutContact() {
             <div>
               <label className="block text-gray-400 text-[10px] md:text-sm mb-1 ml-1">Name</label>
               <input 
+                name="name"
                 type="text" 
                 placeholder="Your Name"
+                required
                 className="w-full bg-gray-900 border-2 border-gray-700 focus:border-geoCyan outline-none text-white p-2.5 md:p-3 rounded-xl transition-colors placeholder-gray-600 text-xs md:text-base"
               />
             </div>
@@ -73,26 +75,30 @@ export default function AboutContact() {
             <div>
               <label className="block text-gray-400 text-[10px] md:text-sm mb-1 ml-1">Email</label>
               <input 
+                name="email"
                 type="email" 
                 placeholder="your@email.com"
+                required
                 className="w-full bg-gray-900 border-2 border-gray-700 focus:border-geoCyan outline-none text-white p-2.5 md:p-3 rounded-xl transition-colors placeholder-gray-600 text-xs md:text-base"
               />
             </div>
 
             <div>
               <label className="block text-gray-400 text-[10px] md:text-sm mb-1 ml-1">Subject</label>
-              <select className="w-full bg-gray-900 border-2 border-gray-700 focus:border-geoCyan outline-none text-white p-2.5 md:p-3 rounded-xl transition-colors text-xs md:text-base">
-                <option>Topic Suggestion</option>
-                <option>Business Inquiry</option>
-                <option>General Feedback</option>
+              <select name="subject" className="w-full bg-gray-900 border-2 border-gray-700 focus:border-geoCyan outline-none text-white p-2.5 md:p-3 rounded-xl transition-colors text-xs md:text-base">
+                <option value="Topic Suggestion">Topic Suggestion</option>
+                <option value="Business Inquiry">Business Inquiry</option>
+                <option value="General Feedback">General Feedback</option>
               </select>
             </div>
 
             <div>
               <label className="block text-gray-400 text-[10px] md:text-sm mb-1 ml-1">Message</label>
               <textarea 
+                name="message"
                 rows={4} 
                 placeholder="How can we help?"
+                required
                 className="w-full bg-gray-900 border-2 border-gray-700 focus:border-geoCyan outline-none text-white p-2.5 md:p-3 rounded-xl transition-colors placeholder-gray-600 resize-none text-xs md:text-base"
               ></textarea>
             </div>
