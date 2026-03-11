@@ -1,3 +1,4 @@
+site_url: https://geoglobe-web.sadeeqmuhammad2320.workers.dev
 backend:
   name: git-gateway
   branch: main
