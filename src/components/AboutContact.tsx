@@ -69,13 +69,15 @@ export default function AboutContact() {
             </h3>
             <div className="flex flex-wrap justify-center md:justify-start gap-3">
               {[
-                { name: 'Email', icon: 'fa-envelope', link: 'mailto:sadeeqmuhammad2320@gmail.com' },
+                { name: 'Email', icon: 'fa-envelope', link: 'mailto:sadiqmdikwa@gmail.com' },
                 { name: 'LinkedIn', icon: 'fa-linkedin', link: 'https://linkedin.com/in/sadiq-muhammad-mustapha-90442b314' },
                 { name: 'X-Twitter', icon: 'fa-x-twitter', link: 'https://x.com/sadiq_m_dkw' },
-                { name: 'Substack', icon: 'fa-bookmark', link: 'https://substack.com/@sadiqmdikwa' },
                 { name: 'Instagram', icon: 'fa-instagram', link: 'https://instagram.com/sadiq_m_dikwa' },
-                { name: 'TikTok', icon: 'fa-tiktok', link: 'https://www.tiktok.com/@geoglobe23' },
-                { name: 'YouTube', icon: 'fa-youtube', link: 'https://youtube.com/@geoglobe23' }
+                { name: 'TikTok', icon: 'fa-tiktok', link: 'https://tiktok.com/@sadiq_m_dikwa' },
+                { name: 'Snapchat', icon: 'fa-snapchat', link: 'https://snapchat.com/add/sadiqmdkw' },
+                { name: 'Pinterest', icon: 'fa-pinterest', link: 'https://pinterest.com/sadiq_m_dikwa' },
+                { name: 'Reddit', icon: 'fa-reddit', link: 'https://reddit.com/user/sadiq_m_dikwa' },
+                { name: 'Substack', icon: 'fa-bookmark', link: 'https://substack.com/@sadiqmdikwa' }
               ].map((social) => (
                 <a 
                   key={social.name}
@@ -84,7 +86,7 @@ export default function AboutContact() {
                   rel="noopener noreferrer"
                   className="bg-black/50 border border-white/5 hover:border-geoCyan text-gray-400 hover:text-white transition-all px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 group shadow-xl hover:shadow-geoCyan/10"
                 >
-                  <i className={`fa-brands ${social.icon} ${social.icon === 'fa-envelope' || social.icon === 'fa-bookmark' ? 'fa-solid' : ''} group-hover:scale-110 transition-transform`}></i> 
+                  <i className={`${social.icon === 'fa-envelope' || social.icon === 'fa-bookmark' ? 'fa-solid' : 'fa-brands'} ${social.icon} text-base group-hover:scale-110 transition-transform`}></i> 
                   {social.name}
                 </a>
               ))}
