@@ -4,15 +4,16 @@
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoGlobe | Explore the World</title>
     
-    <!-- Tailwind CSS CDN -->
+    <title>GeoGlobe | Sadiq Muhammad Mustapha</title>
+    
+    <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1PYQ705DpgwDPAV7kERrpa8a0m8hFdq5w" />
+    <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1PYQ705DpgwDPAV7kERrpa8a0m8hFdq5w" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Tailwind Configuration -->
     <script>
         tailwind.config = {
             theme: {
@@ -30,10 +31,8 @@
         }
     </script>
 
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
@@ -43,7 +42,6 @@
             transition: transform 0.3s ease-in-out;
         }
         
-        /* Sticky header backdrop blur */
         header {
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -65,7 +63,6 @@
             text-shadow: 0.3px 0.3px 0px rgba(244, 208, 63, 0.15);
         }
 
-        /* Drawer Enhancements */
         #drawer-backdrop {
             transition: opacity 0.3s ease-in-out;
             pointer-events: none;
@@ -83,7 +80,6 @@
             opacity: 1;
             transform: translateX(0);
         }
-        /* Staggered delays */
         .drawer-link:nth-child(1) { transition-delay: 0.1s; }
         .drawer-link:nth-child(2) { transition-delay: 0.2s; }
         .drawer-link:nth-child(3) { transition-delay: 0.3s; }
@@ -92,24 +88,20 @@
     </style>
 </head>
 <body class="bg-geoDark text-white min-h-screen flex flex-col font-sans">
-    <!-- Main Content -->
-    <main id="content" class="flex-grow w-full">
-        <!-- React will inject the application here -->
-    </main>
+    <main id="root" class="flex-grow w-full">
+        </main>
 
-    <!-- React Entry Point -->
     <script type="module" src="/src/main.tsx"></script>
     <script>
-  if (window.netlifyIdentity) {
-    window.netlifyIdentity.on("init", user => {
-      if (!user) {
-        window.netlifyIdentity.on("login", () => {
-          document.location.href = "/admin/";
+      if (window.netlifyIdentity) {
+        window.netlifyIdentity.on("init", user => {
+          if (!user) {
+            window.netlifyIdentity.on("login", () => {
+              document.location.href = "/admin/";
+            });
+          }
         });
       }
-    });
-  }
-</script>
+    </script>
 </body>
 </html>
-
