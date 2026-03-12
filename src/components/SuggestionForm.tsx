@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 export default function SuggestionForm() {
+  const [activeTab, setActiveTab] = useState<'video' | 'game'>('video');
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [status, setStatus] = useState('idle');
 
@@ -14,13 +15,18 @@ export default function SuggestionForm() {
 
     let payloads: any[] = [];
 
-    if (mode === 'bulk') {
-      // Logic to split bulk text: "Country:Answer, Country:Answer"
+    if (activeTab === 'game' && mode === 'bulk') {
       const bulkText = data.bulkData as string;
       const pairs = bulkText.split(',');
       payloads = pairs.map(pair => {
         const [q, a] = pair.split(':');
-        return { ...data, title: q?.trim(), correctAnswer: a?.trim() };
+        return { 
+          ...data, 
+          title: q?.trim(), 
+          correctAnswer: a?.trim(),
+          lat: data.lat || 0,
+          lng: data.lng || 0 
+        };
       });
     } else {
       payloads = [data];
@@ -28,8 +34,6 @@ export default function SuggestionForm() {
 
     try {
       const scriptUrl = 'https://script.google.com/macros/s/AKfycbyIR5OmHrP1wNIksz_XDt86EpNsycOpkPBfPJJrLS6ouBLbXD_gahpm26cCvewF9Gkt/exec'; 
-      
-      // We send all questions in the loop
       for (const item of payloads) {
         await fetch(scriptUrl, {
           method: 'POST',
@@ -38,7 +42,6 @@ export default function SuggestionForm() {
           body: JSON.stringify(item)
         });
       }
-
       setStatus('success');
       form.reset(); 
       setTimeout(() => setStatus('idle'), 3000);
@@ -48,26 +51,31 @@ export default function SuggestionForm() {
   };
 
   return (
-    <div className="bg-gray-900/90 border border-white/10 p-8 rounded-3xl max-w-2xl mx-auto shadow-2xl backdrop-blur-xl">
-      <div className="flex gap-4 mb-8 p-1 bg-black/40 rounded-2xl">
-        <button onClick={() => setMode('single')} className={`flex-1 py-2 rounded-xl font-bold transition-all ${mode === 'single' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>Single Entry</button>
-        <button onClick={() => setMode('bulk')} className={`flex-1 py-2 rounded-xl font-bold transition-all ${mode === 'bulk' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>Bulk Upload</button>
+    <div className="bg-gray-900/90 border border-white/10 p-8 rounded-[2rem] max-w-2xl mx-auto shadow-2xl backdrop-blur-xl">
+      {/* Main Switcher */}
+      <div className="flex bg-black/40 p-1.5 rounded-2xl mb-8">
+        <button onClick={() => setActiveTab('video')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${activeTab === 'video' ? 'bg-geoCyan text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+          Video & Pin
+        </button>
+        <button onClick={() => setActiveTab('game')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${activeTab === 'game' ? 'bg-geoCyan text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+          Game Question
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-geoCyan uppercase tracking-widest">Category</label>
-            <select name="category" className="w-full p-3 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-geoCyan uppercase ml-1">Category</label>
+            <select name="category" className="w-full p-3 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan transition-all">
               <option value="Borders">Borders</option>
               <option value="Flags">Flags</option>
               <option value="Anomalies">Anomalies</option>
               <option value="General">General</option>
             </select>
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-geoCyan uppercase tracking-widest">Region</label>
-            <select name="region" className="w-full p-3 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-geoCyan uppercase ml-1">Region</label>
+            <select name="region" className="w-full p-3 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan transition-all">
               <option value="Global">Global</option>
               <option value="Africa">Africa</option>
               <option value="Asia">Asia</option>
@@ -76,25 +84,36 @@ export default function SuggestionForm() {
           </div>
         </div>
 
-        {mode === 'single' ? (
-          <div className="space-y-4">
-            <input name="title" placeholder="Question or Location Name" required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan" />
-            <div className="flex gap-4">
-              <input name="lat" placeholder="Lat" className="flex-1 p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none" />
-              <input name="lng" placeholder="Lng" className="flex-1 p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none" />
-            </div>
-            <input name="youtubeId" placeholder="YouTube ID" className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none" />
-            <input name="correctAnswer" placeholder="Correct Answer (Country)" className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoYellow" />
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <label className="text-xs text-gray-400">Format: Question:Answer, Question:Answer</label>
-            <textarea name="bulkData" rows={6} placeholder="Nigeria:Abuja, France:Paris..." className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan" />
+        {activeTab === 'game' && (
+          <div className="flex justify-center gap-6 py-2 border-y border-white/5">
+            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+              <input type="radio" checked={mode === 'single'} onChange={() => setMode('single')} className="accent-geoCyan" /> Single
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+              <input type="radio" checked={mode === 'bulk'} onChange={() => setMode('bulk')} className="accent-geoCyan" /> Bulk Paste
+            </label>
           </div>
         )}
 
-        <button type="submit" disabled={status === 'loading'} className="w-full py-4 bg-geoCyan text-black font-bold rounded-xl hover:scale-[1.01] transition-all disabled:opacity-50">
-          {status === 'loading' ? 'Processing...' : status === 'success' ? 'Deployed! ✓' : 'Upload to Database'}
+        {mode === 'single' || activeTab === 'video' ? (
+          <div className="space-y-4">
+            <input name="title" placeholder={activeTab === 'video' ? "Video Title" : "Question (e.g. Which country is this?)"} required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan" />
+            <div className="flex gap-4">
+              <input name="lat" placeholder="Latitude (optional for game)" className="flex-1 p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none" />
+              <input name="lng" placeholder="Longitude (optional for game)" className="flex-1 p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none" />
+            </div>
+            {activeTab === 'video' && <input name="youtubeId" placeholder="YouTube ID" required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan" />}
+            <input name="correctAnswer" placeholder="Answer (The Country Name)" required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoYellow" />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[10px] text-gray-500 italic">Format: Question:Answer, Question:Answer</p>
+            <textarea name="bulkData" rows={6} placeholder="Where are the Pyramids?:Egypt, Smallest country?:Vatican City" className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan" />
+          </div>
+        )}
+
+        <button type="submit" disabled={status === 'loading'} className="w-full py-5 bg-geoCyan text-black font-bold rounded-2xl hover:scale-[1.01] transition-all active:scale-95 disabled:opacity-50 shadow-[0_0_20px_rgba(0,255,255,0.2)]">
+          {status === 'loading' ? '🚀 DEPLOYING...' : status === 'success' ? 'MISSION SUCCESS! ✓' : `UPLOAD TO ${activeTab.toUpperCase()}`}
         </button>
       </form>
     </div>
