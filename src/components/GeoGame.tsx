@@ -290,12 +290,15 @@ export default function GeoGame() {
                   />
                 </div>
                 
-                {/* Feedback Box */}
+                {/* Feedback Box (Updated to always show the correct answer) */}
                 <AnimatePresence>
                 {gameState === "revealed" && (
                     <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className={`p-6 rounded-xl mb-6 text-center border ${isCorrect ? 'bg-green-900/20 border-green-500/30 text-green-400' : 'bg-red-900/20 border-red-500/30 text-red-400'}`}>
-                        <p className="font-semibold text-lg mb-3">
-                          {isCorrect ? 'Correct!' : `Incorrect. The answer is ${shuffledQuestions[currentIndex].name}`}
+                        <p className="font-semibold text-xl mb-1">
+                          {isCorrect ? 'Correct!' : 'Incorrect.'}
+                        </p>
+                        <p className="text-sm opacity-90 mb-4">
+                          The answer is <span className="font-bold">{shuffledQuestions[currentIndex].name}</span>
                         </p>
                         <button onClick={() => navigate(`/preview-map?lat=${shuffledQuestions[currentIndex].lat}&lng=${shuffledQuestions[currentIndex].lng}`)} className="mx-auto flex items-center gap-2 text-sm font-medium text-white hover:text-geoCyan transition-colors bg-gray-800 px-5 py-2.5 rounded-lg hover:bg-gray-700">
                           <MapPin size={16} className="text-geoCyan" /> View on Map
