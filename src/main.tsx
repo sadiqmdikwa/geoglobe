@@ -1,14 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+// 1. Change the import to HashRouter
+import { HashRouter } from 'react-router-dom'; 
 import App from './App.tsx';
 import './index.css';
 
 createRoot(document.getElementById('content')!).render(
   <StrictMode>
-    {/* 👇 This is the magic fix right here! */}
-    <BrowserRouter basename="/geoglobe">
+    {/* 2. Change the tag to HashRouter (we don't even need the basename anymore!) */}
+    <HashRouter>
       <App />
-    </BrowserRouter>
+    </HashRouter>
   </StrictMode>,
 );
