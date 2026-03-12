@@ -49,7 +49,7 @@ export default function SuggestionForm() {
     }
 
     try {
-      const scriptUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; 
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyIR5OmHrP1wNIksz_XDt86EpNsycOpkPBfPJJrLS6ouBLbXD_gahpm26cCvewF9Gkt/exec'; 
       for (let i = 0; i < payloads.length; i++) {
         setStatus(`Uploading ${i + 1}/${payloads.length}...`);
         await fetch(scriptUrl, {
