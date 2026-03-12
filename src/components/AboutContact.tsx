@@ -15,7 +15,7 @@ export default function AboutContact() {
 
     try {
       // 🛡️ Use your Triple-Router Apps Script URL here
-      const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE";
+      const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxYhRfD4jSTFm1b_cAmPDtq_NYuNi0NxoqMN-ciY5VyJ2Idc8ojGqhyf6sJvFjxrzHsg/exec";
 
       await fetch(SCRIPT_URL, {
         method: 'POST',
