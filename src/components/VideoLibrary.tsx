@@ -1,13 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, PlayCircle, ExternalLink, X, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { videoData } from "../data/videos"; // The Master List!
 
 export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
   const navigate = useNavigate();
-  // State to control your awesome modal
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 1. PASTE YOUR GOOGLE SHEET CSV LINK HERE 👇
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?output=csv";
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await fetch(SHEET_CSV_URL);
+        const csvText = await response.text();
+        
+        // Parse CSV Rows
+        const rows = csvText.split('\n').slice(1);
+        const parsedVideos = rows.map((row, index) => {
+          const columns = row.split(',');
+          if (columns.length < 5) return null;
+
+          return {
+            id: index,
+            title: columns[1]?.replace(/"/g, ""),
+            lat: parseFloat(columns[2]),
+            lng: parseFloat(columns[3]),
+            youtubeId: columns[4]?.replace(/"/g, "").trim(),
+            description: "Live discovery from the GeoGlobe database."
+          };
+        }).filter(v => v !== null);
+
+        // Reverse so newest videos appear first!
+        setVideos(parsedVideos.reverse());
+      } catch (error) {
+        console.error("Error fetching videos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, []);
 
   const handleBack = () => {
     if (onBack) onBack();
@@ -21,7 +58,6 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
       exit={{ opacity: 0 }}
       className="w-full pb-20 relative"
     >
-      {/* Header & Back Button */}
       <button 
         onClick={handleBack}
         className="flex items-center text-gray-400 hover:text-geoCyan transition-colors mb-8 group"
@@ -36,20 +72,19 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
           Video Library
         </h1>
         <p className="text-gray-300 text-lg">
-          Explore our collection of geographic anomalies and mysteries.
+          {loading ? "Syncing with live database..." : "Explore our collection of geographic mysteries."}
         </p>
       </header>
 
       {/* Video Grid */}
       <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videoData.map((video) => (
+        {videos.map((video) => (
           <motion.div 
             key={video.id}
             whileHover={{ y: -5 }}
             className="bg-gray-900/50 border border-white/5 rounded-2xl overflow-hidden hover:border-geoCyan/30 transition-all group cursor-pointer flex flex-col"
-            onClick={() => setSelectedVideo(video)} // Opens the modal
+            onClick={() => setSelectedVideo(video)}
           >
-            {/* Auto-fetching YouTube Thumbnail */}
             <div className="aspect-video relative overflow-hidden bg-black">
               <img 
                 src={`https://img.youtube.com/vi/${video.youtubeId}/maxresdefault.jpg`}
@@ -67,24 +102,19 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-geoCyan transition-colors">
                 {video.title}
               </h3>
-              <p className="text-gray-400 text-sm mb-4 line-clamp-2 flex-grow">
-                {video.description}
-              </p>
               
               <div className="flex items-center justify-between mt-auto">
-                <div className="flex items-center text-gray-500 text-xs gap-1" title="Pinned on Map">
+                <div className="flex items-center text-gray-500 text-xs gap-1">
                   <MapPin className="w-3 h-3" />
                   {video.lat.toFixed(1)}, {video.lng.toFixed(1)}
                 </div>
                 
-                {/* External Link Button */}
                 <a 
                   href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded flex items-center justify-center transition-colors"
-                  title="Watch on YouTube"
-                  onClick={(e) => e.stopPropagation()} // Stops the modal from opening if they click the external link button
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
@@ -94,7 +124,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
         ))}
       </motion.div>
 
-      {/* Video Modal (Your exact code!) */}
+      {/* Video Modal */}
       <AnimatePresence>
         {selectedVideo && (
           <motion.div 
