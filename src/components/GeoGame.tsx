@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Globe2, Flag, Map, MapPin, Loader2, Play, RotateCcw, ChevronLeft, Eye } from "lucide-react";
+import { Trophy, MapPin, Loader2, Eye, ChevronLeft } from "lucide-react";
 
 interface Question {
   id: string;
@@ -16,6 +16,7 @@ interface Question {
 
 type GameStep = 'main_cat' | 'sub_cat' | 'settings' | 'playing' | 'results';
 
+// Calculate typos (Levenshtein Distance)
 function getLevenshteinDistance(a: string, b: string): number {
   const matrix: number[][] = [];
   for (let i = 0; i <= b.length; i++) matrix[i] = [i];
@@ -27,6 +28,30 @@ function getLevenshteinDistance(a: string, b: string): number {
     }
   }
   return matrix[b.length][a.length];
+}
+
+// Smart Answer Matching (Ignores "desert", "river", etc., and allows partial matches)
+function checkAnswerIsCorrect(guess: string, target: string): boolean {
+  const g = guess.toLowerCase().trim();
+  const t = target.toLowerCase().trim();
+  if (g === t) return true;
+
+  // Strip common geographical terms to allow for partial answers
+  const stripWords = (str: string) => 
+    str.replace(/\b(the|republic of|democratic republic of|desert|river|mountains|mountain|ocean|sea|lake|island|islands)\b/g, '')
+       .replace(/\s+/g, ' ')
+       .trim();
+
+  const cleanG = stripWords(g);
+  const cleanT = stripWords(t);
+
+  if (cleanG === cleanT) return true;
+  // Allow up to 2 typos
+  if (getLevenshteinDistance(cleanG, cleanT) <= 2) return true;
+  // If the user typed a substantial part of the word (e.g. "Sahara" in "Sahara Desert")
+  if (cleanG.length >= 4 && cleanT.includes(cleanG)) return true;
+
+  return false;
 }
 
 export default function GeoGame() {
@@ -48,7 +73,7 @@ export default function GeoGame() {
 
   const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?gid=1141935128&single=true&output=csv";
 
-  // 1. INITIAL LOAD & RESTORE SESSION
+  // INITIAL LOAD & RESTORE SESSION
   useEffect(() => {
     const initGame = async () => {
       try {
@@ -73,8 +98,7 @@ export default function GeoGame() {
         
         setAllData(parsed);
 
-        // Check for saved mission in progress
-        const saved = localStorage.getItem("geoglobe_active_mission");
+        const saved = localStorage.getItem("geoglobe_active_session");
         if (saved) {
           const data = JSON.parse(saved);
           if (data.questions && data.questions.length > 0) {
@@ -97,7 +121,7 @@ export default function GeoGame() {
     initGame();
   }, []);
 
-  // 2. PERSISTENCE ENGINE (Saves state whenever user makes progress)
+  // PERSISTENCE ENGINE
   useEffect(() => {
     if (step === 'playing' && shuffledQuestions.length > 0) {
       const sessionData = {
@@ -109,7 +133,7 @@ export default function GeoGame() {
         subCat,
         gameLength
       };
-      localStorage.setItem("geoglobe_active_mission", JSON.stringify(sessionData));
+      localStorage.setItem("geoglobe_active_session", JSON.stringify(sessionData));
     }
   }, [currentIndex, score, wrongCount, step, shuffledQuestions]);
 
@@ -117,8 +141,8 @@ export default function GeoGame() {
     if (step === 'sub_cat') setStep('main_cat');
     else if (step === 'settings') setStep('sub_cat');
     else if (step === 'playing') {
-      if (window.confirm("Abort mission? Progress will be lost.")) {
-        localStorage.removeItem("geoglobe_active_mission");
+      if (window.confirm("Are you sure you want to exit? Your progress will be lost.")) {
+        localStorage.removeItem("geoglobe_active_session");
         setStep('main_cat');
       }
     } else {
@@ -131,13 +155,12 @@ export default function GeoGame() {
     if (mainCat !== "Mixed Global") pool = pool.filter(q => q.category === mainCat);
     if (subCat !== "Global") pool = pool.filter(q => q.region === subCat);
     
-    if (pool.length === 0) return alert("Insufficient data for this combination!");
+    if (pool.length === 0) return alert("Insufficient questions for this category and region combination.");
 
     const shuffled = pool.sort(() => Math.random() - 0.5);
     const selected = gameLength === 'unlimited' ? shuffled : shuffled.slice(0, gameLength as number);
     
-    // Clear old storage for new game
-    localStorage.removeItem("geoglobe_active_mission");
+    localStorage.removeItem("geoglobe_active_session");
     
     setShuffledQuestions(selected);
     setCurrentIndex(0); 
@@ -149,11 +172,10 @@ export default function GeoGame() {
 
   const handleCheck = () => {
     if (gameState === "revealed") { nextQuestion(); return; }
+    if (!userInput.trim()) return;
+
     const current = shuffledQuestions[currentIndex];
-    const guess = userInput.trim().toLowerCase();
-    const target = current.name.toLowerCase();
-    
-    const isMatch = guess === target || getLevenshteinDistance(guess, target) <= 2;
+    const isMatch = checkAnswerIsCorrect(userInput, current.name);
 
     if (isMatch) { 
       setScore(s => s + 1); 
@@ -172,31 +194,31 @@ export default function GeoGame() {
       setGameState("playing");
       setIsCorrect(null);
     } else {
-      localStorage.removeItem("geoglobe_active_mission");
+      localStorage.removeItem("geoglobe_active_session");
       setStep('results');
     }
   };
 
-  if (loading) return <div className="flex justify-center py-40"><Loader2 className="animate-spin text-geoCyan w-12 h-12" /></div>;
+  if (loading) return <div className="flex justify-center py-40"><Loader2 className="animate-spin text-geoCyan w-10 h-10" /></div>;
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-6 min-h-[70vh] flex flex-col justify-center">
+    <div className="max-w-4xl mx-auto py-10 px-4 min-h-[70vh] flex flex-col justify-center">
       {step !== 'results' && (
-        <button onClick={handleBack} className="flex items-center text-gray-400 hover:text-geoCyan mb-8 transition-colors group font-bold uppercase tracking-widest text-xs">
-          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          {step === 'playing' ? 'Abort Mission' : 'Back'}
+        <button onClick={handleBack} className="flex items-center text-gray-400 hover:text-white mb-8 transition-colors text-sm font-medium w-fit">
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          {step === 'playing' ? 'Exit Game' : 'Back'}
         </button>
       )}
 
       <AnimatePresence mode="wait">
         {step === 'main_cat' && (
           <motion.div key="main" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
-            <h2 className="text-center text-4xl font-black text-white italic tracking-tighter uppercase">Intelligence Sector</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="text-center text-3xl font-bold text-white tracking-tight">Select Category</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {["Mixed Global", "Flags", "Borders", "Anomalies"].map(cat => (
-                <button key={cat} onClick={() => { setMainCat(cat); setStep('sub_cat'); }} className="p-8 bg-gray-900/50 border border-white/5 rounded-[2.5rem] text-left hover:border-geoCyan hover:bg-geoCyan/5 transition-all group backdrop-blur-md shadow-2xl">
-                  <h3 className="text-2xl font-bold text-geoCyan group-hover:text-white transition-colors">{cat}</h3>
-                  <p className="text-gray-500 text-sm mt-2">Initialize {cat} protocols.</p>
+                <button key={cat} onClick={() => { setMainCat(cat); setStep('sub_cat'); }} className="p-8 bg-gray-900/40 border border-gray-800 rounded-2xl text-left hover:border-geoCyan hover:bg-gray-800 transition-all group backdrop-blur-md">
+                  <h3 className="text-xl font-semibold text-white group-hover:text-geoCyan transition-colors">{cat}</h3>
+                  <p className="text-gray-400 text-sm mt-2">Play {cat.toLowerCase()} questions.</p>
                 </button>
               ))}
             </div>
@@ -205,10 +227,10 @@ export default function GeoGame() {
 
         {step === 'sub_cat' && (
           <motion.div key="sub" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
-            <h2 className="text-center text-4xl font-black text-white italic uppercase tracking-tighter">Operational Region</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <h2 className="text-center text-3xl font-bold text-white tracking-tight">Select Region</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
               {["Global", "Africa", "Asia", "Europe", "Americas", "Oceania"].map(reg => (
-                <button key={reg} onClick={() => { setSubCat(reg); setStep('settings'); }} className="p-6 bg-gray-900/50 border border-white/5 rounded-3xl hover:bg-geoCyan hover:text-black font-bold transition-all uppercase tracking-widest text-xs shadow-lg">
+                <button key={reg} onClick={() => { setSubCat(reg); setStep('settings'); }} className="p-6 bg-gray-900/40 border border-gray-800 rounded-2xl hover:border-geoCyan hover:bg-gray-800 text-white font-medium transition-all shadow-sm">
                   {reg}
                 </button>
               ))}
@@ -218,61 +240,78 @@ export default function GeoGame() {
 
         {step === 'settings' && (
           <motion.div key="set" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-10">
-            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Mission Scale</h2>
-            <div className="flex flex-wrap justify-center gap-4">
+            <h2 className="text-3xl font-bold text-white tracking-tight">Game Length</h2>
+            <div className="flex flex-wrap justify-center gap-5">
               {[5, 10, 'unlimited'].map(len => (
-                <button key={len} onClick={() => setGameLength(len as any)} className={`px-10 py-5 rounded-2xl font-black border-2 transition-all ${gameLength === len ? 'border-geoCyan text-geoCyan bg-geoCyan/10 shadow-[0_0_20px_rgba(0,255,255,0.1)]' : 'border-white/10 text-gray-500'}`}>
-                  {len.toString().toUpperCase()}
+                <button key={len} onClick={() => setGameLength(len as any)} className={`px-8 py-4 rounded-xl font-medium border transition-all ${gameLength === len ? 'border-geoCyan text-geoCyan bg-geoCyan/10' : 'border-gray-800 text-gray-400 hover:border-gray-600'}`}>
+                  {len === 'unlimited' ? 'Unlimited' : `${len} Questions`}
                 </button>
               ))}
             </div>
-            <button onClick={prepareGame} className="bg-geoCyan text-black px-16 py-6 rounded-[2rem] font-black text-xl hover:shadow-[0_0_40px_rgba(0,255,255,0.3)] hover:scale-105 transition-all flex items-center gap-3 mx-auto uppercase tracking-tighter">
-              Launch Session
+            <button onClick={prepareGame} className="bg-geoCyan hover:bg-geoCyan/90 text-gray-900 px-12 py-4 rounded-xl font-semibold text-lg transition-all mx-auto mt-4">
+              Start Game
             </button>
           </motion.div>
         )}
 
         {step === 'playing' && shuffledQuestions.length > 0 && (
           <motion.div key="play" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-2xl mx-auto">
-            <div className="flex justify-between items-center mb-6 px-4 font-mono text-[10px] tracking-widest text-gray-500 uppercase">
-              <span className="bg-white/5 px-3 py-1 rounded-full">{mainCat} // {subCat}</span>
-              <div className="flex gap-4">
-                <span className="text-green-500 font-bold">✓ {score}</span>
-                <span className="text-red-500 font-bold">✗ {wrongCount}</span>
+            {/* Header / Stats */}
+            <div className="flex justify-between items-center mb-6 px-2 text-sm font-medium text-gray-400">
+              <span className="bg-gray-800 px-3 py-1 rounded-md">{mainCat} • {subCat}</span>
+              <div className="flex gap-4 bg-gray-800 px-3 py-1 rounded-md">
+                <span className="text-green-500">Correct: {score}</span>
+                <span className="text-red-500">Incorrect: {wrongCount}</span>
               </div>
             </div>
-            <div className="bg-gray-900/90 border border-white/10 p-8 md:p-12 rounded-[3.5rem] shadow-2xl relative backdrop-blur-2xl">
+
+            {/* Main Game Card */}
+            <div className="bg-gray-900/50 border border-white/5 p-8 md:p-12 rounded-[2.5rem] shadow-xl backdrop-blur-md">
                 {mainCat === "Flags" && (
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full aspect-video flex items-center justify-center mb-10 bg-black/40 rounded-[2.5rem] overflow-hidden shadow-inner border border-white/5">
-                      <img src={`https://flagcdn.com/w640/${shuffledQuestions[currentIndex].countryCode}.png`} className="h-32 md:h-44 object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" />
+                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full aspect-video flex items-center justify-center mb-8 bg-black/20 rounded-2xl overflow-hidden border border-gray-800">
+                      <img src={`https://flagcdn.com/w640/${shuffledQuestions[currentIndex].countryCode}.png`} className="h-32 md:h-44 object-contain" alt="Flag clue" />
                     </motion.div>
                 )}
-                <h3 className="text-2xl md:text-3xl font-bold text-center text-white mb-10 leading-snug tracking-tight px-2">
+                
+                <h3 className="text-xl md:text-2xl font-semibold text-center text-white mb-8 leading-relaxed px-2">
                   {shuffledQuestions[currentIndex].clue}
                 </h3>
                 
-                <div className="relative group">
-                  <input ref={inputRef} value={userInput} onChange={e => setUserInput(e.target.value)} disabled={gameState === "revealed"} placeholder="ENTER IDENTITY..." className="w-full p-6 bg-black/60 border-2 border-white/5 rounded-3xl text-white text-center text-xl font-black focus:border-geoCyan/50 outline-none mb-6 transition-all tracking-widest shadow-inner group-hover:border-white/10" onKeyDown={e => e.key === 'Enter' && handleCheck()} />
+                {/* Input Field */}
+                <div className="mb-6">
+                  <input 
+                    ref={inputRef} 
+                    value={userInput} 
+                    onChange={e => setUserInput(e.target.value)} 
+                    disabled={gameState === "revealed"} 
+                    placeholder="Type your answer..." 
+                    className="w-full p-4 bg-black/40 border border-gray-700 rounded-xl text-white text-center text-lg font-medium focus:border-geoCyan focus:ring-1 focus:ring-geoCyan outline-none transition-all placeholder-gray-500 disabled:opacity-50" 
+                    onKeyDown={e => e.key === 'Enter' && handleCheck()} 
+                  />
                 </div>
                 
+                {/* Feedback Box */}
                 <AnimatePresence>
                 {gameState === "revealed" && (
-                    <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className={`p-8 rounded-3xl mb-8 text-center border-2 ${isCorrect ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                        <p className="font-black uppercase tracking-[0.2em] mb-4 text-sm">{isCorrect ? '✓ Verification Success' : `⚠ Data Match: ${shuffledQuestions[currentIndex].name.toUpperCase()}`}</p>
-                        <button onClick={() => navigate(`/preview-map?lat=${shuffledQuestions[currentIndex].lat}&lng=${shuffledQuestions[currentIndex].lng}`)} className="mx-auto flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-white/60 hover:text-geoCyan transition-colors bg-white/5 px-6 py-3 rounded-full hover:bg-white/10">
-                          <MapPin size={14} className="text-geoCyan" /> Scan Satellite Data
+                    <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className={`p-6 rounded-xl mb-6 text-center border ${isCorrect ? 'bg-green-900/20 border-green-500/30 text-green-400' : 'bg-red-900/20 border-red-500/30 text-red-400'}`}>
+                        <p className="font-semibold text-lg mb-3">
+                          {isCorrect ? 'Correct!' : `Incorrect. The answer is ${shuffledQuestions[currentIndex].name}`}
+                        </p>
+                        <button onClick={() => navigate(`/preview-map?lat=${shuffledQuestions[currentIndex].lat}&lng=${shuffledQuestions[currentIndex].lng}`)} className="mx-auto flex items-center gap-2 text-sm font-medium text-white hover:text-geoCyan transition-colors bg-gray-800 px-5 py-2.5 rounded-lg hover:bg-gray-700">
+                          <MapPin size={16} className="text-geoCyan" /> View on Map
                         </button>
                     </motion.div>
                 )}
                 </AnimatePresence>
 
-                <div className="flex gap-4">
-                  <button onClick={handleCheck} className="flex-grow py-6 bg-geoCyan text-black font-black text-xl rounded-2xl hover:bg-white transition-all shadow-[0_10px_20px_rgba(0,255,255,0.15)] active:scale-95 uppercase italic tracking-tighter">
-                      {gameState === "revealed" ? "Next Sector" : "Finalize"}
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <button onClick={handleCheck} className="flex-grow py-4 bg-geoCyan hover:bg-geoCyan/90 text-gray-900 font-semibold text-lg rounded-xl transition-all">
+                      {gameState === "revealed" ? "Next Question" : "Submit"}
                   </button>
                   {gameState === "playing" && (
-                    <button onClick={() => { setIsCorrect(false); setGameState("revealed"); }} className="px-8 bg-white/5 text-gray-500 rounded-2xl hover:text-geoCyan hover:bg-white/10 transition-all border border-white/5 group" title="Reveal Answer">
-                      <Eye size={24} className="group-hover:scale-110 transition-transform" />
+                    <button onClick={() => { setIsCorrect(false); setGameState("revealed"); }} className="px-6 bg-gray-800 text-gray-400 rounded-xl hover:text-white hover:bg-gray-700 transition-all border border-gray-700" title="Reveal Answer">
+                      <Eye size={20} />
                     </button>
                   )}
                 </div>
@@ -281,18 +320,23 @@ export default function GeoGame() {
         )}
 
         {step === 'results' && (
-          <motion.div key="res" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-10">
-            <div className="relative inline-block">
-              <Trophy className="w-28 h-28 text-geoYellow mx-auto drop-shadow-[0_0_30px_rgba(255,215,0,0.4)]" />
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute inset-0 border-2 border-dashed border-geoYellow/20 rounded-full" />
+          <motion.div key="res" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-8">
+            <Trophy className="w-20 h-20 text-geoCyan mx-auto" />
+            <h2 className="text-4xl font-bold text-white tracking-tight">Game Complete</h2>
+            
+            <div className="grid grid-cols-2 gap-5 max-w-sm mx-auto">
+                <div className="bg-gray-900/50 p-6 rounded-2xl border border-gray-800">
+                  <p className="text-sm text-gray-400 font-medium mb-1">Correct</p>
+                  <p className="text-4xl font-bold text-green-500">{score}</p>
+                </div>
+                <div className="bg-gray-900/50 p-6 rounded-2xl border border-gray-800">
+                  <p className="text-sm text-gray-400 font-medium mb-1">Incorrect</p>
+                  <p className="text-4xl font-bold text-red-500">{wrongCount}</p>
+                </div>
             </div>
-            <h2 className="text-6xl font-black text-white italic uppercase tracking-tighter">Mission Accomplished</h2>
-            <div className="grid grid-cols-2 gap-6 max-w-sm mx-auto font-mono">
-                <div className="bg-gray-900 p-8 rounded-[2rem] border-2 border-green-500/20 shadow-lg"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Confirmed</p><p className="text-5xl font-black text-green-500">{score}</p></div>
-                <div className="bg-gray-900 p-8 rounded-[2rem] border-2 border-red-500/20 shadow-lg"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Errors</p><p className="text-5xl font-black text-red-500">{wrongCount}</p></div>
-            </div>
-            <button onClick={() => setStep('main_cat')} className="bg-white text-black font-black px-16 py-6 rounded-[2rem] hover:bg-geoCyan transition-all shadow-xl uppercase italic tracking-tighter hover:scale-105">
-                New Mission
+            
+            <button onClick={() => setStep('main_cat')} className="bg-white hover:bg-gray-100 text-gray-900 font-semibold px-10 py-4 rounded-xl transition-all mt-4">
+                Play Again
             </button>
           </motion.div>
         )}
