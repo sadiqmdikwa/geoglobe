@@ -12,7 +12,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   // 1. PASTE YOUR GOOGLE SHEET CSV LINK HERE 👇
-  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?output=csv";
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?gid=0&single=true&output=csv";
 
   useEffect(() => {
     const fetchVideos = async () => {
