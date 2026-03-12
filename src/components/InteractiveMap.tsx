@@ -1,7 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
-import { videoData } from "../data/videos"; // Import our master list!
 
 declare const L: any;
 
@@ -9,49 +8,74 @@ export default function InteractiveMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  // 1. PASTE YOUR GOOGLE SHEET CSV LINK HERE 👇
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?output=csv";
 
   useEffect(() => {
-    if (mapRef.current && !mapInstance.current) {
+    const loadMapData = async () => {
+      if (!mapRef.current || mapInstance.current) return;
+
       // Initialize the map
       mapInstance.current = L.map(mapRef.current).setView([20.0, 20.0], 3);
 
-      // Dark Theme Tiles
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        attribution: '&copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 20
       }).addTo(mapInstance.current);
 
-      // Loop through our master data and create pins automatically!
-      videoData.forEach((video) => {
-        const marker = L.marker([video.lat, video.lng]).addTo(mapInstance.current);
+      try {
+        // 2. Fetch data from Google Sheets
+        const response = await fetch(SHEET_CSV_URL);
+        const csvText = await response.text();
         
-        // We use a <button> instead of <a> so we can catch the click with JavaScript
-        marker.bindPopup(`
-          <div class="text-gray-900 pb-1">
-            <b class="text-lg">${video.title}</b><br>
-            <span class="text-sm">${video.description}</span><br>
-            <button class="watch-video-btn text-blue-600 font-bold hover:underline inline-block mt-2" data-id="${video.id}">
-              Watch Video ▶
-            </button>
-          </div>
-        `);
-      });
+        // 3. Simple CSV parser (skips the header row)
+        const rows = csvText.split('\n').slice(1);
+        
+        rows.forEach((row) => {
+          const columns = row.split(',');
+          if (columns.length < 5) return;
 
-      // This is the magic bridge between Leaflet's HTML and React Router
+          // Google Sheet Columns: [0]Timestamp, [1]Title, [2]Lat, [3]Lng, [4]YT_ID
+          const title = columns[1]?.replace(/"/g, "");
+          const lat = parseFloat(columns[2]);
+          const lng = parseFloat(columns[3]);
+          const ytId = columns[4]?.replace(/"/g, "").trim();
+
+          if (!isNaN(lat) && !isNaN(lng)) {
+            const marker = L.marker([lat, lng]).addTo(mapInstance.current);
+            
+            marker.bindPopup(`
+              <div class="text-gray-900 pb-1">
+                <b class="text-lg">${title}</b><br>
+                <button class="watch-video-btn text-blue-600 font-bold hover:underline inline-block mt-2" data-id="${ytId}">
+                  Watch Video ▶
+                </button>
+              </div>
+            `);
+          }
+        });
+      } catch (error) {
+        console.error("Error loading map pins:", error);
+      } finally {
+        setLoading(false);
+      }
+
+      // Handle Popup clicks
       mapInstance.current.on('popupopen', (e: any) => {
-        const popupNode = e.popup._contentNode;
-        const btn = popupNode.querySelector('.watch-video-btn');
-        
+        const btn = e.popup._contentNode.querySelector('.watch-video-btn');
         if (btn) {
           btn.onclick = () => {
-            // Send them to the video page! 
-            // (Later, we can make it open the exact video using the data-id)
+            // We can send the YouTube ID to the videos page
             navigate('/videos');
           };
         }
       });
-    }
+    };
+
+    loadMapData();
 
     return () => {
       if (mapInstance.current) {
@@ -69,16 +93,13 @@ export default function InteractiveMap() {
       className="w-full pb-20"
     >
       <header className="mb-8">
-        <h1 className="text-3xl md:text-5xl text-geoCyan font-bold mb-2">
-          Explore the GeoGlobe
-        </h1>
+        <h1 className="text-3xl md:text-5xl text-geoCyan font-bold mb-2">Explore the GeoGlobe</h1>
         <p className="text-gray-300 text-lg">
-          Click the pins to uncover geographical mysteries and watch the related videos.
+          {loading ? "Syncing with live database..." : "Pins are loaded directly from the GeoGlobe database."}
         </p>
       </header>
 
       <div 
-        id="map" 
         ref={mapRef}
         className="w-full h-[350px] md:h-[550px] rounded-2xl shadow-2xl border-2 border-gray-700 z-0 relative overflow-hidden"
       ></div>
