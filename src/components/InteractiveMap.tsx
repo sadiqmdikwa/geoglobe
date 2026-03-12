@@ -11,7 +11,7 @@ export default function InteractiveMap() {
   const [loading, setLoading] = useState(true);
 
   // 1. PASTE YOUR GOOGLE SHEET CSV LINK HERE 👇
-  const SHEET_CSV_URL = "YOUR_PUBLISHED_CSV_LINK_HERE";
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?output=csv";
 
   useEffect(() => {
     const loadMapData = async () => {
