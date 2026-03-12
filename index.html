@@ -38,6 +38,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         
+        /* Fixed: Ensures the React app container is visible */
+        #content {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
         .drawer-transition {
             transition: transform 0.3s ease-in-out;
         }
@@ -45,6 +52,14 @@
         header {
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
+        }
+
+        /* Increased Icon Size Logic */
+        .nav-logo-icon {
+            width: 45px; /* Increased size */
+            height: 45px;
+            object-contain: contain;
+            border-radius: 8px;
         }
 
         /* Logo Animation */
@@ -80,18 +95,15 @@
             opacity: 1;
             transform: translateX(0);
         }
-        .drawer-link:nth-child(1) { transition-delay: 0.1s; }
-        .drawer-link:nth-child(2) { transition-delay: 0.2s; }
-        .drawer-link:nth-child(3) { transition-delay: 0.3s; }
-        .drawer-link:nth-child(4) { transition-delay: 0.4s; }
-        .drawer-link:nth-child(5) { transition-delay: 0.5s; }
     </style>
 </head>
-<body class="bg-geoDark text-white min-h-screen flex flex-col font-sans">
-    <main id="root" class="flex-grow w-full">
+<body class="bg-geoDark text-white min-h-screen font-sans">
+    
+    <main id="content">
         </main>
 
     <script type="module" src="/src/main.tsx"></script>
+
     <script>
       if (window.netlifyIdentity) {
         window.netlifyIdentity.on("init", user => {
