@@ -92,12 +92,13 @@ export default function AboutContact() {
                   key="success"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="py-20 text-center space-y-4"
+                  // Added min-height and flex to prevent mobile "black screen" collapse
+                  className="py-20 min-h-[400px] flex flex-col items-center justify-center text-center space-y-4"
                 >
                   <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-                  <h2 className="text-2xl font-bold text-white uppercase italic">Transmission Sent</h2>
+                  <h2 className="text-2xl font-bold text-white uppercase italic tracking-tighter">Transmission Sent</h2>
                   <p className="text-gray-500 text-sm">Target reached. Sadiq will review your intel shortly.</p>
-                  <button onClick={() => setStatus('idle')} className="text-geoCyan text-[10px] font-black uppercase tracking-[0.3em] pt-6">New Transmission?</button>
+                  <button onClick={() => setStatus('idle')} className="text-geoCyan text-[10px] font-black uppercase tracking-[0.3em] pt-6 hover:text-white transition-colors">New Transmission?</button>
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -113,7 +114,7 @@ export default function AboutContact() {
                       <option value="General Feedback">General Feedback</option>
                     </select>
                     <textarea name="message" rows={4} placeholder="Type your message..." required className="w-full bg-black/40 border border-white/5 focus:border-geoCyan outline-none text-white p-4 rounded-2xl resize-none text-sm" />
-                    <button type="submit" disabled={status === 'sending'} className="w-full bg-geoCyan disabled:opacity-50 text-black font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-white uppercase">
+                    <button type="submit" disabled={status === 'sending'} className="w-full bg-geoCyan disabled:opacity-50 text-black font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-white transition-all uppercase italic tracking-tighter">
                       {status === 'sending' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
                       SEND TRANSMISSION
                     </button>
