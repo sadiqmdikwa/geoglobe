@@ -14,15 +14,12 @@ export default function AboutContact() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      // Use your Universal Smart Router URL here
+      // 🛡️ Use your Triple-Router Apps Script URL here
       const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE";
 
       await fetch(SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        mode: 'no-cors', // Keeps the browser from blocking the redirect
         body: JSON.stringify(data),
       });
 
@@ -65,7 +62,7 @@ export default function AboutContact() {
               {[
                 { name: 'Email', icon: 'fa-envelope', link: 'mailto:sadeeqmuhammad2320@gmail.com' },
                 { name: 'LinkedIn', icon: 'fa-linkedin', link: 'https://linkedin.com/in/sadiq-muhammad-mustapha-90442b314' },
-                { name: 'X', icon: 'fa-twitter-x', link: 'https://x.com/sadiq_m_dkw' },
+                { name: 'X', icon: 'fa-x-twitter', link: 'https://x.com/sadiq_m_dkw' },
                 { name: 'Substack', icon: 'fa-bookmark', link: 'https://substack.com/@sadiqmdikwa' },
                 { name: 'Instagram', icon: 'fa-instagram', link: 'https://instagram.com/sadiq_m_dikwa' }
               ].map((social) => (
