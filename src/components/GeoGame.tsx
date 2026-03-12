@@ -48,7 +48,7 @@ export default function GeoGame() {
 
   const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?gid=1141935128&single=true&output=csv";
 
-  // 1. INITIAL LOAD & RESTORE SESSION
+  // 1. INITIAL LOAD & PERSISTENCE RECOVERY
   useEffect(() => {
     const initGame = async () => {
       try {
@@ -73,7 +73,7 @@ export default function GeoGame() {
         
         setAllData(parsed);
 
-        // Check for saved mission in progress
+        // 🛡️ RECOVERY CHECK: This must happen after data is parsed
         const saved = localStorage.getItem("geoglobe_active_mission");
         if (saved) {
           const data = JSON.parse(saved);
@@ -97,7 +97,7 @@ export default function GeoGame() {
     initGame();
   }, []);
 
-  // 2. PERSISTENCE ENGINE (Saves state whenever user makes progress)
+  // 2. MISSION RECORDER
   useEffect(() => {
     if (step === 'playing' && shuffledQuestions.length > 0) {
       const sessionData = {
@@ -136,7 +136,6 @@ export default function GeoGame() {
     const shuffled = pool.sort(() => Math.random() - 0.5);
     const selected = gameLength === 'unlimited' ? shuffled : shuffled.slice(0, gameLength as number);
     
-    // Clear old storage for new game
     localStorage.removeItem("geoglobe_active_mission");
     
     setShuffledQuestions(selected);
@@ -182,9 +181,9 @@ export default function GeoGame() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-6 min-h-[70vh] flex flex-col justify-center">
       {step !== 'results' && (
-        <button onClick={handleBack} className="flex items-center text-gray-400 hover:text-geoCyan mb-8 transition-colors group font-bold uppercase tracking-widest text-xs">
+        <button onClick={handleBack} className="flex items-center text-gray-500 hover:text-geoCyan mb-8 transition-colors group font-bold uppercase tracking-widest text-[10px]">
           <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          {step === 'playing' ? 'Abort Mission' : 'Back'}
+          {step === 'playing' ? 'Abort Active Mission' : 'Back'}
         </button>
       )}
 
@@ -195,8 +194,8 @@ export default function GeoGame() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {["Mixed Global", "Flags", "Borders", "Anomalies"].map(cat => (
                 <button key={cat} onClick={() => { setMainCat(cat); setStep('sub_cat'); }} className="p-8 bg-gray-900/50 border border-white/5 rounded-[2.5rem] text-left hover:border-geoCyan hover:bg-geoCyan/5 transition-all group backdrop-blur-md shadow-2xl">
-                  <h3 className="text-2xl font-bold text-geoCyan group-hover:text-white transition-colors">{cat}</h3>
-                  <p className="text-gray-500 text-sm mt-2">Initialize {cat} protocols.</p>
+                  <h3 className="text-2xl font-bold text-geoCyan group-hover:text-white transition-colors tracking-tight">{cat}</h3>
+                  <p className="text-gray-500 text-xs mt-2 uppercase tracking-widest">Deploy {cat} protocols</p>
                 </button>
               ))}
             </div>
@@ -208,7 +207,7 @@ export default function GeoGame() {
             <h2 className="text-center text-4xl font-black text-white italic uppercase tracking-tighter">Operational Region</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {["Global", "Africa", "Asia", "Europe", "Americas", "Oceania"].map(reg => (
-                <button key={reg} onClick={() => { setSubCat(reg); setStep('settings'); }} className="p-6 bg-gray-900/50 border border-white/5 rounded-3xl hover:bg-geoCyan hover:text-black font-bold transition-all uppercase tracking-widest text-xs shadow-lg">
+                <button key={reg} onClick={() => { setSubCat(reg); setStep('settings'); }} className="p-6 bg-gray-900/50 border border-white/5 rounded-3xl hover:bg-geoCyan hover:text-black font-bold transition-all uppercase tracking-widest text-[11px] shadow-lg">
                   {reg}
                 </button>
               ))}
@@ -218,7 +217,7 @@ export default function GeoGame() {
 
         {step === 'settings' && (
           <motion.div key="set" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-10">
-            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Mission Scale</h2>
+            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Mission Parameters</h2>
             <div className="flex flex-wrap justify-center gap-4">
               {[5, 10, 'unlimited'].map(len => (
                 <button key={len} onClick={() => setGameLength(len as any)} className={`px-10 py-5 rounded-2xl font-black border-2 transition-all ${gameLength === len ? 'border-geoCyan text-geoCyan bg-geoCyan/10 shadow-[0_0_20px_rgba(0,255,255,0.1)]' : 'border-white/10 text-gray-500'}`}>
@@ -226,7 +225,7 @@ export default function GeoGame() {
                 </button>
               ))}
             </div>
-            <button onClick={prepareGame} className="bg-geoCyan text-black px-16 py-6 rounded-[2rem] font-black text-xl hover:shadow-[0_0_40px_rgba(0,255,255,0.3)] hover:scale-105 transition-all flex items-center gap-3 mx-auto uppercase tracking-tighter">
+            <button onClick={prepareGame} className="bg-geoCyan text-black px-16 py-6 rounded-[2.5rem] font-black text-xl hover:shadow-[0_0_40px_rgba(0,255,255,0.3)] hover:scale-105 transition-all flex items-center gap-3 mx-auto uppercase tracking-tighter">
               Launch Session
             </button>
           </motion.div>
@@ -234,44 +233,47 @@ export default function GeoGame() {
 
         {step === 'playing' && shuffledQuestions.length > 0 && (
           <motion.div key="play" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-2xl mx-auto">
-            <div className="flex justify-between items-center mb-6 px-4 font-mono text-[10px] tracking-widest text-gray-500 uppercase">
-              <span className="bg-white/5 px-3 py-1 rounded-full">{mainCat} // {subCat}</span>
+            <div className="flex justify-between items-center mb-6 px-4 font-mono text-[10px] tracking-[0.3em] text-gray-500 uppercase">
+              <span className="bg-white/5 px-4 py-1.5 rounded-full border border-white/5">{mainCat} // {subCat}</span>
               <div className="flex gap-4">
                 <span className="text-green-500 font-bold">✓ {score}</span>
                 <span className="text-red-500 font-bold">✗ {wrongCount}</span>
               </div>
             </div>
-            <div className="bg-gray-900/90 border border-white/10 p-8 md:p-12 rounded-[3.5rem] shadow-2xl relative backdrop-blur-2xl">
+            <div className="bg-gray-900/90 border border-white/10 p-8 md:p-12 rounded-[4rem] shadow-2xl relative backdrop-blur-3xl overflow-hidden">
+                {/* Visual Accent */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-geoCyan/50 to-transparent" />
+
                 {mainCat === "Flags" && (
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full aspect-video flex items-center justify-center mb-10 bg-black/40 rounded-[2.5rem] overflow-hidden shadow-inner border border-white/5">
-                      <img src={`https://flagcdn.com/w640/${shuffledQuestions[currentIndex].countryCode}.png`} className="h-32 md:h-44 object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" />
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full aspect-video flex items-center justify-center mb-10 bg-black/40 rounded-[3rem] overflow-hidden shadow-inner border border-white/5">
+                      <img src={`https://flagcdn.com/w640/${shuffledQuestions[currentIndex].countryCode}.png`} className="h-32 md:h-44 object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]" />
                     </motion.div>
                 )}
-                <h3 className="text-2xl md:text-3xl font-bold text-center text-white mb-10 leading-snug tracking-tight px-2">
-                  {shuffledQuestions[currentIndex].clue}
+                <h3 className="text-2xl md:text-3xl font-bold text-center text-white mb-10 leading-snug tracking-tight px-4 italic">
+                  "{shuffledQuestions[currentIndex].clue}"
                 </h3>
                 
                 <div className="relative group">
-                  <input ref={inputRef} value={userInput} onChange={e => setUserInput(e.target.value)} disabled={gameState === "revealed"} placeholder="ENTER IDENTITY..." className="w-full p-6 bg-black/60 border-2 border-white/5 rounded-3xl text-white text-center text-xl font-black focus:border-geoCyan/50 outline-none mb-6 transition-all tracking-widest shadow-inner group-hover:border-white/10" onKeyDown={e => e.key === 'Enter' && handleCheck()} />
+                  <input ref={inputRef} value={userInput} onChange={e => setUserInput(e.target.value)} disabled={gameState === "revealed"} placeholder="ENTER IDENTIFIED TARGET..." className="w-full p-6 bg-black/60 border-2 border-white/5 rounded-[2rem] text-white text-center text-xl font-black focus:border-geoCyan/50 outline-none mb-6 transition-all tracking-widest shadow-inner group-hover:border-white/10" onKeyDown={e => e.key === 'Enter' && handleCheck()} />
                 </div>
                 
                 <AnimatePresence>
                 {gameState === "revealed" && (
-                    <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className={`p-8 rounded-3xl mb-8 text-center border-2 ${isCorrect ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                        <p className="font-black uppercase tracking-[0.2em] mb-4 text-sm">{isCorrect ? '✓ Verification Success' : `⚠ Data Match: ${shuffledQuestions[currentIndex].name.toUpperCase()}`}</p>
-                        <button onClick={() => navigate(`/preview-map?lat=${shuffledQuestions[currentIndex].lat}&lng=${shuffledQuestions[currentIndex].lng}`)} className="mx-auto flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-white/60 hover:text-geoCyan transition-colors bg-white/5 px-6 py-3 rounded-full hover:bg-white/10">
-                          <MapPin size={14} className="text-geoCyan" /> Scan Satellite Data
+                    <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className={`p-8 rounded-[2.5rem] mb-8 text-center border-2 ${isCorrect ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                        <p className="font-black uppercase tracking-[0.2em] mb-4 text-xs">{isCorrect ? '✓ Verification Confirmed' : `⚠ Data Match: ${shuffledQuestions[currentIndex].name.toUpperCase()}`}</p>
+                        <button onClick={() => navigate(`/preview-map?lat=${shuffledQuestions[currentIndex].lat}&lng=${shuffledQuestions[currentIndex].lng}`)} className="mx-auto flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/60 hover:text-geoCyan transition-all bg-white/5 px-8 py-3.5 rounded-full hover:bg-white/10 border border-white/5">
+                          <MapPin size={14} className="text-geoCyan animate-pulse" /> Initiate Satellite Scan
                         </button>
                     </motion.div>
                 )}
                 </AnimatePresence>
 
                 <div className="flex gap-4">
-                  <button onClick={handleCheck} className="flex-grow py-6 bg-geoCyan text-black font-black text-xl rounded-2xl hover:bg-white transition-all shadow-[0_10px_20px_rgba(0,255,255,0.15)] active:scale-95 uppercase italic tracking-tighter">
-                      {gameState === "revealed" ? "Next Sector" : "Finalize"}
+                  <button onClick={handleCheck} className="flex-grow py-6 bg-geoCyan text-black font-black text-xl rounded-2xl hover:bg-white transition-all shadow-[0_15px_30px_rgba(0,255,255,0.2)] active:scale-95 uppercase italic tracking-tighter">
+                      {gameState === "revealed" ? "Continue Mission" : "Authenticate"}
                   </button>
                   {gameState === "playing" && (
-                    <button onClick={() => { setIsCorrect(false); setGameState("revealed"); }} className="px-8 bg-white/5 text-gray-500 rounded-2xl hover:text-geoCyan hover:bg-white/10 transition-all border border-white/5 group" title="Reveal Answer">
+                    <button onClick={() => { setIsCorrect(false); setGameState("revealed"); }} className="px-8 bg-white/5 text-gray-500 rounded-2xl hover:text-geoCyan hover:bg-white/10 transition-all border border-white/5 group shadow-lg" title="Manual Reveal">
                       <Eye size={24} className="group-hover:scale-110 transition-transform" />
                     </button>
                   )}
@@ -283,16 +285,16 @@ export default function GeoGame() {
         {step === 'results' && (
           <motion.div key="res" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-10">
             <div className="relative inline-block">
-              <Trophy className="w-28 h-28 text-geoYellow mx-auto drop-shadow-[0_0_30px_rgba(255,215,0,0.4)]" />
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute inset-0 border-2 border-dashed border-geoYellow/20 rounded-full" />
+              <Trophy className="w-28 h-28 text-geoYellow mx-auto drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]" />
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 15, ease: "linear" }} className="absolute inset-0 border-2 border-dashed border-geoYellow/20 rounded-full scale-125" />
             </div>
-            <h2 className="text-6xl font-black text-white italic uppercase tracking-tighter">Mission Accomplished</h2>
+            <h2 className="text-6xl font-black text-white italic uppercase tracking-tighter">Debriefing Finalized</h2>
             <div className="grid grid-cols-2 gap-6 max-w-sm mx-auto font-mono">
-                <div className="bg-gray-900 p-8 rounded-[2rem] border-2 border-green-500/20 shadow-lg"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Confirmed</p><p className="text-5xl font-black text-green-500">{score}</p></div>
-                <div className="bg-gray-900 p-8 rounded-[2rem] border-2 border-red-500/20 shadow-lg"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Errors</p><p className="text-5xl font-black text-red-500">{wrongCount}</p></div>
+                <div className="bg-gray-900/50 p-8 rounded-[2.5rem] border-2 border-green-500/20 shadow-xl"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Verified</p><p className="text-5xl font-black text-green-500">{score}</p></div>
+                <div className="bg-gray-900/50 p-8 rounded-[2.5rem] border-2 border-red-500/20 shadow-xl"><p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Anomalies</p><p className="text-5xl font-black text-red-500">{wrongCount}</p></div>
             </div>
-            <button onClick={() => setStep('main_cat')} className="bg-white text-black font-black px-16 py-6 rounded-[2rem] hover:bg-geoCyan transition-all shadow-xl uppercase italic tracking-tighter hover:scale-105">
-                New Mission
+            <button onClick={() => setStep('main_cat')} className="bg-white text-black font-black px-16 py-6 rounded-[2.5rem] hover:bg-geoCyan transition-all shadow-2xl uppercase italic tracking-tighter hover:scale-105 active:scale-95">
+                New Session
             </button>
           </motion.div>
         )}
