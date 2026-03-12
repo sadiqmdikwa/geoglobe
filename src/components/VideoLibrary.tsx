@@ -37,7 +37,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
         const reversedVideos = parsedVideos.reverse();
         setVideos(reversedVideos);
 
-        // Check for Auto-Play ID in URL
+        // Check for Auto-Play ID from Map Navigation
         const videoIdFromUrl = searchParams.get('id');
         if (videoIdFromUrl) {
           const autoVideo = reversedVideos.find(v => v.youtubeId === videoIdFromUrl);
@@ -54,7 +54,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
     fetchVideos();
   }, [searchParams]);
 
-  // 2. PRO SEARCH LOGIC: Filters the list as you type
+  // LIVE SEARCH LOGIC
   const filteredVideos = useMemo(() => {
     return videos.filter(video => 
       video.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -92,7 +92,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
           </p>
         </div>
 
-        {/* --- LIVE SEARCH BAR --- */}
+        {/* SEARCH BAR */}
         <div className="relative w-full md:w-80 group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-geoCyan transition-colors" />
           <input 
@@ -106,7 +106,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
       </header>
 
       {/* Video Grid */}
-      <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative min-h-[400px]">
         <AnimatePresence mode="popLayout">
           {filteredVideos.map((video) => (
             <motion.div 
@@ -155,10 +155,55 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
             </motion.div>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
-      {/* Empty State */}
+      {/* Empty Search State */}
       {!loading && filteredVideos.length === 0 && (
         <div className="text-center py-20 text-gray-500">
-          <p className="text-xl">No videos match "{searchTerm}"</p>
-          <button onClick={() => setSearchTerm("")} className="text-geoCyan mt-2 hover:underline">
+          <p className="text-xl font-medium">No videos match "{searchTerm}"</p>
+          <button 
+            onClick={() => setSearchTerm("")} 
+            className="text-geoCyan mt-2 hover:underline transition-all"
+          >
+            Clear search filters
+          </button>
+        </div>
+      )}
+
+      {/* Video Modal Player */}
+      <AnimatePresence>
+        {selectedVideo && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
+          >
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedVideo(null)}></div>
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 z-10"
+            >
+              <button 
+                onClick={() => setSelectedVideo(null)}
+                className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <iframe 
+                src={`https://www.youtube.com/embed/${selectedVideo.youtubeId}?autoplay=1`}
+                title={selectedVideo.title}
+                className="w-full h-full relative z-10"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
