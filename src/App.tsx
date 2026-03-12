@@ -98,12 +98,6 @@ function Home() {
         </div>
       </motion.section>
 
-      {/* --- ADDED THIS SECTION SO YOU CAN SEE THE FORM! --- */}
-      <div className="w-full py-8">
-        <SuggestionForm />
-      </div>
-      {/* --------------------------------------------------- */}
-
       {/* Feature Cards Grid */}
       <motion.section 
         variants={containerVariants}
@@ -205,6 +199,9 @@ export default function App() {
             <Route path="/map" element={<InteractiveMap />} />
             <Route path="/game" element={<GeoGame />} />
             <Route path="/contact" element={<AboutContact />} />
+            
+            {/* 👇 THIS IS YOUR SECRET ADMIN PORTAL ROUTE 👇 */}
+            <Route path="/admin-portal-xyz" element={<SuggestionForm />} />
           </Routes>
         </AnimatePresence>
       </main>
