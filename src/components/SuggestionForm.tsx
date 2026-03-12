@@ -1,110 +1,99 @@
 import { useState } from 'react';
 
 export default function SuggestionForm() {
-  const [activeTab, setActiveTab] = useState<'video' | 'game'>('video');
-  const [mode, setMode] = useState<'single' | 'bulk'>('single');
+  const [mode, setMode] = useState<'video' | 'game'>('video');
   const [status, setStatus] = useState('idle');
-
-  const getCoordinates = async (locationName: string) => {
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}&limit=1`);
-      const data = await response.json();
-      if (data && data.length > 0) return { lat: data[0].lat, lng: data[0].lon };
-    } catch (e) { console.error(e); }
-    return { lat: 0, lng: 0 };
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setStatus('processing');
+    setStatus('loading');
     
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-    let payloads: any[] = [];
-
-    if (activeTab === 'game' && mode === 'bulk') {
-      const lines = (data.bulkData as string).split('\n').filter(line => line.trim() !== "");
-      
-      for (let i = 0; i < lines.length; i++) {
-        const [q, a, loc, cat, reg] = lines[i].split(':');
-        setStatus(`Geocoding ${i + 1}/${lines.length}: ${loc?.trim()}...`);
-        
-        const coords = loc ? await getCoordinates(loc.trim()) : { lat: 0, lng: 0 };
-        // Wait 1 second between requests to respect OpenStreetMap rules
-        await new Promise(r => setTimeout(r, 1000));
-
-        payloads.push({
-          title: q?.trim(),
-          correctAnswer: a?.trim(),
-          lat: coords.lat,
-          lng: coords.lng,
-          category: cat?.trim() || "General",
-          region: reg?.trim() || "Global",
-          youtubeId: "" 
-        });
-      }
-    } else {
-      payloads = [data];
-    }
+    const payload = Object.fromEntries(formData.entries());
 
     try {
-      const scriptUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; 
-      for (let i = 0; i < payloads.length; i++) {
-        setStatus(`Uploading ${i + 1}/${payloads.length}...`);
-        await fetch(scriptUrl, {
-          method: 'POST',
-          mode: 'no-cors', 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payloads[i])
-        });
-      }
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyIR5OmHrP1wNIksz_XDt86EpNsycOpkPBfPJJrLS6ouBLbXD_gahpm26cCvewF9Gkt/exec'; 
+      
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors', 
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
       setStatus('success');
       form.reset(); 
       setTimeout(() => setStatus('idle'), 3000);
-    } catch (error) { setStatus('error'); }
+      
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      setStatus('error');
+    }
   };
 
   return (
-    <div className="bg-gray-900 border border-white/10 p-8 rounded-[2.5rem] max-w-2xl mx-auto shadow-2xl backdrop-blur-xl">
-      <div className="flex bg-black/40 p-1 rounded-2xl mb-8 border border-white/5">
-        <button onClick={() => {setActiveTab('video'); setMode('single')}} className={`flex-1 py-3 rounded-xl font-bold transition-all ${activeTab === 'video' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>VIDEO & PINS</button>
-        <button onClick={() => setActiveTab('game')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${activeTab === 'game' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>GAME DATA</button>
+    <div className="bg-gray-900/80 border border-white/10 p-8 rounded-3xl max-w-lg mx-auto shadow-2xl backdrop-blur-md">
+      <div className="flex gap-4 mb-8 p-1 bg-black/40 rounded-2xl">
+        <button 
+          onClick={() => setMode('video')}
+          className={`flex-1 py-3 rounded-xl font-bold transition-all ${mode === 'video' ? 'bg-geoCyan text-black' : 'text-gray-500 hover:text-white'}`}
+        >
+          Add Video
+        </button>
+        <button 
+          onClick={() => setMode('game')}
+          className={`flex-1 py-3 rounded-xl font-bold transition-all ${mode === 'game' ? 'bg-geoCyan text-black' : 'text-gray-500 hover:text-white'}`}
+        >
+          Add Game
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {activeTab === 'game' && (
-          <div className="flex justify-center gap-4 py-2 bg-white/5 rounded-xl">
-            <button type="button" onClick={() => setMode('single')} className={`px-6 py-2 rounded-lg text-xs font-black tracking-widest ${mode === 'single' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>SINGLE ENTRY</button>
-            <button type="button" onClick={() => setMode('bulk')} className={`px-6 py-2 rounded-lg text-xs font-black tracking-widest ${mode === 'bulk' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>AI BULK PASTE</button>
+      <h2 className="text-2xl font-bold text-white mb-6">
+        {mode === 'video' ? 'New Map Discovery' : 'New Game Challenge'}
+      </h2>
+      
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-geoCyan uppercase tracking-widest ml-1">Location Title</label>
+          <input name="title" placeholder="e.g. The Great Rift Valley" required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 focus:border-geoCyan outline-none transition-all" />
+        </div>
+        
+        <div className="flex gap-4">
+          <div className="flex-1 space-y-2">
+            <label className="text-xs font-bold text-geoCyan uppercase tracking-widest ml-1">Latitude</label>
+            <input name="lat" type="number" step="any" placeholder="4.9" required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 focus:border-geoCyan outline-none" />
           </div>
-        )}
+          <div className="flex-1 space-y-2">
+            <label className="text-xs font-bold text-geoCyan uppercase tracking-widest ml-1">Longitude</label>
+            <input name="lng" type="number" step="any" placeholder="35.3" required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 focus:border-geoCyan outline-none" />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-geoCyan uppercase tracking-widest ml-1">YouTube Video ID</label>
+          <input name="youtubeId" placeholder="z7Xr00C9LY0" required className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 focus:border-geoCyan outline-none" />
+        </div>
 
-        {mode === 'single' ? (
-          <div className="grid grid-cols-1 gap-4">
-            <input name="title" placeholder="Title / Question" required className="p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none focus:border-geoCyan" />
-            <div className="grid grid-cols-2 gap-4">
-                <input name="lat" placeholder="Latitude" className="p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none" />
-                <input name="lng" placeholder="Longitude" className="p-4 bg-black/50 text-white rounded-xl border border-white/10 outline-none" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <select name="category" className="p-4 bg-black/50 text-white rounded-xl border border-white/10"><option>Flags</option><option>Borders</option><option>General</option></select>
-                <select name="region" className="p-4 bg-black/50 text-white rounded-xl border border-white/10"><option>Global</option><option>Africa</option><option>Asia</option><option>Europe</option></select>
-            </div>
-            <input name="correctAnswer" placeholder="Correct Answer" className="p-4 bg-black/50 text-white rounded-xl border border-white/10 focus:border-geoYellow" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center px-1">
-                <span className="text-[10px] text-geoCyan font-black uppercase tracking-widest">AI Input Protocol</span>
-                <span className="text-[10px] text-gray-600 italic">Format: Question:Answer:SearchPlace:Category:Region</span>
-            </div>
-            <textarea name="bulkData" rows={10} placeholder="Identify the flag with a star:Somalia:Mogadishu:Flags:Africa" className="w-full p-6 bg-black/50 text-white rounded-3xl border border-white/10 outline-none focus:border-geoCyan font-mono text-sm" />
-          </div>
-        )}
-
-        <button type="submit" disabled={status !== 'idle' && status !== 'success' && status !== 'error'} className="w-full py-6 bg-geoCyan text-black font-black text-xl rounded-2xl hover:shadow-[0_0_30px_rgba(0,255,255,0.2)] transition-all disabled:opacity-50">
-          {status === 'idle' ? 'START UPLOAD' : status.toUpperCase()}
+        {/* --- THIS IS THE NEW GAME ANSWER FIELD --- */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-geoYellow uppercase tracking-widest ml-1">Game Answer (Correct Country)</label>
+          <input name="correctAnswer" placeholder="e.g. Kenya" required={mode === 'game'} className="w-full p-4 bg-black/50 text-white rounded-xl border border-white/10 focus:border-geoYellow outline-none transition-all" />
+        </div>
+        
+        <button 
+          type="submit" 
+          disabled={status === 'loading' || status === 'success'}
+          className={`font-bold py-4 rounded-xl mt-4 transition-all shadow-lg ${
+            status === 'success' ? 'bg-green-500 text-white' : 
+            status === 'error' ? 'bg-red-500 text-white' : 
+            'bg-geoCyan text-black hover:scale-[1.02] active:scale-[0.98]'
+          }`}
+        >
+          {status === 'loading' ? 'Encrypting & Sending...' : 
+           status === 'success' ? 'Data Deployed! ✓' : 
+           status === 'error' ? 'System Error' : 
+           `Save to GeoGlobe ${mode === 'video' ? 'Map' : 'Game'}`}
         </button>
       </form>
     </div>
