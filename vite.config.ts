@@ -7,7 +7,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     // 👇 This is the magic line that tells GitHub Pages where your site lives!
-    base: '/geoglobe-v2/', 
+    base: '/geoglobe/', 
     
     plugins: [react(), tailwindcss()],
     define: {
