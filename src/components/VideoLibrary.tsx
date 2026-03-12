@@ -37,7 +37,6 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
         const reversedVideos = parsedVideos.reverse();
         setVideos(reversedVideos);
 
-        // Check for Auto-Play ID from Map Navigation
         const videoIdFromUrl = searchParams.get('id');
         if (videoIdFromUrl) {
           const autoVideo = reversedVideos.find(v => v.youtubeId === videoIdFromUrl);
@@ -54,7 +53,6 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
     fetchVideos();
   }, [searchParams]);
 
-  // LIVE SEARCH LOGIC
   const filteredVideos = useMemo(() => {
     return videos.filter(video => 
       video.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -75,77 +73,84 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
     >
       <button 
         onClick={handleBack}
-        className="flex items-center text-gray-400 hover:text-geoCyan transition-colors mb-8 group"
+        className="flex items-center text-gray-400 hover:text-geoCyan transition-colors mb-8 group font-medium"
       >
-        <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+        <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
         Back to Explore
       </button>
 
-      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl md:text-5xl text-geoCyan font-bold mb-4 flex items-center gap-3">
-            <PlayCircle className="w-10 h-10" />
-            Video Library
-          </h1>
-          <p className="text-gray-300 text-lg">
-            {loading ? "Syncing..." : `Showing ${filteredVideos.length} geographic mysteries.`}
-          </p>
-        </div>
+      {/* --- PRO HEADER SECTION --- */}
+      <header className="mb-12 border-b border-white/5 pb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl md:text-5xl text-white font-bold tracking-tight flex items-center gap-4">
+              <span className="p-2 bg-geoCyan/10 rounded-xl">
+                <PlayCircle className="w-8 h-8 md:w-10 md:h-10 text-geoCyan" />
+              </span>
+              Video Library
+            </h1>
+            <p className="text-gray-400 text-lg max-w-xl">
+              {loading ? "Syncing database..." : `Exploring ${filteredVideos.length} geographical anomalies.`}
+            </p>
+          </div>
 
-        {/* SEARCH BAR */}
-        <div className="relative w-full md:w-80 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-geoCyan transition-colors" />
-          <input 
-            type="text"
-            placeholder="Search videos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-900/80 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:border-geoCyan/50 focus:ring-1 focus:ring-geoCyan/20 transition-all"
-          />
+          {/* REFINED SEARCH BAR POSITION */}
+          <div className="relative w-full lg:w-96 group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="w-5 h-5 text-gray-500 group-focus-within:text-geoCyan transition-colors" />
+            </div>
+            <input 
+              type="text"
+              placeholder="Search by title..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-gray-900/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-500 outline-none focus:border-geoCyan/40 focus:bg-gray-900/60 transition-all shadow-inner"
+            />
+          </div>
         </div>
       </header>
 
       {/* Video Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative min-h-[400px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative min-h-[400px]">
         <AnimatePresence mode="popLayout">
           {filteredVideos.map((video) => (
             <motion.div 
               layout
               key={video.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={{ y: -5 }}
-              className="bg-gray-900/50 border border-white/5 rounded-2xl overflow-hidden hover:border-geoCyan/30 transition-all group cursor-pointer flex flex-col"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              whileHover={{ y: -8 }}
+              className="bg-gray-900/40 backdrop-blur-sm border border-white/5 rounded-3xl overflow-hidden hover:border-geoCyan/20 transition-all group cursor-pointer flex flex-col shadow-lg"
               onClick={() => setSelectedVideo(video)}
             >
               <div className="aspect-video relative overflow-hidden bg-black">
                 <img 
                   src={`https://img.youtube.com/vi/${video.youtubeId}/maxresdefault.jpg`}
                   alt={video.title}
-                  className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                  className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-500"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-geoCyan/90 w-14 h-14 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 shadow-[0_0_20px_rgba(0,255,255,0.5)]">
-                    <PlayCircle className="text-gray-900 w-8 h-8 ml-1" />
+                  <div className="bg-geoCyan w-14 h-14 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-50 group-hover:scale-100 shadow-[0_0_30px_rgba(0,255,255,0.4)]">
+                    <PlayCircle className="text-gray-900 w-8 h-8 ml-0.5" />
                   </div>
                 </div>
               </div>
 
               <div className="p-6 flex-grow flex flex-col">
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-geoCyan transition-colors">
+                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-geoCyan transition-colors line-clamp-1">
                   {video.title}
                 </h3>
-                <div className="flex items-center justify-between mt-auto">
-                  <div className="flex items-center text-gray-500 text-xs gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {video.lat.toFixed(1)}, {video.lng.toFixed(1)}
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                  <div className="flex items-center text-gray-500 text-xs font-mono tracking-wider gap-2">
+                    <MapPin className="w-3 h-3 text-geoCyan/50" />
+                    {video.lat.toFixed(2)}°N, {video.lng.toFixed(2)}°E
                   </div>
                   <a 
                     href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded flex items-center justify-center transition-colors"
+                    className="p-2 bg-white/5 hover:bg-geoCyan hover:text-black text-white rounded-lg transition-all"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -159,15 +164,22 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
 
       {/* Empty Search State */}
       {!loading && filteredVideos.length === 0 && (
-        <div className="text-center py-20 text-gray-500">
-          <p className="text-xl font-medium">No videos match "{searchTerm}"</p>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-32"
+        >
+          <div className="inline-block p-6 rounded-full bg-gray-900/50 mb-4 text-gray-600">
+            <Search className="w-12 h-12" />
+          </div>
+          <p className="text-xl text-gray-400 font-medium">No results found for "{searchTerm}"</p>
           <button 
             onClick={() => setSearchTerm("")} 
-            className="text-geoCyan mt-2 hover:underline transition-all"
+            className="text-geoCyan mt-3 hover:text-white transition-colors underline underline-offset-4"
           >
-            Clear search filters
+            Clear filters
           </button>
-        </div>
+        </motion.div>
       )}
 
       {/* Video Modal Player */}
@@ -179,23 +191,23 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
           >
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedVideo(null)}></div>
+            <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setSelectedVideo(null)}></div>
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 z-10"
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-6xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 z-10"
             >
               <button 
                 onClick={() => setSelectedVideo(null)}
-                className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+                className="absolute top-6 right-6 z-20 bg-black/60 hover:bg-geoCyan hover:text-black text-white p-3 rounded-2xl transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
               <iframe 
                 src={`https://www.youtube.com/embed/${selectedVideo.youtubeId}?autoplay=1`}
                 title={selectedVideo.title}
-                className="w-full h-full relative z-10"
+                className="w-full h-full"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
