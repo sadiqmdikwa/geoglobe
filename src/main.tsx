@@ -6,7 +6,8 @@ import './index.css';
 
 createRoot(document.getElementById('content')!).render(
   <StrictMode>
-    <BrowserRouter>
+    {/* 👇 This is the magic fix right here! */}
+    <BrowserRouter basename="/geoglobe">
       <App />
     </BrowserRouter>
   </StrictMode>,
