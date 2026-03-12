@@ -39,17 +39,17 @@ export default function AboutContact() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="w-full pb-20 pt-8 max-w-6xl mx-auto"
+      className="w-full pb-20 pt-8 max-w-6xl mx-auto px-4 lg:px-0"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
         
         {/* Left Column: About Information */}
-        <div className="space-y-10">
+        <div className="space-y-10 text-center lg:text-left">
           <section className="space-y-4">
             <h1 className="text-3xl md:text-4xl text-white font-bold tracking-tight">
               About GeoGlobe
             </h1>
-            <p className="text-gray-400 text-base md:text-lg leading-relaxed">
+            <p className="text-gray-400 text-base md:text-lg leading-relaxed max-w-2xl mx-auto lg:mx-0">
               GeoGlobe is an interactive educational platform designed to make geography accessible, visual, and engaging. By combining interactive maps, curated video content, and gamified learning experiences, we aim to bridge the gap between complex geopolitical data and everyday curiosity. Whether you are exploring border anomalies or testing your knowledge, GeoGlobe provides a modern approach to learning about our world.
             </p>
           </section>
@@ -58,7 +58,7 @@ export default function AboutContact() {
             <h2 className="text-2xl font-semibold text-white tracking-tight">
               Meet the Founder
             </h2>
-            <p className="text-gray-400 text-base leading-relaxed">
+            <p className="text-gray-400 text-base leading-relaxed max-w-2xl mx-auto lg:mx-0">
               GeoGlobe was founded by <span className="text-white font-medium">Sadiq Muhammad Mustapha</span>, a software developer and geography enthusiast. Combining technical expertise in modern web development with a deep passion for cartography and global cultures, Sadiq built GeoGlobe to provide a clean, user-friendly interface for geography lovers to explore the world's stories.
             </p>
           </section>
@@ -67,8 +67,8 @@ export default function AboutContact() {
             <h3 className="text-gray-500 font-medium text-sm uppercase tracking-wider">
               Connect
             </h3>
-            {/* MATCHED REFERENCE IMAGE: Curvy, dark buttons with subtle borders */}
-            <div className="flex flex-wrap gap-3">
+            {/* Center aligned on mobile, left aligned on desktop */}
+            <div className="flex flex-wrap justify-center lg:justify-start gap-3 max-w-lg mx-auto lg:mx-0">
               {[
                 { name: 'Email', icon: 'fa-envelope', link: 'mailto:sadiqmdikwa@gmail.com' },
                 { name: 'LinkedIn', icon: 'fa-linkedin', link: 'https://linkedin.com/in/sadiq-muhammad-mustapha-90442b314' },
@@ -96,8 +96,7 @@ export default function AboutContact() {
         </div>
 
         {/* Right Column: Contact Form */}
-        {/* ADDED CURVES: rounded-[2.5rem] for a sleek, modern card look */}
-        <div className="bg-gray-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/5 shadow-2xl w-full">
+        <div className="bg-gray-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/5 shadow-2xl w-full text-left">
           <AnimatePresence mode="wait">
             {status === 'success' ? (
               <motion.div 
@@ -118,7 +117,7 @@ export default function AboutContact() {
               </motion.div>
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <h2 className="text-2xl text-white font-semibold mb-6 tracking-tight">Get in Touch</h2>
+                <h2 className="text-2xl text-white font-semibold mb-6 tracking-tight text-center lg:text-left">Get in Touch</h2>
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="space-y-1.5">
