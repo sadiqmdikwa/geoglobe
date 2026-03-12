@@ -15,12 +15,13 @@ export default function SuggestionForm() {
       // 2. The secret URL to your Google Apps Script
       const scriptUrl = 'https://script.google.com/macros/s/AKfycbyIR5OmHrP1wNIksz_XDt86EpNsycOpkPBfPJJrLS6ouBLbXD_gahpm26cCvewF9Gkt/exec'; 
       
-      // 3. Send the data to Google
+      // 3. Send the data to Google (with the anti-blocking disguise!)
       await fetch(scriptUrl, {
         method: 'POST',
-        mode: 'no-cors', // This is required so Google doesn't block the request
+        mode: 'no-cors', 
         headers: {
-          'Content-Type': 'application/json',
+          // 👇 THIS IS THE MAGIC FIX 👇
+          'Content-Type': 'text/plain;charset=utf-8', 
         },
         body: JSON.stringify(payload)
       });
@@ -33,6 +34,7 @@ export default function SuggestionForm() {
       setTimeout(() => setStatus('idle'), 3000);
       
     } catch (error) {
+      console.error("THE FETCH ERROR IS:", error); // Helps us debug if it fails
       setStatus('error');
     }
   };
