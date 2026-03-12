@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import SuggestionForm from './components/SuggestionForm';
 import { motion, AnimatePresence } from "motion/react";
 import { PlayCircle, Map, Trophy, ArrowRight } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
@@ -98,6 +98,12 @@ function Home() {
         </div>
       </motion.section>
 
+      {/* --- ADDED THIS SECTION SO YOU CAN SEE THE FORM! --- */}
+      <div className="w-full py-8">
+        <SuggestionForm />
+      </div>
+      {/* --------------------------------------------------- */}
+
       {/* Feature Cards Grid */}
       <motion.section 
         variants={containerVariants}
@@ -173,7 +179,6 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Map path to view type for Header component
   const getViewFromPath = (path: string): "home" | "videos" | "map" | "game" | "contact" => {
     if (path === "/videos") return "videos";
     if (path === "/map") return "map";
@@ -233,7 +238,7 @@ export default function App() {
           </div>
 
           <div className="text-center space-y-2">
-            <p className="text-gray-500 text-sm">&copy; 2026 GeoGlobe. All rights reserved.</p>
+            <p className="text-gray-500 text-sm">© 2026 GeoGlobe. All rights reserved.</p>
             <p className="text-gray-600 text-xs uppercase tracking-[0.2em]">Exploring the World's Mysteries</p>
           </div>
         </div>
