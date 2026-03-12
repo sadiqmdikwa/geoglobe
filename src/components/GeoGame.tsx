@@ -6,7 +6,7 @@ export default function SuggestionForm() {
   const [status, setStatus] = useState('idle');
 
   // PASTE YOUR WEB APP URL HERE
-  const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; 
+  const SCRIPT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?gid=1141935128&single=true&output=csv'; 
 
   const getCoordinates = async (locationName: string) => {
     try {
