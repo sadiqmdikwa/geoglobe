@@ -54,7 +54,7 @@ export default function AboutContact() {
             </p>
           </section>
 
-          <section className="space-y-4 pt-6 border-t border-white/10">
+          <section className="space-y-4 pt-6 border-t border-white/5">
             <h2 className="text-2xl font-semibold text-white tracking-tight">
               Meet the Founder
             </h2>
@@ -67,24 +67,25 @@ export default function AboutContact() {
             <h3 className="text-gray-500 font-medium text-sm uppercase tracking-wider">
               Connect
             </h3>
+            {/* MATCHED REFERENCE IMAGE: Curvy, dark buttons with subtle borders */}
             <div className="flex flex-wrap gap-3">
               {[
                 { name: 'Email', icon: 'fa-envelope', link: 'mailto:sadiqmdikwa@gmail.com' },
                 { name: 'LinkedIn', icon: 'fa-linkedin', link: 'https://linkedin.com/in/sadiq-muhammad-mustapha-90442b314' },
-                { name: 'X (Twitter)', icon: 'fa-x-twitter', link: 'https://x.com/sadiq_m_dkw' },
+                { name: 'X', icon: 'fa-x-twitter', link: 'https://x.com/sadiq_m_dkw' },
+                { name: 'Substack', icon: 'fa-bookmark', link: 'https://substack.com/@sadiqmdikwa' },
                 { name: 'Instagram', icon: 'fa-instagram', link: 'https://instagram.com/sadiq_m_dikwa' },
                 { name: 'TikTok', icon: 'fa-tiktok', link: 'https://tiktok.com/@sadiq_m_dikwa' },
                 { name: 'Snapchat', icon: 'fa-snapchat', link: 'https://snapchat.com/add/sadiqmdkw' },
                 { name: 'Pinterest', icon: 'fa-pinterest', link: 'https://pinterest.com/sadiq_m_dikwa' },
-                { name: 'Reddit', icon: 'fa-reddit', link: 'https://reddit.com/user/sadiq_m_dikwa' },
-                { name: 'Substack', icon: 'fa-bookmark', link: 'https://substack.com/@sadiqmdikwa' }
+                { name: 'Reddit', icon: 'fa-reddit', link: 'https://reddit.com/user/sadiq_m_dikwa' }
               ].map((social) => (
                 <a 
                   key={social.name}
                   href={social.link} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="bg-gray-800/50 border border-gray-700 hover:border-geoCyan hover:bg-gray-800 text-gray-300 hover:text-white transition-all px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                  className="bg-black/40 border border-white/5 hover:border-white/10 hover:bg-white/5 text-gray-400 hover:text-white transition-all px-5 py-2.5 rounded-2xl text-sm font-medium flex items-center gap-2.5 shadow-sm"
                 >
                   <i className={`${social.icon === 'fa-envelope' || social.icon === 'fa-bookmark' ? 'fa-solid' : 'fa-brands'} ${social.icon} text-base`}></i> 
                   {social.name}
@@ -95,7 +96,8 @@ export default function AboutContact() {
         </div>
 
         {/* Right Column: Contact Form */}
-        <div className="bg-gray-900/50 backdrop-blur-md rounded-2xl p-8 border border-gray-800 shadow-xl w-full">
+        {/* ADDED CURVES: rounded-[2.5rem] for a sleek, modern card look */}
+        <div className="bg-gray-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/5 shadow-2xl w-full">
           <AnimatePresence mode="wait">
             {status === 'success' ? (
               <motion.div 
@@ -120,18 +122,18 @@ export default function AboutContact() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-gray-300">Name</label>
-                      <input name="name" type="text" placeholder="John Doe" required className="w-full bg-gray-800/50 border border-gray-700 focus:border-geoCyan focus:ring-1 focus:ring-geoCyan outline-none text-white px-4 py-2.5 rounded-lg transition-all text-sm placeholder-gray-500" />
+                      <label className="text-sm font-medium text-gray-400">Name</label>
+                      <input name="name" type="text" placeholder="John Doe" required className="w-full bg-black/40 border border-white/5 focus:border-geoCyan outline-none text-white px-5 py-3 rounded-xl transition-all text-sm placeholder-gray-600 shadow-inner" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-gray-300">Email Address</label>
-                      <input name="email" type="email" placeholder="john@example.com" required className="w-full bg-gray-800/50 border border-gray-700 focus:border-geoCyan focus:ring-1 focus:ring-geoCyan outline-none text-white px-4 py-2.5 rounded-lg transition-all text-sm placeholder-gray-500" />
+                      <label className="text-sm font-medium text-gray-400">Email Address</label>
+                      <input name="email" type="email" placeholder="john@example.com" required className="w-full bg-black/40 border border-white/5 focus:border-geoCyan outline-none text-white px-5 py-3 rounded-xl transition-all text-sm placeholder-gray-600 shadow-inner" />
                     </div>
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-300">Subject</label>
-                    <select name="subject" className="w-full bg-gray-800/50 border border-gray-700 focus:border-geoCyan focus:ring-1 focus:ring-geoCyan outline-none text-white px-4 py-2.5 rounded-lg text-sm appearance-none cursor-pointer">
+                    <label className="text-sm font-medium text-gray-400">Subject</label>
+                    <select name="subject" className="w-full bg-black/40 border border-white/5 focus:border-geoCyan outline-none text-white px-5 py-3 rounded-xl text-sm appearance-none cursor-pointer shadow-inner">
                       <option value="General Feedback">General Feedback</option>
                       <option value="Topic Suggestion">Topic Suggestion</option>
                       <option value="Business Inquiry">Business Inquiry</option>
@@ -140,14 +142,14 @@ export default function AboutContact() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-300">Message</label>
-                    <textarea name="message" rows={5} placeholder="How can we help you?" required className="w-full bg-gray-800/50 border border-gray-700 focus:border-geoCyan focus:ring-1 focus:ring-geoCyan outline-none text-white px-4 py-2.5 rounded-lg resize-none text-sm placeholder-gray-500" />
+                    <label className="text-sm font-medium text-gray-400">Message</label>
+                    <textarea name="message" rows={5} placeholder="How can we help you?" required className="w-full bg-black/40 border border-white/5 focus:border-geoCyan outline-none text-white px-5 py-3 rounded-xl resize-none text-sm placeholder-gray-600 shadow-inner" />
                   </div>
 
                   <button 
                     type="submit" 
                     disabled={status === 'sending'} 
-                    className="w-full bg-geoCyan hover:bg-geoCyan/90 disabled:opacity-50 text-gray-900 font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-all mt-2"
+                    className="w-full bg-geoCyan hover:bg-geoCyan/90 disabled:opacity-50 text-gray-900 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all mt-4"
                   >
                     {status === 'sending' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
                     {status === 'sending' ? 'Sending...' : 'Send Message'}
