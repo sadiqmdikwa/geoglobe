@@ -5,6 +5,9 @@ export default function SuggestionForm() {
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [status, setStatus] = useState('idle');
 
+  // Replace this with your actual Deployment URL
+  const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; 
+
   const getCoordinates = async (locationName: string) => {
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}&limit=1`);
@@ -16,20 +19,21 @@ export default function SuggestionForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setStatus('processing...');
+    setStatus('uploading...');
     
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+    const formProps = Object.fromEntries(formData.entries());
     let payloads: any[] = [];
 
     if (activeTab === 'game' && mode === 'bulk') {
-      const lines = (data.bulkData as string).split('\n').filter(line => line.trim() !== "");
+      const lines = (formProps.bulkData as string).split('\n').filter(l => l.trim() !== "");
       for (let i = 0; i < lines.length; i++) {
         const [q, a, loc, cat, reg] = lines[i].split(':');
         setStatus(`Geocoding ${i + 1}/${lines.length}...`);
         const coords = loc ? await getCoordinates(loc.trim()) : { lat: 0, lng: 0 };
-        if (lines.length > 1) await new Promise(r => setTimeout(r, 1000)); // Respect API limits
+        // Wait 1 second between geocoding requests to respect Nominatim's API
+        if (lines.length > 1) await new Promise(r => setTimeout(r, 1000));
 
         payloads.push({
           title: q?.trim(),
@@ -42,23 +46,30 @@ export default function SuggestionForm() {
         });
       }
     } else {
-      payloads = [data];
+      payloads = [formProps];
     }
 
     try {
-      const scriptUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; 
-      for (const item of payloads) {
-        await fetch(scriptUrl, {
+      for (const p of payloads) {
+        // REMOVED 'no-cors' so we can actually verify the response
+        const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors', 
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(item)
+          body: JSON.stringify(p)
         });
+        
+        const result = await response.text();
+        if (!result.includes("success") && !response.ok) throw new Error("Upload failed");
       }
+      
       setStatus('success');
-      form.reset(); 
+      form.reset();
       setTimeout(() => setStatus('idle'), 3000);
-    } catch (error) { setStatus('error'); }
+    } catch (error) {
+      console.error(error);
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 3000);
+    }
   };
 
   return (
@@ -80,56 +91,46 @@ export default function SuggestionForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {activeTab === 'game' && (
-          <div className="flex justify-center gap-4 py-2 bg-white/5 rounded-xl border border-white/5">
-            <button type="button" onClick={() => setMode('single')} className={`px-6 py-2 rounded-lg text-[10px] font-black tracking-[0.2em] ${mode === 'single' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>SINGLE</button>
-            <button type="button" onClick={() => setMode('bulk')} className={`px-6 py-2 rounded-lg text-[10px] font-black tracking-[0.2em] ${mode === 'bulk' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>AI BULK</button>
-          </div>
-        )}
-
-        {mode === 'single' ? (
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-geoCyan uppercase ml-1 tracking-widest">{activeTab === 'video' ? 'Location Name' : 'Question'}</label>
+        
+        {/* VIDEO MODE: Only essential fields */}
+        {activeTab === 'video' && (
+          <div className="space-y-4">
+             <div className="space-y-1">
+              <label className="text-[10px] font-bold text-geoCyan uppercase ml-1 tracking-widest">Location Name</label>
               <input name="title" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan transition-all" />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Lat</label>
-                <input name="lat" className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Lng</label>
-                <input name="lng" className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan" />
-              </div>
+              <input name="lat" placeholder="Latitude" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan" />
+              <input name="lng" placeholder="Longitude" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan" />
             </div>
-
-            {activeTab === 'video' ? (
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-geoCyan uppercase ml-1 tracking-widest">YouTube Video ID</label>
-                <input name="youtubeId" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan" />
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <select name="category" className="p-4 bg-black/50 text-white rounded-2xl border border-white/10"><option>Flags</option><option>Borders</option><option>Anomalies</option></select>
-                  <select name="region" className="p-4 bg-black/50 text-white rounded-2xl border border-white/10"><option>Africa</option><option>Asia</option><option>Europe</option><option>Americas</option></select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-geoYellow uppercase ml-1 tracking-widest">Correct Answer</label>
-                  <input name="correctAnswer" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoYellow" />
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <textarea name="bulkData" rows={8} placeholder="Question:Answer:SearchPlace:Category:Region" className="w-full p-6 bg-black/50 text-white rounded-[2rem] border border-white/10 outline-none focus:border-geoCyan font-mono text-xs" />
+            <input name="youtubeId" placeholder="YouTube Video ID" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan" />
           </div>
         )}
 
-        <button type="submit" disabled={status !== 'idle' && status !== 'success'} className="w-full py-5 bg-geoCyan text-black font-black text-lg rounded-2xl hover:shadow-[0_0_30px_rgba(0,255,255,0.3)] transition-all active:scale-95 disabled:opacity-50">
+        {/* GAME MODE: Full fields + Bulk logic */}
+        {activeTab === 'game' && (
+          <div className="space-y-4">
+            <div className="flex justify-center gap-4 py-2 bg-white/5 rounded-xl border border-white/5">
+              <button type="button" onClick={() => setMode('single')} className={`px-6 py-2 rounded-lg text-[10px] font-black tracking-[0.2em] ${mode === 'single' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>SINGLE</button>
+              <button type="button" onClick={() => setMode('bulk')} className={`px-6 py-2 rounded-lg text-[10px] font-black tracking-[0.2em] ${mode === 'bulk' ? 'bg-geoCyan text-black' : 'text-gray-500'}`}>AI BULK</button>
+            </div>
+
+            {mode === 'single' ? (
+              <div className="space-y-4">
+                <input name="title" placeholder="Question" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoCyan" />
+                <div className="grid grid-cols-2 gap-4">
+                  <select name="category" className="p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none"><option>Flags</option><option>Borders</option><option>Anomalies</option></select>
+                  <select name="region" className="p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none"><option>Africa</option><option>Asia</option><option>Europe</option><option>Americas</option></select>
+                </div>
+                <input name="correctAnswer" placeholder="Correct Answer" required className="w-full p-4 bg-black/50 text-white rounded-2xl border border-white/10 outline-none focus:border-geoYellow" />
+              </div>
+            ) : (
+              <textarea name="bulkData" rows={8} placeholder="Question:Answer:SearchPlace:Category:Region" className="w-full p-6 bg-black/50 text-white rounded-[2rem] border border-white/10 outline-none focus:border-geoCyan font-mono text-xs" />
+            )}
+          </div>
+        )}
+
+        <button type="submit" disabled={status !== 'idle' && status !== 'success'} className="w-full py-6 bg-geoCyan text-black font-black text-xl rounded-2xl hover:shadow-[0_0_30px_rgba(0,255,255,0.3)] transition-all active:scale-95 disabled:opacity-50 uppercase tracking-tighter">
           {status === 'idle' ? 'START UPLOAD' : status.toUpperCase()}
         </button>
       </form>
