@@ -13,6 +13,8 @@ import GeoGame from "./components/GeoGame";
 import AboutContact from "./components/AboutContact";
 import BackToTop from "./components/BackToTop";
 import ScrollProgress from "./components/ScrollProgress";
+// 👇 IMPORT YOUR NEW PREVIEW MAP HERE
+import PreviewMap from "./components/PreviewMap"; 
 
 function Home() {
   const navigate = useNavigate();
@@ -202,6 +204,9 @@ export default function App() {
             
             {/* 👇 THIS IS YOUR SECRET ADMIN PORTAL ROUTE 👇 */}
             <Route path="/admin-portal-xyz" element={<SuggestionForm />} />
+
+            {/* 👇 THIS IS THE NEW PREVIEW MAP ROUTE 👇 */}
+            <Route path="/preview-map" element={<PreviewMap />} />
           </Routes>
         </AnimatePresence>
       </main>
