@@ -11,7 +11,7 @@ export default function InteractiveMap() {
   const [loading, setLoading] = useState(true);
 
   // 1. PASTE YOUR GOOGLE SHEET CSV LINK HERE 👇
-  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?output=csv";
+  const SHEET_CSV_URL = "YOUR_PUBLISHED_CSV_LINK_HERE";
 
   useEffect(() => {
     const loadMapData = async () => {
@@ -27,18 +27,14 @@ export default function InteractiveMap() {
       }).addTo(mapInstance.current);
 
       try {
-        // 2. Fetch data from Google Sheets
         const response = await fetch(SHEET_CSV_URL);
         const csvText = await response.text();
-        
-        // 3. Simple CSV parser (skips the header row)
         const rows = csvText.split('\n').slice(1);
         
         rows.forEach((row) => {
           const columns = row.split(',');
           if (columns.length < 5) return;
 
-          // Google Sheet Columns: [0]Timestamp, [1]Title, [2]Lat, [3]Lng, [4]YT_ID
           const title = columns[1]?.replace(/"/g, "");
           const lat = parseFloat(columns[2]);
           const lng = parseFloat(columns[3]);
@@ -63,13 +59,14 @@ export default function InteractiveMap() {
         setLoading(false);
       }
 
-      // Handle Popup clicks
+      // Pro Navigation Logic
       mapInstance.current.on('popupopen', (e: any) => {
         const btn = e.popup._contentNode.querySelector('.watch-video-btn');
         if (btn) {
           btn.onclick = () => {
-            // We can send the YouTube ID to the videos page
-            navigate('/videos');
+            const ytId = btn.getAttribute('data-id');
+            // Navigate with the ID in the URL
+            navigate(`/videos?id=${ytId}`);
           };
         }
       });
@@ -95,7 +92,7 @@ export default function InteractiveMap() {
       <header className="mb-8">
         <h1 className="text-3xl md:text-5xl text-geoCyan font-bold mb-2">Explore the GeoGlobe</h1>
         <p className="text-gray-300 text-lg">
-          {loading ? "Syncing with live database..." : "Pins are loaded directly from the GeoGlobe database."}
+          {loading ? "Syncing with live database..." : "Pins are loaded directly from your database."}
         </p>
       </header>
 
