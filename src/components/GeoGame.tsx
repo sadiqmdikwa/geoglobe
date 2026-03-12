@@ -1,18 +1,21 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Trophy, RefreshCw, ArrowRight, CheckCircle2, XCircle, Globe2, Flag, Map } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Trophy, ArrowRight, Globe2, Flag, Map, MapPin } from "lucide-react";
 
 interface Question {
   id: string;
   name: string;
   clue: string;
-  countryCode: string; // Used for flags
+  lat: number;
+  lng: number;
   category: string;
   region: string;
   fact: string;
 }
 
 export default function GeoGame() {
+  const navigate = useNavigate();
   const [allData, setAllData] = useState<Question[]>([]);
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -25,7 +28,7 @@ export default function GeoGame() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 1. YOUR GOOGLE SHEET CSV LINK 👇
-  const SHEET_CSV_URL = "YOUR_PUBLISHED_CSV_LINK_HERE";
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN2eegc7Fbv9U2Wlui2p3kzG9mai7Q-lbNF-zHW2mNpOPNESCg5Oiwqvnr8IPIVVqfrfl6CVRkIqnV/pub?output=csv";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,12 +42,13 @@ export default function GeoGame() {
           if (cols.length < 6) return null;
           return {
             id: index.toString(),
-            clue: cols[1]?.replace(/"/g, ""), // Title acts as Clue
-            name: cols[5]?.replace(/"/g, "").trim(), // Correct Answer
+            clue: cols[1]?.replace(/"/g, ""), 
+            lat: parseFloat(cols[2]) || 0,
+            lng: parseFloat(cols[3]) || 0,
+            name: cols[5]?.replace(/"/g, "").trim(), 
             category: cols[6]?.replace(/"/g, "").trim() || "General",
             region: cols[7]?.replace(/"/g, "").trim() || "Global",
-            fact: "Did you know? This location is a key geographical landmark.",
-            countryCode: (cols[5]?.replace(/"/g, "").substring(0,2).toLowerCase()) || "un" // Fallback
+            fact: "This location is part of the GeoGlobe master database."
           };
         }).filter(q => q !== null) as Question[];
 
@@ -64,6 +68,11 @@ export default function GeoGame() {
       ? allData 
       : allData.filter(q => q.region === filter || q.category === filter);
     
+    if (pool.length === 0) {
+        alert("No questions found in this category yet! Add some in the Admin Portal.");
+        return;
+    }
+
     const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
     setShuffledQuestions(shuffled);
     setCurrentIndex(0);
@@ -98,7 +107,14 @@ export default function GeoGame() {
     }
   };
 
-  // --- LOBBY VIEW ---
+  // Teleport to Preview Map Logic
+  const handleTeleport = () => {
+    const current = shuffledQuestions[currentIndex];
+    navigate(`/preview-map?lat=${current.lat}&lng=${current.lng}`);
+  };
+
+  if (loading) return <div className="text-center py-20 text-geoCyan animate-pulse">Loading Database...</div>;
+
   if (gameState === "lobby") {
     return (
       <div className="max-w-4xl mx-auto py-12 px-6">
@@ -107,10 +123,10 @@ export default function GeoGame() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { id: 'Global', icon: <Globe2 />, desc: 'All questions' },
-            { id: 'Africa', icon: <Map />, desc: 'Continental challenge' },
+            { id: 'Global', icon: <Globe2 />, desc: 'All database questions' },
+            { id: 'Africa', icon: <Map />, desc: 'African Continental challenge' },
             { id: 'Borders', icon: <Flag />, desc: 'Disputed & unique borders' },
-            { id: 'Flags', icon: <Flag />, desc: 'Identify by flags' },
+            { id: 'Flags', icon: <Flag />, desc: 'Identify by flag details' },
           ].map(cat => (
             <button 
               key={cat.id}
@@ -127,14 +143,13 @@ export default function GeoGame() {
     );
   }
 
-  // --- FINISHED VIEW ---
   if (gameState === "finished") {
     return (
       <div className="text-center py-20">
         <Trophy className="text-geoYellow w-20 h-20 mx-auto mb-6" />
         <h2 className="text-4xl font-bold text-white mb-2">Well Played!</h2>
         <p className="text-gray-400 text-xl mb-8">Score: {score} / {shuffledQuestions.length}</p>
-        <button onClick={() => setGameState("lobby")} className="bg-geoCyan text-black font-bold px-10 py-4 rounded-xl">Back to Lobby</button>
+        <button onClick={() => setGameState("lobby")} className="bg-geoCyan text-black font-bold px-10 py-4 rounded-xl hover:bg-white transition-colors">Back to Lobby</button>
       </div>
     );
   }
@@ -144,14 +159,14 @@ export default function GeoGame() {
   return (
     <div className="max-w-2xl mx-auto py-10 px-6">
       <div className="flex justify-between items-center mb-8">
-        <span className="text-geoCyan font-mono">CATEGORY: {selectedCategory}</span>
+        <span className="text-geoCyan font-mono bg-geoCyan/10 px-3 py-1 rounded-lg text-xs uppercase tracking-widest">{selectedCategory}</span>
         <span className="text-geoYellow font-bold">SCORE: {score}</span>
       </div>
 
-      <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
+      <div className="bg-gray-900 border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
         <div className="text-center mb-10">
-            <p className="text-gray-500 uppercase tracking-widest text-xs mb-2">Question {currentIndex + 1}</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+            <p className="text-gray-500 uppercase tracking-widest text-[10px] mb-4">Question {currentIndex + 1} of {shuffledQuestions.length}</p>
+            <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight">
                 {current.clue}
             </h2>
         </div>
@@ -162,19 +177,36 @@ export default function GeoGame() {
           onChange={e => setUserInput(e.target.value)}
           disabled={gameState === "revealed"}
           placeholder="Enter country name..."
-          className="w-full bg-black/40 border border-white/10 p-5 rounded-2xl text-white text-center text-xl mb-6 focus:border-geoCyan outline-none transition-all"
+          className="w-full bg-black/40 border border-white/10 p-5 rounded-2xl text-white text-center text-xl mb-6 focus:border-geoCyan outline-none transition-all placeholder:text-gray-700"
           onKeyDown={e => e.key === 'Enter' && handleCheck()}
         />
 
-        {gameState === "revealed" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`text-center p-4 rounded-2xl mb-6 ${isCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                <p className="font-bold">{isCorrect ? 'Correct!' : `Wrong! Answer: ${current.name}`}</p>
-            </motion.div>
-        )}
+        <AnimatePresence>
+            {gameState === "revealed" && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    className={`text-center p-6 rounded-2xl mb-6 ${isCorrect ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}
+                >
+                    <p className="font-bold text-lg mb-4">
+                        {isCorrect ? '✨ Genius! You nailed it.' : `❌ Not quite! The answer is ${current.name}`}
+                    </p>
+                    
+                    {/* THE TELEPORT BUTTON */}
+                    <button 
+                        onClick={handleTeleport}
+                        className="flex items-center gap-2 mx-auto bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm transition-all group"
+                    >
+                        <MapPin className="w-4 h-4 text-geoCyan group-hover:animate-bounce" />
+                        {isCorrect ? "See your kingdom on the map" : "Show me where this is on the map"}
+                    </button>
+                </motion.div>
+            )}
+        </AnimatePresence>
 
         <button 
           onClick={handleCheck}
-          className="w-full py-5 rounded-2xl bg-geoCyan text-black font-bold text-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
+          className="w-full py-5 rounded-2xl bg-geoCyan text-black font-bold text-lg hover:shadow-[0_0_30px_rgba(0,255,255,0.3)] transition-all active:scale-95"
         >
           {gameState === "revealed" ? "Next Question" : "Submit Answer"}
         </button>
