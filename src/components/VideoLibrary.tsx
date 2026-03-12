@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, PlayCircle, ExternalLink, X, MapPin } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,9 +18,8 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
       try {
         const response = await fetch(SHEET_CSV_URL);
         const csvText = await response.text();
-        
-        // Parse CSV Rows
         const rows = csvText.split('\n').slice(1);
+        
         const parsedVideos = rows.map((row, index) => {
           const columns = row.split(',');
           if (columns.length < 5) return null;
@@ -30,12 +30,19 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
             lat: parseFloat(columns[2]),
             lng: parseFloat(columns[3]),
             youtubeId: columns[4]?.replace(/"/g, "").trim(),
-            description: "Live discovery from the GeoGlobe database."
           };
         }).filter(v => v !== null);
 
-        // Reverse so newest videos appear first!
-        setVideos(parsedVideos.reverse());
+        const reversedVideos = parsedVideos.reverse();
+        setVideos(reversedVideos);
+
+        // Check for Auto-Play ID in URL
+        const videoIdFromUrl = searchParams.get('id');
+        if (videoIdFromUrl) {
+          const autoVideo = reversedVideos.find(v => v.youtubeId === videoIdFromUrl);
+          if (autoVideo) setSelectedVideo(autoVideo);
+        }
+
       } catch (error) {
         console.error("Error fetching videos:", error);
       } finally {
@@ -44,7 +51,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
     };
 
     fetchVideos();
-  }, []);
+  }, [searchParams]);
 
   const handleBack = () => {
     if (onBack) onBack();
@@ -72,11 +79,10 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
           Video Library
         </h1>
         <p className="text-gray-300 text-lg">
-          {loading ? "Syncing with live database..." : "Explore our collection of geographic mysteries."}
+          {loading ? "Syncing..." : "Explore our collection of geographic mysteries."}
         </p>
       </header>
 
-      {/* Video Grid */}
       <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => (
           <motion.div 
@@ -102,13 +108,11 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-geoCyan transition-colors">
                 {video.title}
               </h3>
-              
               <div className="flex items-center justify-between mt-auto">
                 <div className="flex items-center text-gray-500 text-xs gap-1">
                   <MapPin className="w-3 h-3" />
                   {video.lat.toFixed(1)}, {video.lng.toFixed(1)}
                 </div>
-                
                 <a 
                   href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
                   target="_blank"
@@ -124,7 +128,6 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
         ))}
       </motion.div>
 
-      {/* Video Modal */}
       <AnimatePresence>
         {selectedVideo && (
           <motion.div 
@@ -133,11 +136,7 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
           >
-            <div 
-              className="absolute inset-0 bg-black/90 backdrop-blur-md"
-              onClick={() => setSelectedVideo(null)}
-            ></div>
-            
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedVideo(null)}></div>
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -150,7 +149,6 @@ export default function VideoLibrary({ onBack }: { onBack?: () => void }) {
               >
                 <X className="w-6 h-6" />
               </button>
-              
               <iframe 
                 src={`https://www.youtube.com/embed/${selectedVideo.youtubeId}?autoplay=1`}
                 title={selectedVideo.title}
