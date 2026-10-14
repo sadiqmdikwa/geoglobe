@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import { useLayoutEffect, useRef } from "react";
 import { PlayCircle, Map as MapIcon, Trophy, ArrowRight, Compass } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate, useNavigationType } from "react-router-dom";
@@ -47,7 +47,7 @@ function RouteScrollRestoration() {
 function Home() {
   const navigate = useNavigate();
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -57,7 +57,7 @@ function Home() {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 15, opacity: 0 },
     visible: {
       y: 0,

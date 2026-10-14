@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import { 
   Play, 
   ArrowLeft, 
@@ -142,7 +142,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
   const hasActiveDropdownFilters = selectedCategory !== "All" || selectedRegion !== "All";
   const isFiltered = searchTerm !== "" || selectedCategory !== "All" || selectedRegion !== "All" || sortBy !== "newest";
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -152,7 +152,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 15 },
     visible: {
       opacity: 1,

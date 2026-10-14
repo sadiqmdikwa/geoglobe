@@ -1,25 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router-dom";
+import { loadGameQuestions, type GameQuestion } from "../data/gameDataSource";
 import { 
   Trophy, RefreshCw, ArrowRight, ArrowLeft, CheckCircle2, 
   XCircle, MapPin, Compass, Flag, Globe, Layers, AlertCircle, X,
   Volume2, VolumeX 
 } from "lucide-react";
-
-export interface GameQuestion {
-  id: string;
-  title: string;
-  name: string; // Official answer
-  lat: number;
-  lng: number;
-  category: string;
-  region: string;
-  clue?: string;
-  fact?: string;
-  countryCode?: string;
-  youtubeId?: string;
-}
 
 // Built-in verified question master bank covering all categories & regions
 const DEFAULT_QUESTIONS: GameQuestion[] = [
@@ -396,6 +383,9 @@ export default function GeoGame() {
 
   // Active Session State
   const [questions, setQuestions] = useState<GameQuestion[]>([]);
+  const [questionBank, setQuestionBank] = useState<GameQuestion[]>(DEFAULT_QUESTIONS);
+  const [isQuestionBankReady, setIsQuestionBankReady] = useState(false);
+  const [questionBankError, setQuestionBankError] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [wrong, setWrong] = useState(0);
@@ -407,6 +397,31 @@ export default function GeoGame() {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    loadGameQuestions()
+      .then((loadedQuestions) => {
+        if (!isActive) return;
+        if (loadedQuestions.length === 0) {
+          setQuestionBankError("The spreadsheet has no usable questions.");
+          return;
+        }
+        setQuestionBank(loadedQuestions);
+      })
+      .catch((error) => {
+        console.error("Unable to load the GeoGlobe question sheet:", error);
+        if (isActive) setQuestionBankError("The live question sheet is unavailable.");
+      })
+      .finally(() => {
+        if (isActive) setIsQuestionBankReady(true);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   // Save session state to localStorage on every state change
   const persistSession = useCallback((
@@ -485,7 +500,7 @@ export default function GeoGame() {
 
   // Start the mission after selecting category, region, and settings
   const startGame = () => {
-    let pool = [...DEFAULT_QUESTIONS];
+    let pool = [...questionBank];
 
     // Filter by main category if not Mixed Global
     if (mainCat !== "Mixed Global") {
@@ -640,6 +655,17 @@ export default function GeoGame() {
 
   const current = questions[currentIndex];
 
+  if (!isQuestionBankReady) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center text-sm text-gray-400">
+        <span className="flex items-center gap-3">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-geoCyan border-t-transparent" />
+          Loading your GeoGlobe questions...
+        </span>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -647,6 +673,12 @@ export default function GeoGame() {
       exit={{ opacity: 0, y: -20 }}
       className="w-full pb-20"
     >
+      {questionBankError && (
+        <div role="status" className="mb-5 rounded-xl border border-geoYellow/20 bg-geoYellow/5 px-4 py-3 text-xs text-geoYellow">
+          {questionBankError} Using the built-in question bank for this session.
+        </div>
+      )}
+
       {/* ─────────────────────────────────────────────────────────────
           STEP 1: MAIN CATEGORY SELECTION
          ───────────────────────────────────────────────────────────── */}

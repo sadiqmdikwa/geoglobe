@@ -4,8 +4,7 @@ import {
   ShieldCheck, Video, Database, Send, Plus, 
   CheckCircle2, AlertCircle, Loader2, Sparkles, MapPin 
 } from "lucide-react";
-
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxYhRfD4jSTFm1b_cAmPDtq_NYuNi0NxoqMN-ciY5VyJ2Idc8ojGqhyf6sJvFjxrzHsg/exec";
+import { GAME_ADMIN_SCRIPT_URL } from "../data/gameDataSource";
 
 export default function SuggestionForm() {
   const [activeTab, setActiveTab] = useState<"videos" | "game">("videos");
@@ -50,10 +49,10 @@ export default function SuggestionForm() {
     setFeedback("");
 
     try {
-      await fetch(SCRIPT_URL, {
+      await fetch(GAME_ADMIN_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           title: videoForm.title.trim(),
           lat: parseFloat(videoForm.lat) || 0,
@@ -85,10 +84,10 @@ export default function SuggestionForm() {
     setFeedback("");
 
     try {
-      await fetch(SCRIPT_URL, {
+      await fetch(GAME_ADMIN_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           title: singleGameForm.title.trim(),
           lat: parseFloat(singleGameForm.lat) || 0,
@@ -165,17 +164,18 @@ export default function SuggestionForm() {
 
       // Submit to Google Sheet Apps Script
       try {
-        await fetch(SCRIPT_URL, {
+        await fetch(GAME_ADMIN_SCRIPT_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
             title: question,
             lat: lat,
             lng: lng,
             correctAnswer: answer,
             category: category,
-            region: region
+            region: region,
+            youtubeId: ""
           }),
         });
         successCount++;
