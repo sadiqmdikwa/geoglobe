@@ -1,0 +1,447 @@
+export interface VideoItem {
+  id: string;
+  title: string;
+  category: string;
+  region: string;
+  lat: number;
+  lng: number;
+  youtubeId: string;
+  description: string;
+  duration?: string;
+  date?: string;
+}
+
+export const initialVideos: VideoItem[] = [
+  {
+    id: "1",
+    title: "The Truth About the Ilemi Triangle",
+    category: "Border Mysteries",
+    region: "Africa",
+    lat: 4.9000,
+    lng: 35.3000,
+    youtubeId: "3Zp_vR6P6mI",
+    description: "A disputed border territory in East Africa claimed by South Sudan and Kenya, with origins dating back to colonial treaties.",
+    duration: "14:20",
+    date: "2024-03-15"
+  },
+  {
+    id: "2",
+    title: "The Most Complex Border in the World (Baarle-Hertog)",
+    category: "Enclaves & Exclaves",
+    region: "Europe",
+    lat: 51.4428,
+    lng: 4.9317,
+    youtubeId: "gtLxZiiuaXs",
+    description: "A Belgian municipality consisting of 22 enclaves inside the Netherlands, where borders cut through living rooms and restaurants.",
+    duration: "11:45",
+    date: "2024-02-28"
+  },
+  {
+    id: "3",
+    title: "Why Bir Tawil is Unclaimed Land",
+    category: "No Man's Land",
+    region: "Africa",
+    lat: 21.8706,
+    lng: 33.7342,
+    youtubeId: "4A7NfS8X2X4",
+    description: "One of the few unclaimed habitable places on Earth due to conflicting 1899 and 1902 border interpretations between Egypt and Sudan.",
+    duration: "16:02",
+    date: "2024-01-19"
+  },
+  {
+    id: "4",
+    title: "The Diomede Islands: Yesterday & Tomorrow",
+    category: "Border Mysteries",
+    region: "Oceania & Polar",
+    lat: 65.7592,
+    lng: -168.9622,
+    youtubeId: "qMkYlIA7mgw",
+    description: "Two islands separated by just 2.4 miles across the Bering Strait, but with a 21-hour time difference across the International Date Line.",
+    duration: "09:30",
+    date: "2024-04-02"
+  },
+  {
+    id: "5",
+    title: "The Disappearing Aral Sea: A Cartographic Tragedy",
+    category: "Natural Wonders & Waterways",
+    region: "Asia",
+    lat: 45.0000,
+    lng: 60.0000,
+    youtubeId: "5N-_69785pM",
+    description: "Once the world's fourth largest lake, the Aral Sea dramatically shrank into a desolate desert following Soviet irrigation diversions.",
+    duration: "18:15",
+    date: "2024-04-10"
+  },
+  {
+    id: "6",
+    title: "Pheasant Island: The Country Swap Every 6 Months",
+    category: "Cartographic Anomalies",
+    region: "Europe",
+    lat: 43.3422,
+    lng: -1.7656,
+    youtubeId: "fLpZ6S8-7Wc",
+    description: "An uninhabited island in the Bidassoa River jointly ruled by Spain and France, alternating sovereignty every six months since 1659.",
+    duration: "08:50",
+    date: "2024-02-12"
+  },
+  {
+    id: "7",
+    title: "Point Roberts: The US Town Trapped in Canada",
+    category: "Enclaves & Exclaves",
+    region: "North America",
+    lat: 48.9883,
+    lng: -123.0800,
+    youtubeId: "3Zp_vR6P6mI",
+    description: "An American exclave on the southernmost tip of the Tsawwassen Peninsula, only reachable by land through Canada.",
+    duration: "12:10",
+    date: "2024-05-01"
+  },
+  {
+    id: "8",
+    title: "The Third-Order Enclave: Dahala Khagrabari",
+    category: "Enclaves & Exclaves",
+    region: "Asia",
+    lat: 26.1500,
+    lng: 88.7500,
+    youtubeId: "gtLxZiiuaXs",
+    description: "Formerly the world's only counter-counter enclave: an Indian parcel inside Bangladeshi land inside Indian land inside Bangladesh.",
+    duration: "13:35",
+    date: "2024-03-22"
+  },
+  {
+    id: "9",
+    title: "The Caprivi Strip: Namibia's Strange Geometric Corridor",
+    category: "Geopolitical Frontiers",
+    region: "Africa",
+    lat: -17.8000,
+    lng: 23.5000,
+    youtubeId: "4A7NfS8X2X4",
+    description: "A narrow panhandle reaching 450 km into Central Africa, drawn by German cartographers in 1890 in a failed quest to reach the Zambezi.",
+    duration: "15:20",
+    date: "2024-04-18"
+  },
+  {
+    id: "10",
+    title: "Llívia: Spain's Forgotten Town Deep in France",
+    category: "Enclaves & Exclaves",
+    region: "Europe",
+    lat: 42.4636,
+    lng: 1.9808,
+    youtubeId: "fLpZ6S8-7Wc",
+    description: "A Spanish municipality situated completely within the French department of Pyrénées-Orientales due to a technicality in the Treaty of the Pyrenees.",
+    duration: "10:40",
+    date: "2024-01-30"
+  },
+  {
+    id: "11",
+    title: "The Strange Story of Liberland on the Danube",
+    category: "No Man's Land",
+    region: "Europe",
+    lat: 45.7667,
+    lng: 18.8667,
+    youtubeId: "qMkYlIA7mgw",
+    description: "A pocket of land along the Croatia-Serbia border that neither side claims due to opposing views on old river meanders.",
+    duration: "14:05",
+    date: "2024-05-05"
+  },
+  {
+    id: "12",
+    title: "The Darién Gap: The Missing Link of the Americas",
+    category: "Natural Wonders & Waterways",
+    region: "South America",
+    lat: 7.9000,
+    lng: -77.4000,
+    youtubeId: "5N-_69785pM",
+    description: "A 100-kilometer break in the 30,000 km Pan-American Highway consisting of impenetrable jungle, swamps, and steep mountain ridges.",
+    duration: "21:10",
+    date: "2024-02-14"
+  },
+  {
+    id: "13",
+    title: "Campione d'Italia: Italy's Tax Haven inside Switzerland",
+    category: "Enclaves & Exclaves",
+    region: "Europe",
+    lat: 45.9692,
+    lng: 8.9711,
+    youtubeId: "gtLxZiiuaXs",
+    description: "An Italian commune situated on Lake Lugano surrounded by Swiss territory, using Swiss francs and Swiss telecom services.",
+    duration: "11:15",
+    date: "2024-03-08"
+  },
+  {
+    id: "14",
+    title: "Svalbard: The World's Most Unique Arctic Treaty Territory",
+    category: "Cartographic Anomalies",
+    region: "Oceania & Polar",
+    lat: 78.2232,
+    lng: 15.6267,
+    youtubeId: "qMkYlIA7mgw",
+    description: "Under the 1920 Svalbard Treaty, citizens of over 40 signatory nations have equal rights to fish, hunt, and operate commerce visa-free.",
+    duration: "17:40",
+    date: "2024-04-25"
+  },
+  {
+    id: "15",
+    title: "The Wakhan Corridor: Afghanistan's Finger to China",
+    category: "Geopolitical Frontiers",
+    region: "Asia",
+    lat: 37.0000,
+    lng: 73.0000,
+    youtubeId: "3Zp_vR6P6mI",
+    description: "Created in 1893 during the Great Game as a buffer between the British and Russian Empires, creating a 3.5-hour time change border with China.",
+    duration: "19:05",
+    date: "2024-03-01"
+  },
+  {
+    id: "16",
+    title: "Gibraltar: The Mediterranean Fortress and Neutral Strip",
+    category: "Border Mysteries",
+    region: "Europe",
+    lat: 36.1408,
+    lng: -5.3536,
+    youtubeId: "fLpZ6S8-7Wc",
+    description: "A British Overseas Territory at the southern tip of the Iberian Peninsula featuring an airport runway intersected directly by a city highway.",
+    duration: "13:50",
+    date: "2024-05-12"
+  },
+  {
+    id: "17",
+    title: "Lake Titicaca: Navies on the Highest Navigable Lake",
+    category: "Natural Wonders & Waterways",
+    region: "South America",
+    lat: -15.8000,
+    lng: -69.4000,
+    youtubeId: "5N-_69785pM",
+    description: "Sitting at 3,812 meters altitude in the Andes between Peru and Bolivia, where the Bolivian Navy continues drills despite having no sea coast.",
+    duration: "15:35",
+    date: "2024-02-05"
+  },
+  {
+    id: "18",
+    title: "Marie Byrd Land: The Vast Antarctic Terra Nullius",
+    category: "No Man's Land",
+    region: "Oceania & Polar",
+    lat: -80.0000,
+    lng: -120.0000,
+    youtubeId: "4A7NfS8X2X4",
+    description: "The largest single unclaimed territory on Earth, covering 1.6 million square kilometers of ice sheets unclaimed by any sovereign nation.",
+    duration: "16:45",
+    date: "2024-01-10"
+  },
+  {
+    id: "19",
+    title: "The Turkish Republic of Northern Cyprus & The Green Line",
+    category: "Geopolitical Frontiers",
+    region: "Middle East",
+    lat: 35.1856,
+    lng: 33.3823,
+    youtubeId: "3Zp_vR6P6mI",
+    description: "The United Nations Buffer Zone cutting right through the historic capital of Nicosia, frozen in time since the 1974 partition.",
+    duration: "18:30",
+    date: "2024-04-14"
+  },
+  {
+    id: "20",
+    title: "Northwest Angle: Minnesota's Canadian Enclave",
+    category: "Enclaves & Exclaves",
+    region: "North America",
+    lat: 49.3828,
+    lng: -95.1500,
+    youtubeId: "3Zp_vR6P6mI",
+    description: "The northernmost point of the contiguous United States, severed by Lake of the Woods and accessible overland only through Manitoba.",
+    duration: "12:55",
+    date: "2024-03-18"
+  },
+  {
+    id: "21",
+    title: "The Strait of Hormuz: The Chokepoint of Global Crude",
+    category: "Natural Wonders & Waterways",
+    region: "Middle East",
+    lat: 26.5667,
+    lng: 56.2500,
+    youtubeId: "5N-_69785pM",
+    description: "A narrow maritime passage between Oman and Iran through which roughly one-fifth of the world's petroleum consumption flows daily.",
+    duration: "20:15",
+    date: "2024-05-18"
+  },
+  {
+    id: "22",
+    title: "Madha & Nahwa: The Second-Order Enclave in Oman",
+    category: "Enclaves & Exclaves",
+    region: "Middle East",
+    lat: 25.2833,
+    lng: 56.3333,
+    youtubeId: "gtLxZiiuaXs",
+    description: "Madha is an Omani exclave surrounded entirely by the UAE, which in turn envelops Nahwa, a tiny counter-enclave belonging to Sharjah.",
+    duration: "14:10",
+    date: "2024-02-22"
+  },
+  {
+    id: "23",
+    title: "The Danakil Depression: Earth's Most Alien Landscape",
+    category: "Natural Wonders & Waterways",
+    region: "Africa",
+    lat: 14.2417,
+    lng: 40.3000,
+    youtubeId: "5N-_69785pM",
+    description: "A tectonic rift valley sitting 125 meters below sea level in the Afar Triangle, featuring sulfur springs, lava lakes, and salt flats.",
+    duration: "16:20",
+    date: "2024-03-29"
+  },
+  {
+    id: "24",
+    title: "Büsingen am Hochrhein: Germany's Swiss Island",
+    category: "Enclaves & Exclaves",
+    region: "Europe",
+    lat: 47.6983,
+    lng: 8.6897,
+    youtubeId: "gtLxZiiuaXs",
+    description: "A German municipality completely enclosed by the Swiss Canton of Schaffhausen, using Swiss customs, postage, and dual telephone codes.",
+    duration: "11:05",
+    date: "2024-01-25"
+  },
+  {
+    id: "25",
+    title: "The Line of Actual Control: High Altitude Himalayan Frontier",
+    category: "Geopolitical Frontiers",
+    region: "Asia",
+    lat: 34.0000,
+    lng: 78.5000,
+    youtubeId: "3Zp_vR6P6mI",
+    description: "The undemarcated ceasefire border separating Indian-controlled territory from Chinese-controlled Aksai Chin across 4,000-meter peaks.",
+    duration: "22:40",
+    date: "2024-05-22"
+  },
+  {
+    id: "26",
+    title: "The Dead Sea: The Lowest Continental Elevation on Earth",
+    category: "Natural Wonders & Waterways",
+    region: "Middle East",
+    lat: 31.5000,
+    lng: 35.5000,
+    youtubeId: "5N-_69785pM",
+    description: "Lying 430 meters below sea level, its hyper-saline waters and retreating shorelines have sparked sinkhole formation and international canal proposals.",
+    duration: "15:10",
+    date: "2024-04-05"
+  },
+  {
+    id: "27",
+    title: "The Belgian Motorway Lighting Seen From Space",
+    category: "Cartographic Anomalies",
+    region: "Europe",
+    lat: 50.8503,
+    lng: 4.3517,
+    youtubeId: "fLpZ6S8-7Wc",
+    description: "Why Belgium's illuminated roadway system was historically one of the few human-made infrastructures brightly visible from the ISS.",
+    duration: "09:45",
+    date: "2024-02-18"
+  },
+  {
+    id: "28",
+    title: "Haskell Free Library: Where the Border Runs Through the Stage",
+    category: "Border Mysteries",
+    region: "North America",
+    lat: 45.0058,
+    lng: -72.0975,
+    youtubeId: "qMkYlIA7mgw",
+    description: "Built deliberately on the US-Canada boundary in Derby Line, VT and Stanstead, QC, with a black line taped across the library floor.",
+    duration: "13:15",
+    date: "2024-03-12"
+  },
+  {
+    id: "29",
+    title: "Ceuta and Melilla: Spain's African Enclaves",
+    category: "Enclaves & Exclaves",
+    region: "Africa",
+    lat: 35.8894,
+    lng: -5.3213,
+    youtubeId: "fLpZ6S8-7Wc",
+    description: "Two autonomous Spanish cities located directly on the North African mainland, fortified by razor-wire fences bordering Morocco.",
+    duration: "17:05",
+    date: "2024-04-30"
+  },
+  {
+    id: "30",
+    title: "The Salar de Uyuni: The World's Great Natural Mirror",
+    category: "Natural Wonders & Waterways",
+    region: "South America",
+    lat: -20.1338,
+    lng: -67.4891,
+    youtubeId: "5N-_69785pM",
+    description: "Over 10,000 square kilometers of prehistoric salt crust in southwest Bolivia used by NASA satellites for altimeter calibration.",
+    duration: "14:50",
+    date: "2024-01-15"
+  },
+  {
+    id: "31",
+    title: "The Korean Demilitarized Zone (DMZ): Ecology in the Buffer",
+    category: "Geopolitical Frontiers",
+    region: "Asia",
+    lat: 37.9500,
+    lng: 126.6700,
+    youtubeId: "3Zp_vR6P6mI",
+    description: "A 250 km long, 4 km wide buffer established in 1953 that has accidentally become one of East Asia's most pristine wildlife sanctuaries.",
+    duration: "21:00",
+    date: "2024-05-28"
+  },
+  {
+    id: "32",
+    title: "The Casamance Enclave: Senegal's Divided South",
+    category: "Geopolitical Frontiers",
+    region: "Africa",
+    lat: 12.8000,
+    lng: -15.5000,
+    youtubeId: "4A7NfS8X2X4",
+    description: "A southern province of Senegal almost completely severed from the capital Dakar by the narrow sovereign nation of The Gambia.",
+    duration: "16:15",
+    date: "2024-02-26"
+  },
+  {
+    id: "33",
+    title: "Pitcairn Island: The Loneliest Democracy in the Pacific",
+    category: "Cartographic Anomalies",
+    region: "Oceania & Polar",
+    lat: -25.0667,
+    lng: -130.1000,
+    youtubeId: "qMkYlIA7mgw",
+    description: "Inhabited by fewer than 50 descendants of HMS Bounty mutineers, located over 2,000 kilometers from the nearest continental port.",
+    duration: "18:45",
+    date: "2024-03-05"
+  },
+  {
+    id: "34",
+    title: "The Four Corners Monument: The US Quadripoint",
+    category: "Cartographic Anomalies",
+    region: "North America",
+    lat: 36.9990,
+    lng: -109.0452,
+    youtubeId: "gtLxZiiuaXs",
+    description: "The only location in the United States where four states meet: Arizona, Colorado, New Mexico, and Utah, marked by a bronze disc.",
+    duration: "10:20",
+    date: "2024-04-08"
+  },
+  {
+    id: "35",
+    title: "Socotra: The Galapagos of the Indian Ocean",
+    category: "Natural Wonders & Waterways",
+    region: "Middle East",
+    lat: 12.4634,
+    lng: 53.8237,
+    youtubeId: "5N-_69785pM",
+    description: "An isolated Yemeni archipelago with dragon's blood trees and flora where one-third of all plant species are found nowhere else on Earth.",
+    duration: "19:30",
+    date: "2024-05-15"
+  },
+  {
+    id: "36",
+    title: "Hans Island: The Whispering Whisky War",
+    category: "Border Mysteries",
+    region: "Oceania & Polar",
+    lat: 80.8267,
+    lng: -66.4583,
+    youtubeId: "fLpZ6S8-7Wc",
+    description: "How Denmark and Canada resolved a decades-long Arctic boundary dispute by leaving bottles of Schnapps and Canadian Club, finally partitioning the rock in 2022.",
+    duration: "12:40",
+    date: "2024-06-01"
+  }
+];
