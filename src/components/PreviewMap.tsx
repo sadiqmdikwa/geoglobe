@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, MapPin } from "lucide-react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import MapSkeleton from "./skeletons/MapSkeleton";
-
-declare const L: any;
 
 export default function PreviewMap() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -21,6 +21,10 @@ export default function PreviewMap() {
     if (!mapRef.current) return;
     let timer: NodeJS.Timeout;
 
+    if ((mapRef.current as any)._leaflet_id) {
+      delete (mapRef.current as any)._leaflet_id;
+    }
+
     if (!mapInstance.current) {
       const map = L.map(mapRef.current, {
         zoomControl: true,
@@ -28,10 +32,12 @@ export default function PreviewMap() {
 
       mapInstance.current = map;
 
-      // 100% Free Forever English Basemap (Esri World Street Map - No API key required, pure English labels)
-      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
-        attribution: '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a>, HERE, Garmin, USGS, NGA',
-        maxZoom: 18,
+      // 100% Free Forever Dark Basemap - Zero API Key, Unlimited Access Forever
+      L.tileLayer("https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
+        subdomains: ["a", "b", "c", "d"],
+        maxZoom: 19,
+        minZoom: 2,
       }).addTo(map);
 
       // Glowing Pulsing Circle

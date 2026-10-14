@@ -62,12 +62,10 @@
       background-size: 3rem 3rem;
     }
 
-    /* 100% Free Forever English Basemap - Minimalist Dark Filter */
-    .minimalist-dark-map .leaflet-tile-pane {
-      filter: brightness(0.65) invert(1) contrast(1.8) hue-rotate(185deg) saturate(0.25);
-    }
+    /* Seamless map styling - no destructive CSS inversion */
+    .minimalist-dark-map .leaflet-tile-pane,
     .minimalist-clean-map .leaflet-tile-pane {
-      filter: contrast(1.05) saturate(1.1);
+      filter: none;
     }
 
     /* Custom Leaflet Minimalist Dark Popups */

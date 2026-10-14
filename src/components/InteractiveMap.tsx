@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { initialVideos, VideoItem } from "../data/videos";
 import { 
   Map as MapIcon, 
@@ -16,15 +18,19 @@ import {
   MapPin, 
   Eye,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Layers
 } from "lucide-react";
 import MapSkeleton from "./skeletons/MapSkeleton";
 
-declare const L: any;
+// 100% Free Forever Basemaps - Zero API Key, Unlimited Access Forever
+const CARTO_DARK = "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png";
+const CARTO_VOYAGER = "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png";
 
 export default function InteractiveMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const baseTileLayerRef = useRef<L.TileLayer | null>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
   const focusMarkerRef = useRef<any>(null);
   const navigate = useNavigate();
@@ -106,197 +112,273 @@ export default function InteractiveMap() {
 
     window.addEventListener("keydown", handleKeyDown);
 
-    const timer1 = setTimeout(() => {
-      mapInstance.current?.invalidateSize();
-    }, 100);
-    const timer2 = setTimeout(() => {
-      mapInstance.current?.invalidateSize();
-    }, 300);
+    // Multi-stage invalidateSize to ensure full-bleed tiles render immediately
+    if (mapInstance.current) {
+      mapInstance.current.invalidateSize({ animate: false });
+      requestAnimationFrame(() => {
+        mapInstance.current?.invalidateSize({ animate: false });
+      });
+      const timer1 = setTimeout(() => {
+        mapInstance.current?.invalidateSize({ animate: false });
+      }, 60);
+      const timer2 = setTimeout(() => {
+        mapInstance.current?.invalidateSize({ animate: false });
+      }, 180);
+      const timer3 = setTimeout(() => {
+        mapInstance.current?.invalidateSize({ animate: false });
+      }, 350);
+
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", handleKeyDown);
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
 
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
-      clearTimeout(timer1);
-      clearTimeout(timer2);
     };
   }, [isExpanded]);
 
+  // Handle Dark vs Natural Basemap Toggle (100% Free Forever, Zero API Key)
+  useEffect(() => {
+    if (!mapInstance.current || !baseTileLayerRef.current) return;
+    const isDark = mapTheme === "dark";
+    baseTileLayerRef.current.setUrl(isDark ? CARTO_DARK : CARTO_VOYAGER);
+  }, [mapTheme]);
+
+  // Initialize Leaflet Map
   useEffect(() => {
     if (!mapRef.current) return;
 
-    let timer: NodeJS.Timeout;
-
-    if (!mapInstance.current) {
-      // Determine initial map center and zoom:
-      // If coordinates are provided in URL, zoom into that specific place
-      const hasCoords = focusLat !== null && focusLng !== null && !isNaN(focusLat) && !isNaN(focusLng);
-      const initialCenter = hasCoords ? [focusLat, focusLng] : [20.0, 15.0];
-      const initialZoomLevel = hasCoords ? 7 : 3;
-
-      setCurrentZoom(initialZoomLevel);
-
-      const map = L.map(mapRef.current, {
-        zoomControl: true,
-        attributionControl: true,
-      }).setView(initialCenter, initialZoomLevel);
-
-      mapInstance.current = map;
-
-      // English World Basemap (Esri World Street Map - No API key, English labels globally)
-      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
-        attribution: '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener noreferrer">Esri</a>, HERE, Garmin, USGS, NGA',
-        maxZoom: 18,
-      }).addTo(map);
-
-      // Track cursor position for live coordinate HUD
-      map.on("mousemove", (e: any) => {
-        setCoords({
-          lat: parseFloat(e.latlng.lat.toFixed(4)),
-          lng: parseFloat(e.latlng.lng.toFixed(4)),
-        });
-      });
-
-      // Track zoom level: if user zooms out (zoom <= 5), reveal surrounding locations
-      map.on("zoomend", () => {
-        const zoom = map.getZoom();
-        setCurrentZoom(zoom);
-        if (zoom <= 5) {
-          setIsFocusedOnly(false);
-        }
-      });
-
-      // Custom Glowing Cyan Icon for Normal Pins
-      const customIcon = L.divIcon({
-        className: "custom-map-pin",
-        html: `
-          <div class="relative flex items-center justify-center">
-            <div class="w-7 h-7 rounded-full bg-geoCyan/20 animate-ping absolute"></div>
-            <div class="w-6 h-6 rounded-full bg-geoCyan border-2 border-white flex items-center justify-center shadow-[0_0_15px_#42C2CB] text-gray-950">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-            </div>
-          </div>
-        `,
-        iconSize: [28, 28],
-        iconAnchor: [14, 28],
-        popupAnchor: [0, -28],
-      });
-
-      // Special Golden-Cyan Icon for the Focused/Queried Anomaly
-      const focusedTargetIcon = L.divIcon({
-        className: "custom-focused-pin",
-        html: `
-          <div class="relative flex items-center justify-center">
-            <div class="w-10 h-10 rounded-full bg-geoYellow/30 animate-ping absolute"></div>
-            <div class="w-8 h-8 rounded-full bg-geoYellow border-2 border-white flex items-center justify-center shadow-[0_0_20px_#F4D03F] text-gray-950 font-bold scale-110">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
-              </svg>
-            </div>
-          </div>
-        `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32],
-      });
-
-      // Add pins for all videos
-      initialVideos.forEach((video) => {
-        const isTarget =
-          (focusId && video.id === focusId) ||
-          (hasCoords && Math.abs(video.lat - focusLat!) < 0.005 && Math.abs(video.lng - focusLng!) < 0.005);
-
-        const marker = L.marker([video.lat, video.lng], {
-          icon: isTarget ? focusedTargetIcon : customIcon,
-          title: video.title,
-        });
-
-        // Professional glassmorphic popup
-        const popupContent = `
-          <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-white/10 shadow-2xl backdrop-blur-xl">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
-                ${video.region}
-              </span>
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
-                ${video.category}
-              </span>
-            </div>
-            <h4 class="font-bold text-sm text-white mb-1.5 leading-snug">${video.title}</h4>
-            <p class="text-xs text-gray-300 mb-3 line-clamp-3 leading-relaxed">${video.description}</p>
-            <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
-              <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
-              <a 
-                href="#/videos?search=${encodeURIComponent(video.title)}" 
-                class="text-geoCyan hover:text-geoYellow font-bold flex items-center gap-1 transition-colors uppercase tracking-wider text-[10px]"
-              >
-                Watch Video &rarr;
-              </a>
-            </div>
-          </div>
-        `;
-
-        marker.bindPopup(popupContent, {
-          className: "custom-leaflet-popup",
-          maxWidth: 320,
-        });
-
-        marker.on("click", () => {
-          setSelectedLocationId(video.id);
-        });
-
-        markersRef.current[video.id] = marker;
-
-        if (isTarget) {
-          focusMarkerRef.current = marker;
-        }
-
-        // If NOT in isolated focus mode, attach to map
-        if (!hasCoords) {
-          marker.addTo(map);
-        }
-      });
-
-      // If URL coordinates exist: show only the target marker initially
-      if (hasCoords) {
-        if (focusMarkerRef.current) {
-          focusMarkerRef.current.addTo(map);
-          setTimeout(() => {
-            focusMarkerRef.current.openPopup();
-          }, 800);
-        } else {
-          // Dynamic standalone marker if coordinates don't match existing video id
-          const tempMarker = L.marker([focusLat!, focusLng!], {
-            icon: focusedTargetIcon,
-            title: focusTitle || "Target Anomaly",
-          }).addTo(map);
-
-          const tempPopup = `
-            <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-geoYellow/30 shadow-2xl backdrop-blur-xl">
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/20 text-geoYellow border border-geoYellow/30 mb-2 inline-block">
-                Target Location
-              </span>
-              <h4 class="font-bold text-sm text-white mb-1">${focusTitle || "Selected Coordinate"}</h4>
-              <p class="text-xs text-gray-300 font-mono mb-2">${focusLat!.toFixed(4)}°, ${focusLng!.toFixed(4)}°</p>
-            </div>
-          `;
-          tempMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup" });
-          setTimeout(() => {
-            tempMarker.openPopup();
-          }, 800);
-          focusMarkerRef.current = tempMarker;
-        }
-      }
-
-      timer = setTimeout(() => {
-        setIsMapReady(true);
-      }, 350);
+    // Safety check: clear any leftover Leaflet container ID to prevent "Map container is already initialized"
+    if ((mapRef.current as any)._leaflet_id) {
+      delete (mapRef.current as any)._leaflet_id;
     }
 
+    if (mapInstance.current) {
+      try {
+        mapInstance.current.remove();
+      } catch (e) {
+        console.warn("Leaflet remove error:", e);
+      }
+      mapInstance.current = null;
+    }
+
+    // Determine initial center
+    const hasCoords = focusLat !== null && focusLng !== null && !isNaN(focusLat) && !isNaN(focusLng);
+    const initialCenter: [number, number] = hasCoords ? [focusLat, focusLng] : [20.0, 15.0];
+    const initialZoomLevel = hasCoords ? 7 : 3;
+
+    setCurrentZoom(initialZoomLevel);
+
+    const map = L.map(mapRef.current, {
+      zoomControl: true,
+      attributionControl: true,
+      minZoom: 2,
+      maxZoom: 19,
+    }).setView(initialCenter, initialZoomLevel);
+
+    mapInstance.current = map;
+
+    const isDark = mapTheme === "dark";
+
+    // 100% Free Forever Basemap - Zero API Key, Unlimited Access Forever
+    const baseLayer = L.tileLayer(isDark ? CARTO_DARK : CARTO_VOYAGER, {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19,
+      minZoom: 2,
+    }).addTo(map);
+
+    baseTileLayerRef.current = baseLayer;
+
+    // Responsive ResizeObserver for instant container adaptation
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstance.current) {
+        mapInstance.current.invalidateSize({ animate: false });
+      }
+    });
+    if (mapRef.current) {
+      resizeObserver.observe(mapRef.current);
+    }
+
+    // Track cursor position for live coordinate HUD
+    map.on("mousemove", (e: L.LeafletMouseEvent) => {
+      setCoords({
+        lat: parseFloat(e.latlng.lat.toFixed(4)),
+        lng: parseFloat(e.latlng.lng.toFixed(4)),
+      });
+    });
+
+    // Track zoom level: if user zooms out (zoom <= 5), reveal surrounding locations
+    map.on("zoomend", () => {
+      const zoom = map.getZoom();
+      setCurrentZoom(zoom);
+      if (zoom <= 5) {
+        setIsFocusedOnly(false);
+      }
+    });
+
+    // Custom Glowing Cyan Icon for Normal Pins
+    const customIcon = L.divIcon({
+      className: "custom-map-pin",
+      html: `
+        <div class="relative flex items-center justify-center">
+          <div class="w-7 h-7 rounded-full bg-geoCyan/20 animate-ping absolute"></div>
+          <div class="w-6 h-6 rounded-full bg-geoCyan border-2 border-white flex items-center justify-center shadow-[0_0_15px_#42C2CB] text-gray-950">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+      popupAnchor: [0, -28],
+    });
+
+    // Special Golden-Cyan Icon for the Focused/Queried Anomaly
+    const focusedTargetIcon = L.divIcon({
+      className: "custom-focused-pin",
+      html: `
+        <div class="relative flex items-center justify-center">
+          <div class="w-10 h-10 rounded-full bg-geoYellow/30 animate-ping absolute"></div>
+          <div class="w-8 h-8 rounded-full bg-geoYellow border-2 border-white flex items-center justify-center shadow-[0_0_20px_#F4D03F] text-gray-950 font-bold scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    });
+
+    // Clear previous marker references
+    markersRef.current = {};
+    focusMarkerRef.current = null;
+
+    // Add pins for all videos
+    initialVideos.forEach((video) => {
+      const isTarget =
+        (focusId && video.id === focusId) ||
+        (hasCoords && Math.abs(video.lat - focusLat!) < 0.005 && Math.abs(video.lng - focusLng!) < 0.005);
+
+      const marker = L.marker([video.lat, video.lng], {
+        icon: isTarget ? focusedTargetIcon : customIcon,
+        title: video.title,
+      });
+
+      // Professional glassmorphic popup
+      const popupContent = `
+        <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-white/10 shadow-2xl backdrop-blur-xl">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
+              ${video.region}
+            </span>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
+              ${video.category}
+            </span>
+          </div>
+          <h4 class="font-bold text-sm text-white mb-1.5 leading-snug">${video.title}</h4>
+          <p class="text-xs text-gray-300 mb-3 line-clamp-3 leading-relaxed">${video.description}</p>
+          <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
+            <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
+            <a 
+              href="#/videos?search=${encodeURIComponent(video.title)}" 
+              class="text-geoCyan hover:text-geoYellow font-bold flex items-center gap-1 transition-colors uppercase tracking-wider text-[10px]"
+            >
+              Watch Video &rarr;
+            </a>
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, {
+        className: "custom-leaflet-popup",
+        maxWidth: 320,
+      });
+
+      marker.on("click", () => {
+        setSelectedLocationId(video.id);
+      });
+
+      markersRef.current[video.id] = marker;
+
+      if (isTarget) {
+        focusMarkerRef.current = marker;
+      }
+
+      // If NOT in isolated focus mode, attach to map
+      if (!hasCoords) {
+        marker.addTo(map);
+      }
+    });
+
+    // If URL coordinates exist: show only target marker initially
+    if (hasCoords) {
+      if (focusMarkerRef.current) {
+        focusMarkerRef.current.addTo(map);
+        setTimeout(() => {
+          if (focusMarkerRef.current) {
+            focusMarkerRef.current.openPopup();
+          }
+        }, 500);
+      } else {
+        // Dynamic standalone marker if coordinates don't match existing video id
+        const tempMarker = L.marker([focusLat!, focusLng!], {
+          icon: focusedTargetIcon,
+          title: focusTitle || "Target Anomaly",
+        }).addTo(map);
+
+        const tempPopup = `
+          <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-geoYellow/30 shadow-2xl backdrop-blur-xl">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/20 text-geoYellow border border-geoYellow/30 mb-2 inline-block">
+              Target Location
+            </span>
+            <h4 class="font-bold text-sm text-white mb-1">${focusTitle || "Selected Coordinate"}</h4>
+            <p class="text-xs text-gray-300 font-mono mb-2">${focusLat!.toFixed(4)}°, ${focusLng!.toFixed(4)}°</p>
+          </div>
+        `;
+        tempMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup" });
+        setTimeout(() => {
+          tempMarker.openPopup();
+        }, 500);
+        focusMarkerRef.current = tempMarker;
+      }
+    }
+
+    // Crucial: Invalidate size after layout settles so tiles never turn gray
+    const resizeTimer1 = setTimeout(() => {
+      map.invalidateSize();
+      setIsMapReady(true);
+    }, 150);
+
+    const resizeTimer2 = setTimeout(() => {
+      map.invalidateSize();
+    }, 450);
+
     return () => {
-      clearTimeout(timer);
+      resizeObserver.disconnect();
+      clearTimeout(resizeTimer1);
+      clearTimeout(resizeTimer2);
+      if (mapInstance.current) {
+        try {
+          mapInstance.current.remove();
+        } catch (e) {
+          console.warn("Leaflet cleanup error:", e);
+        }
+        mapInstance.current = null;
+      }
+      if (mapRef.current && (mapRef.current as any)._leaflet_id) {
+        delete (mapRef.current as any)._leaflet_id;
+      }
     };
   }, [focusLat, focusLng, focusId, focusTitle]);
 
@@ -334,7 +416,7 @@ export default function InteractiveMap() {
         }
       });
     }
-  }, [isFocusedOnly, filteredVideos]);
+  }, [isFocusedOnly, filteredVideos, isMapReady]);
 
   // Quick Jump camera to anomaly
   const handleFlyTo = (video: VideoItem) => {
@@ -382,13 +464,14 @@ export default function InteractiveMap() {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
+      style={isExpanded ? { transform: "none" } : undefined}
       className="w-full pb-20"
     >
       {/* Top Navigation Row: Back Navigation Button + Controls */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <button
           onClick={handleBackNavigation}
-          className="inline-flex items-center gap-2 bg-gray-900/40 hover:bg-gray-900/80 text-gray-300 hover:text-white px-4 py-2 rounded-full border border-white/15 transition-all text-xs font-semibold backdrop-blur-xl hover:border-geoCyan/50 active:scale-95 shadow-sm group"
+          className="inline-flex items-center gap-2 bg-gray-900/40 hover:bg-gray-900/80 text-gray-300 hover:text-white px-4 py-2 rounded-full border border-white/10 transition-all text-xs font-semibold backdrop-blur-xl hover:border-geoCyan/40 active:scale-95 shadow-sm group"
         >
           <ArrowLeft className="w-4 h-4 text-geoCyan group-hover:-translate-x-0.5 transition-transform" />
           <span>
@@ -405,7 +488,7 @@ export default function InteractiveMap() {
           {/* Expand / Fullscreen Toggle Button */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/15 backdrop-blur-xl transition-all"
+            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
             title={isExpanded ? "Contract map (Esc)" : "Expand map to fullscreen"}
           >
             {isExpanded ? (
@@ -424,7 +507,7 @@ export default function InteractiveMap() {
           {/* Map Style Toggle */}
           <button
             onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
-            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/15 backdrop-blur-xl transition-all"
+            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
             title="Toggle Map Style"
           >
             {mapTheme === "dark" ? (
@@ -443,7 +526,7 @@ export default function InteractiveMap() {
           {/* Reset View */}
           <button
             onClick={handleResetView}
-            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/15 backdrop-blur-xl transition-all"
+            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
             title="Reset to global view"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -595,7 +678,7 @@ export default function InteractiveMap() {
         </AnimatePresence>
 
         {/* Row 2: Location Index */}
-        <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
+        <div className="mt-3 pt-1 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
           <div className="flex items-center gap-2">
             <Compass className="w-3.5 h-3.5 text-geoCyan" />
             {isFocusedOnly ? (
@@ -627,10 +710,10 @@ export default function InteractiveMap() {
             <button
               key={video.id}
               onClick={() => handleFlyTo(video)}
-              className={`px-3 py-1.5 rounded-full border shrink-0 transition-all text-xs ${
+              className={`px-3 py-1.5 rounded-full shrink-0 transition-all text-xs ${
                 selectedLocationId === video.id
-                  ? "bg-geoCyan text-gray-950 border-geoCyan font-semibold"
-                  : "bg-gray-900/40 border-white/10 text-gray-400 hover:text-white hover:border-white/20 backdrop-blur-md"
+                  ? "bg-geoCyan text-gray-950 font-semibold shadow-sm"
+                  : "bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white border border-transparent hover:border-white/10 backdrop-blur-md"
               }`}
             >
               {video.title.replace("The Truth About the ", "").replace("The Most Complex Border in the World ", "").replace("Why Bir Tawil is Unclaimed Land", "Bir Tawil")}
@@ -643,15 +726,17 @@ export default function InteractiveMap() {
       <div 
         className={
           isExpanded 
-            ? "fixed inset-0 z-50 bg-[#090d16] flex flex-col p-3 sm:p-5 transition-all"
-            : `relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 transition-all ${
+            ? `fixed inset-0 w-screen h-screen z-[9999] bg-[#090d16] flex flex-col p-3 sm:p-5 m-0 ${
+                mapTheme === "dark" ? "minimalist-dark-map" : "minimalist-clean-map"
+              }`
+            : `relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 ${
                 mapTheme === "dark" ? "minimalist-dark-map" : "minimalist-clean-map"
               }`
         }
       >
         {/* Fullscreen Header Overlay (when expanded) */}
         {isExpanded && (
-          <div className="flex items-center justify-between gap-3 mb-3 px-2">
+          <div className="flex items-center justify-between gap-3 mb-3 px-2 shrink-0">
             <div className="flex items-center gap-2 text-white">
               <span className="w-2.5 h-2.5 rounded-full bg-geoCyan animate-ping"></span>
               <span className="text-sm font-bold tracking-tight">GeoGlobe Fullscreen Atlas</span>
@@ -666,17 +751,18 @@ export default function InteractiveMap() {
               {/* Map Theme Toggle */}
               <button
                 onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
-                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/70 px-3 py-1.5 rounded-full border border-white/15 backdrop-blur-xl"
+                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+                title="Toggle Map Style"
               >
                 {mapTheme === "dark" ? (
                   <>
                     <Sun className="w-3.5 h-3.5 text-geoYellow" />
-                    <span className="hidden sm:inline">Natural</span>
+                    <span>Natural</span>
                   </>
                 ) : (
                   <>
                     <Moon className="w-3.5 h-3.5 text-geoCyan" />
-                    <span className="hidden sm:inline">Dark</span>
+                    <span>Dark</span>
                   </>
                 )}
               </button>
@@ -684,43 +770,25 @@ export default function InteractiveMap() {
               {/* Reset View */}
               <button
                 onClick={handleResetView}
-                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/70 px-3 py-1.5 rounded-full border border-white/15 backdrop-blur-xl"
+                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/80 hover:bg-gray-800 px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+                title="Reset to global view"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Reset</span>
+                <span>Reset</span>
               </button>
 
-              {/* Contract Button */}
+              {/* Single Sleek Contract Button (matching dark styling, no blue button) */}
               <button
                 onClick={() => setIsExpanded(false)}
-                className="inline-flex items-center gap-1.5 bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold px-4 py-1.5 rounded-full text-xs transition-all shadow-md active:scale-95"
+                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-xl transition-all active:scale-95"
                 title="Contract map (Esc)"
               >
-                <Minimize2 className="w-3.5 h-3.5" />
-                <span>Contract Map</span>
+                <Minimize2 className="w-3.5 h-3.5 text-geoYellow" />
+                <span>Contract</span>
               </button>
             </div>
           </div>
         )}
-
-        {/* Floating Expand/Contract Button inside Map Corner */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="absolute top-4 right-4 z-10 flex items-center gap-1.5 text-xs text-gray-200 hover:text-white bg-gray-950/85 hover:bg-gray-900 px-3.5 py-1.5 rounded-full border border-white/15 backdrop-blur-md shadow-xl transition-all active:scale-95"
-          title={isExpanded ? "Contract map back (Esc)" : "Expand map to fullscreen"}
-        >
-          {isExpanded ? (
-            <>
-              <Minimize2 className="w-3.5 h-3.5 text-geoYellow" />
-              <span className="text-[11px] font-medium">Contract</span>
-            </>
-          ) : (
-            <>
-              <Maximize2 className="w-3.5 h-3.5 text-geoCyan" />
-              <span className="text-[11px] font-medium hidden sm:inline">Expand</span>
-            </>
-          )}
-        </button>
 
         {/* Loading Skeleton */}
         <AnimatePresence>
@@ -768,7 +836,7 @@ export default function InteractiveMap() {
           ref={mapRef}
           className={
             isExpanded
-              ? "w-full h-full flex-1 rounded-2xl md:rounded-3xl overflow-hidden z-0"
+              ? "w-full flex-1 min-h-0 rounded-2xl md:rounded-3xl overflow-hidden z-0"
               : "w-full h-[520px] md:h-[660px] lg:h-[700px] overflow-hidden z-0"
           }
         ></div>

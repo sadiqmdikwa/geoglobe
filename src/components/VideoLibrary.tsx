@@ -366,7 +366,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-full bg-gray-900/40 border border-white/15 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors backdrop-blur-md"
+              className="p-1.5 rounded-full bg-gray-900/40 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors backdrop-blur-md"
               aria-label="Previous Page"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -379,7 +379,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
                 className={`w-7 h-7 rounded-full text-xs font-bold transition-all ${
                   currentPage === page
                     ? "bg-geoCyan text-gray-950 shadow-md"
-                    : "bg-gray-900/40 border border-white/10 text-gray-400 hover:text-white"
+                    : "bg-gray-900/40 text-gray-400 hover:text-white"
                 }`}
               >
                 {page}
@@ -389,7 +389,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-full bg-gray-900/40 border border-white/15 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors backdrop-blur-md"
+              className="p-1.5 rounded-full bg-gray-900/40 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors backdrop-blur-md"
               aria-label="Next Page"
             >
               <ChevronRight className="w-4 h-4" />
@@ -538,9 +538,9 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
         </motion.div>
       )}
 
-      {/* Bottom Pagination Bar */}
+      {/* Bottom Pagination Bar - Frameless border-free styling */}
       {!isLoading && totalPages > 1 && (
-        <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-full bg-gray-900/40 border border-white/15 backdrop-blur-xl">
+        <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-full bg-gray-900/40 backdrop-blur-xl">
           <div className="text-xs text-gray-400 px-3">
             Showing <strong className="text-white font-mono">{startIndex + 1}</strong> to{" "}
             <strong className="text-white font-mono">{Math.min(startIndex + ITEMS_PER_PAGE, filteredVideos.length)}</strong> of{" "}
@@ -551,7 +551,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-gray-900/50 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:pointer-events-none transition-all"
+              className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-gray-900/50 text-xs font-semibold text-gray-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Prev</span>
@@ -564,7 +564,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
                 className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${
                   currentPage === page
                     ? "bg-geoCyan text-gray-950 shadow-md"
-                    : "bg-gray-900/50 border border-white/10 text-gray-400 hover:text-white hover:border-white/30"
+                    : "bg-gray-900/50 text-gray-400 hover:text-white"
                 }`}
               >
                 {page}
@@ -574,7 +574,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-gray-900/50 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:pointer-events-none transition-all"
+              className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-gray-900/50 text-xs font-semibold text-gray-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
             >
               <span>Next</span>
               <ChevronRight className="w-3.5 h-3.5" />
