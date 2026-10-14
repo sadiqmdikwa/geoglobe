@@ -3,7 +3,6 @@ import {
   Play, 
   ArrowLeft, 
   X, 
-  ExternalLink, 
   Search, 
   Share2, 
   Check, 
@@ -14,12 +13,12 @@ import {
   SlidersHorizontal,
   Film,
   MapPin,
-  Compass
 } from "lucide-react";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { initialVideos, VideoItem } from "../data/videos";
 import { VideoLibrarySkeleton } from "./skeletons/VideoCardSkeleton";
+import VideoPreviewModal from "./VideoPreviewModal";
 
 interface VideoLibraryProps {
   onBack: () => void;
@@ -41,6 +40,16 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
   const [copiedVideoId, setCopiedVideoId] = useState<string | null>(null);
 
   const catalogTopRef = useRef<HTMLDivElement>(null);
+
+  const handleCloseVideo = useCallback(() => {
+    setActiveVideo(null);
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
+
+  const handleViewVideoMap = useCallback(() => {
+    if (!activeVideo) return;
+    navigate(`/map?lat=${activeVideo.lat}&lng=${activeVideo.lng}&id=${activeVideo.id}&title=${encodeURIComponent(activeVideo.title)}&from=videos`);
+  }, [activeVideo, navigate]);
 
   // Extract unique categories & regions
   const categories = useMemo(() => {
@@ -583,131 +592,13 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
         </div>
       )}
 
-      {/* Fullscreen HD Video Player Modal */}
-      <AnimatePresence>
-        {activeVideo && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6"
-            onClick={() => {
-              setActiveVideo(null);
-              setSearchParams({});
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ type: "spring", stiffness: 200, damping: 20 }}
-              className="relative w-full max-w-4xl bg-gray-900 border border-white/15 rounded-2xl overflow-hidden shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Top Bar */}
-              <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/10 bg-gray-950/80">
-                <div className="flex items-center gap-2">
-                  <span className="bg-geoCyan/20 text-geoCyan border border-geoCyan/40 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
-                    {activeVideo.category}
-                  </span>
-                  <span className="text-gray-400 text-xs font-medium hidden sm:inline">
-                    {activeVideo.region}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <a
-                    href={`https://youtube.com/watch?v=${activeVideo.youtubeId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-geoCyan transition-colors p-1"
-                    title="Open on YouTube"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                  <button
-                    onClick={() => {
-                      setActiveVideo(null);
-                      setSearchParams({});
-                    }}
-                    className="text-gray-400 hover:text-white transition-colors p-1"
-                    aria-label="Close modal"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Responsive 16:9 Video Embed */}
-              <div className="relative aspect-video w-full bg-black">
-                <iframe
-                  src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
-                  title={activeVideo.title}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-
-              {/* Modal Details Footer */}
-              <div className="p-4 sm:p-6 bg-gray-950">
-                <h2 className="text-white text-base sm:text-xl font-bold mb-2">
-                  {activeVideo.title}
-                </h2>
-                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mb-4">
-                  {activeVideo.description}
-                </p>
-
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
-                  {/* Clickable Coordinates leading to map */}
-                  <button
-                    onClick={() => {
-                      const v = activeVideo;
-                      setActiveVideo(null);
-                      setSearchParams({});
-                      navigate(`/map?lat=${v.lat}&lng=${v.lng}&id=${v.id}&title=${encodeURIComponent(v.title)}&from=videos`);
-                    }}
-                    className="text-gray-400 hover:text-geoCyan font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
-                    title="View coordinates on map"
-                  >
-                    <Compass className="w-3.5 h-3.5 text-geoCyan" />
-                    <span>Coordinates: {activeVideo.lat.toFixed(3)}°, {activeVideo.lng.toFixed(3)}°</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        const shareUrl = `${window.location.origin}${window.location.pathname}#/videos?play=${activeVideo.youtubeId}`;
-                        navigator.clipboard.writeText(shareUrl);
-                        setCopiedVideoId(activeVideo.id);
-                        setTimeout(() => setCopiedVideoId(null), 2500);
-                      }}
-                      className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/15 text-white px-3.5 py-1.5 rounded-full border border-white/10 transition-colors"
-                    >
-                      <Share2 className="w-3.5 h-3.5" />
-                      <span>Share Link</span>
-                    </button>
-
-                    {/* View on Map Button */}
-                    <button
-                      onClick={() => {
-                        const v = activeVideo;
-                        setActiveVideo(null);
-                        setSearchParams({});
-                        navigate(`/map?lat=${v.lat}&lng=${v.lng}&id=${v.id}&title=${encodeURIComponent(v.title)}&from=videos`);
-                      }}
-                      className="bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold px-4 py-1.5 rounded-full text-xs transition-colors flex items-center gap-1.5 active:scale-95 shadow-sm"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>View on Map</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {activeVideo && (
+        <VideoPreviewModal
+          video={activeVideo}
+          onClose={handleCloseVideo}
+          onViewMap={handleViewVideoMap}
+        />
+      )}
     </motion.div>
   );
 }

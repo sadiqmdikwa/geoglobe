@@ -16,16 +16,16 @@ import {
   Compass, 
   ArrowLeft, 
   MapPin, 
-  Eye,
   Maximize2,
   Minimize2,
   Layers
 } from "lucide-react";
 import MapSkeleton from "./skeletons/MapSkeleton";
+import VideoPreviewModal from "./VideoPreviewModal";
 
-// 100% Free Forever Basemaps - Zero API Key, Unlimited Access Forever
-const CARTO_DARK = "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png";
-const CARTO_VOYAGER = "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png";
+// Public ArcGIS World Street Map tiles provide English labels without a client API key.
+const BASE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+const BASE_ATTRIBUTION = 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>; Sources: Esri, HERE, Garmin, and <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export default function InteractiveMap() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -34,7 +34,7 @@ export default function InteractiveMap() {
   const markersRef = useRef<{ [key: string]: any }>({});
   const focusMarkerRef = useRef<any>(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Read URL query coordinates (from Video or Game)
   const focusLat = searchParams.get("lat") ? parseFloat(searchParams.get("lat")!) : null;
@@ -42,13 +42,21 @@ export default function InteractiveMap() {
   const focusTitle = searchParams.get("title") || "";
   const focusId = searchParams.get("id") || "";
   const fromSource = searchParams.get("from");
+  const previewVideo = initialVideos.find((video) => video.id === searchParams.get("preview")) || null;
+  const initialSelectedLocationId = initialVideos.find((video) =>
+    video.id === focusId ||
+    (focusLat !== null && focusLng !== null &&
+      Math.abs(video.lat - focusLat) < 0.005 && Math.abs(video.lng - focusLng) < 0.005),
+  )?.id || "";
 
   const [isMapReady, setIsMapReady] = useState(false);
-  const [selectedLocationId, setSelectedLocationId] = useState<string>(focusId || "");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mapTheme, setMapTheme] = useState<"dark" | "clean">("dark");
   const [currentZoom, setCurrentZoom] = useState<number>(3);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const selectedLocationIdRef = useRef(initialSelectedLocationId);
+  const hasFocusedPinRef = useRef(Boolean(initialSelectedLocationId) || (focusLat !== null && focusLng !== null));
+  const updatePinIconsRef = useRef<((zoom: number) => void) | null>(null);
 
   // If launched with coordinates: initial state is focused mode (shows only that location)
   // When user zooms out (zoom <= 5), show all locations dynamically
@@ -59,6 +67,14 @@ export default function InteractiveMap() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedRegion, setSelectedRegion] = useState("All");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  useEffect(() => {
+    const hasFocusCoordinates = focusLat !== null && focusLng !== null && Number.isFinite(focusLat) && Number.isFinite(focusLng);
+    selectedLocationIdRef.current = initialSelectedLocationId;
+    hasFocusedPinRef.current = Boolean(initialSelectedLocationId) || hasFocusCoordinates;
+    setIsFocusedOnly(hasFocusCoordinates);
+    updatePinIconsRef.current?.(mapInstance.current?.getZoom() ?? 3);
+  }, [focusLat, focusLng, initialSelectedLocationId]);
 
   // Extract unique categories & regions
   const categories = useMemo(() => {
@@ -126,6 +142,7 @@ export default function InteractiveMap() {
       }, 180);
       const timer3 = setTimeout(() => {
         mapInstance.current?.invalidateSize({ animate: false });
+        baseTileLayerRef.current?.redraw();
       }, 350);
 
       return () => {
@@ -143,11 +160,10 @@ export default function InteractiveMap() {
     };
   }, [isExpanded]);
 
-  // Handle Dark vs Natural Basemap Toggle (100% Free Forever, Zero API Key)
+  // Style only the basemap tiles, leaving markers and map controls unchanged.
   useEffect(() => {
-    if (!mapInstance.current || !baseTileLayerRef.current) return;
-    const isDark = mapTheme === "dark";
-    baseTileLayerRef.current.setUrl(isDark ? CARTO_DARK : CARTO_VOYAGER);
+    const tileContainer = baseTileLayerRef.current?.getContainer();
+    tileContainer?.classList.toggle("map-tiles-dark", mapTheme === "dark");
   }, [mapTheme]);
 
   // Initialize Leaflet Map
@@ -184,17 +200,14 @@ export default function InteractiveMap() {
 
     mapInstance.current = map;
 
-    const isDark = mapTheme === "dark";
-
-    // 100% Free Forever Basemap - Zero API Key, Unlimited Access Forever
-    const baseLayer = L.tileLayer(isDark ? CARTO_DARK : CARTO_VOYAGER, {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
-      subdomains: ["a", "b", "c", "d"],
+    const baseLayer = L.tileLayer(BASE_TILES, {
+      attribution: BASE_ATTRIBUTION,
       maxZoom: 19,
       minZoom: 2,
     }).addTo(map);
 
     baseTileLayerRef.current = baseLayer;
+    baseLayer.getContainer()?.classList.toggle("map-tiles-dark", mapTheme === "dark");
 
     // Responsive ResizeObserver for instant container adaptation
     const resizeObserver = new ResizeObserver(() => {
@@ -218,47 +231,50 @@ export default function InteractiveMap() {
     map.on("zoomend", () => {
       const zoom = map.getZoom();
       setCurrentZoom(zoom);
+      updatePinIconsRef.current?.(zoom);
       if (zoom <= 5) {
         setIsFocusedOnly(false);
       }
     });
 
-    // Custom Glowing Cyan Icon for Normal Pins
-    const customIcon = L.divIcon({
-      className: "custom-map-pin",
-      html: `
-        <div class="relative flex items-center justify-center">
-          <div class="w-7 h-7 rounded-full bg-geoCyan/20 animate-ping absolute"></div>
-          <div class="w-6 h-6 rounded-full bg-geoCyan border-2 border-white flex items-center justify-center shadow-[0_0_15px_#42C2CB] text-gray-950">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-          </div>
-        </div>
-      `,
-      iconSize: [28, 28],
-      iconAnchor: [14, 28],
-      popupAnchor: [0, -28],
-    });
+    const createPinIcon = (color: string, size: [number, number]) =>
+      L.divIcon({
+        className: "custom-map-pin",
+        html: `
+          <svg xmlns="http://www.w3.org/2000/svg" width="${size[0]}" height="${size[1]}" viewBox="0 0 32 44" aria-hidden="true" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))">
+            <path d="M16 1C7.72 1 1 7.72 1 16c0 10.45 15 27 15 27s15-16.55 15-27C31 7.72 24.28 1 16 1Z" fill="${color}" stroke="#e8fbff" stroke-width="1.5" />
+            <circle cx="16" cy="16" r="5" fill="#f8fafc" />
+          </svg>
+        `,
+        iconSize: size,
+        iconAnchor: [size[0] / 2, size[1] - 1],
+        popupAnchor: [0, -(size[1] - 1)],
+      });
 
-    // Special Golden-Cyan Icon for the Focused/Queried Anomaly
-    const focusedTargetIcon = L.divIcon({
-      className: "custom-focused-pin",
-      html: `
-        <div class="relative flex items-center justify-center">
-          <div class="w-10 h-10 rounded-full bg-geoYellow/30 animate-ping absolute"></div>
-          <div class="w-8 h-8 rounded-full bg-geoYellow border-2 border-white flex items-center justify-center shadow-[0_0_20px_#F4D03F] text-gray-950 font-bold scale-110">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
-            </svg>
-          </div>
-        </div>
-      `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    });
+    const customIcon = createPinIcon("#2999d4", [32, 44]);
+    const focusedTargetIcon = createPinIcon("#f4d03f", [36, 50]);
+    const compactIcon = createPinIcon("#2999d4", [22, 30]);
+    const compactFocusedIcon = createPinIcon("#f4d03f", [26, 36]);
+    const mediumIcon = createPinIcon("#2999d4", [27, 37]);
+    const mediumFocusedIcon = createPinIcon("#f4d03f", [32, 44]);
+    const updatePinIcons = (zoom: number) => {
+      const size = zoom <= 4 ? "compact" : zoom <= 7 ? "medium" : "large";
+      const icons = {
+        compact: { normal: compactIcon, selected: compactFocusedIcon },
+        medium: { normal: mediumIcon, selected: mediumFocusedIcon },
+        large: { normal: customIcon, selected: focusedTargetIcon },
+      }[size];
+
+      Object.entries(markersRef.current).forEach(([id, marker]) => {
+        marker.setIcon(id === selectedLocationIdRef.current ? icons.selected : icons.normal);
+      });
+
+      if (focusMarkerRef.current && !Object.values(markersRef.current).includes(focusMarkerRef.current)) {
+        const isSelected = hasFocusedPinRef.current && !selectedLocationIdRef.current;
+        focusMarkerRef.current.setIcon(isSelected ? icons.selected : icons.normal);
+      }
+    };
+    updatePinIconsRef.current = updatePinIcons;
 
     // Clear previous marker references
     markersRef.current = {};
@@ -269,9 +285,13 @@ export default function InteractiveMap() {
       const isTarget =
         (focusId && video.id === focusId) ||
         (hasCoords && Math.abs(video.lat - focusLat!) < 0.005 && Math.abs(video.lng - focusLng!) < 0.005);
+      const isCompact = initialZoomLevel <= 4;
+      const isMedium = initialZoomLevel > 4 && initialZoomLevel <= 7;
 
       const marker = L.marker([video.lat, video.lng], {
-        icon: isTarget ? focusedTargetIcon : customIcon,
+        icon: video.id === selectedLocationIdRef.current
+          ? isCompact ? compactFocusedIcon : isMedium ? mediumFocusedIcon : focusedTargetIcon
+          : isCompact ? compactIcon : isMedium ? mediumIcon : customIcon,
         title: video.title,
       });
 
@@ -291,7 +311,7 @@ export default function InteractiveMap() {
           <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
             <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
             <a 
-              href="#/videos?search=${encodeURIComponent(video.title)}" 
+              href="#/map?preview=${video.id}" 
               class="text-geoCyan hover:text-geoYellow font-bold flex items-center gap-1 transition-colors uppercase tracking-wider text-[10px]"
             >
               Watch Video &rarr;
@@ -306,7 +326,9 @@ export default function InteractiveMap() {
       });
 
       marker.on("click", () => {
-        setSelectedLocationId(video.id);
+        selectedLocationIdRef.current = video.id;
+        hasFocusedPinRef.current = true;
+        updatePinIconsRef.current?.(map.getZoom());
       });
 
       markersRef.current[video.id] = marker;
@@ -333,7 +355,9 @@ export default function InteractiveMap() {
       } else {
         // Dynamic standalone marker if coordinates don't match existing video id
         const tempMarker = L.marker([focusLat!, focusLng!], {
-          icon: focusedTargetIcon,
+          icon: initialZoomLevel <= 4
+            ? compactFocusedIcon
+            : initialZoomLevel <= 7 ? mediumFocusedIcon : focusedTargetIcon,
           title: focusTitle || "Target Anomaly",
         }).addTo(map);
 
@@ -421,8 +445,10 @@ export default function InteractiveMap() {
   // Quick Jump camera to anomaly
   const handleFlyTo = (video: VideoItem) => {
     setIsFocusedOnly(false);
-    setSelectedLocationId(video.id);
+    selectedLocationIdRef.current = video.id;
+    hasFocusedPinRef.current = true;
     if (mapInstance.current) {
+      updatePinIconsRef.current?.(mapInstance.current.getZoom());
       mapInstance.current.flyTo([video.lat, video.lng], 8, {
         duration: 1.5,
         easeLinearity: 0.25,
@@ -440,8 +466,10 @@ export default function InteractiveMap() {
   // Reset to global overview
   const handleResetView = () => {
     setIsFocusedOnly(false);
-    setSelectedLocationId("");
+    selectedLocationIdRef.current = "";
+    hasFocusedPinRef.current = false;
     if (mapInstance.current) {
+      updatePinIconsRef.current?.(mapInstance.current.getZoom());
       mapInstance.current.closePopup();
       mapInstance.current.flyTo([20.0, 15.0], 3, {
         duration: 1.3,
@@ -459,7 +487,19 @@ export default function InteractiveMap() {
     }
   };
 
+  const handleClosePreview = useCallback(() => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("preview");
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const handlePreviewMap = useCallback(() => {
+    if (!previewVideo) return;
+    navigate(`/map?lat=${previewVideo.lat}&lng=${previewVideo.lng}&id=${previewVideo.id}&title=${encodeURIComponent(previewVideo.title)}&from=videos`);
+  }, [navigate, previewVideo]);
+
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
@@ -467,8 +507,8 @@ export default function InteractiveMap() {
       style={isExpanded ? { transform: "none" } : undefined}
       className="w-full pb-20"
     >
-      {/* Top Navigation Row: Back Navigation Button + Controls */}
-      <div className="flex items-center justify-between gap-3 mb-4">
+      {/* Top Navigation Row */}
+      <div className="flex items-center gap-3 mb-4">
         <button
           onClick={handleBackNavigation}
           className="inline-flex items-center gap-2 bg-gray-900/40 hover:bg-gray-900/80 text-gray-300 hover:text-white px-4 py-2 rounded-full border border-white/10 transition-all text-xs font-semibold backdrop-blur-xl hover:border-geoCyan/40 active:scale-95 shadow-sm group"
@@ -483,56 +523,6 @@ export default function InteractiveMap() {
           </span>
         </button>
 
-        {/* Minimalist Controls */}
-        <div className="flex items-center gap-2">
-          {/* Expand / Fullscreen Toggle Button */}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
-            title={isExpanded ? "Contract map (Esc)" : "Expand map to fullscreen"}
-          >
-            {isExpanded ? (
-              <>
-                <Minimize2 className="w-3.5 h-3.5 text-geoYellow" />
-                <span>Contract</span>
-              </>
-            ) : (
-              <>
-                <Maximize2 className="w-3.5 h-3.5 text-geoCyan" />
-                <span>Expand</span>
-              </>
-            )}
-          </button>
-
-          {/* Map Style Toggle */}
-          <button
-            onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
-            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
-            title="Toggle Map Style"
-          >
-            {mapTheme === "dark" ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-geoYellow" />
-                <span>Natural</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-geoCyan" />
-                <span>Dark</span>
-              </>
-            )}
-          </button>
-
-          {/* Reset View */}
-          <button
-            onClick={handleResetView}
-            className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/40 hover:bg-gray-900/80 px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
-            title="Reset to global view"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset</span>
-          </button>
-        </div>
       </div>
 
       {/* Minimalist Page Header */}
@@ -549,73 +539,89 @@ export default function InteractiveMap() {
         </p>
       </header>
 
-      {/* Google-Style Circular & Transparent Search & Filter Bar */}
+      {/* Map Search and Status */}
       <div className="mb-6">
-        {/* Row 1: Google-style pill search input + Search button + Filter button */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Circular Google-Style Transparent Search Box */}
-          <div className="relative flex-1 flex items-center bg-gray-900/30 hover:bg-gray-900/50 focus-within:bg-gray-900/65 border border-white/15 focus-within:border-geoCyan/60 focus-within:ring-2 focus-within:ring-geoCyan/20 rounded-full transition-all backdrop-blur-xl shadow-lg px-4 py-2 sm:py-2.5">
-            <Search className="w-4 h-4 text-gray-400 shrink-0 mr-3 pointer-events-none" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search map locations, regions, or borders..."
-              className="w-full bg-transparent outline-none text-white text-xs sm:text-sm placeholder-gray-400/70"
-            />
-            {searchTerm && (
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-gray-400">
+            <Compass className="h-3.5 w-3.5 shrink-0 text-geoCyan" />
+            {isFocusedOnly ? (
+              <span className="truncate">
+                Focusing on <strong className="font-semibold text-geoYellow">{focusTitle || "Target Location"}</strong>
+              </span>
+            ) : (
+              <span className="shrink-0">
+                Atlas Pins: <strong className="font-mono text-white">{filteredVideos.length}</strong> active locations
+              </span>
+            )}
+            {isFocusedOnly && (
               <button
-                onClick={() => setSearchTerm("")}
-                className="text-gray-400 hover:text-white transition-colors p-1 ml-1"
-                aria-label="Clear search"
+                onClick={handleResetView}
+                className="shrink-0 text-xs font-semibold text-geoCyan transition-colors hover:text-geoYellow"
               >
-                <X className="w-3.5 h-3.5" />
+                Show All Locations
               </button>
             )}
           </div>
 
-          {/* Search Button (Circular Pill) */}
-          <button
-            onClick={() => {
-              setIsFocusedOnly(false);
-              if (filteredVideos.length > 0) {
-                handleFlyTo(filteredVideos[0]);
-              }
-            }}
-            className="bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 shrink-0"
-          >
-            <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span className="hidden sm:inline">Search</span>
-          </button>
+          <div className="flex min-w-0 items-center gap-2 md:flex-1 md:justify-end">
+            <div className="relative flex min-w-0 flex-1 items-center rounded-full border border-white/15 bg-gray-900/30 px-4 py-2 transition-all backdrop-blur-xl hover:bg-gray-900/50 focus-within:border-geoCyan/60 focus-within:bg-gray-900/65 focus-within:ring-2 focus-within:ring-geoCyan/20 md:max-w-[420px]">
+              <Search className="mr-3 h-4 w-4 shrink-0 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search locations..."
+                className="w-full min-w-0 bg-transparent text-xs text-white outline-none placeholder-gray-400/70 sm:text-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
-          {/* Filter Toggle Button (Circular Pill) */}
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full text-xs font-semibold border backdrop-blur-xl transition-all shrink-0 ${
-              isFilterOpen || hasActiveDropdownFilters
-                ? "bg-geoCyan/15 border-geoCyan text-geoCyan"
-                : "bg-gray-900/30 border-white/15 text-gray-300 hover:text-white hover:border-white/30"
-            }`}
-            title="Toggle Region and Category Filters"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Filter</span>
-            {hasActiveDropdownFilters && (
-              <span className="w-2 h-2 rounded-full bg-geoYellow"></span>
-            )}
-          </button>
-
-          {/* Reset Filters (Circular Pill) */}
-          {isFiltered && (
             <button
-              onClick={handleResetFilters}
-              className="bg-gray-900/30 hover:bg-white/10 text-gray-300 hover:text-white border border-white/15 w-10 h-10 rounded-full transition-colors flex items-center justify-center shrink-0 backdrop-blur-xl"
-              title="Reset all filters"
-              aria-label="Reset all filters"
+              onClick={() => {
+                setIsFocusedOnly(false);
+                if (filteredVideos.length > 0) handleFlyTo(filteredVideos[0]);
+              }}
+              className="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-geoCyan px-4 py-2.5 text-xs font-bold uppercase text-gray-950 shadow-md transition-all hover:bg-geoYellow active:scale-95 sm:px-5"
+              aria-label="Search map locations"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <Search className="h-3.5 w-3.5 stroke-[2.5]" />
+              <span className="hidden sm:inline">Search</span>
             </button>
-          )}
+
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`flex shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 py-2.5 text-xs font-semibold backdrop-blur-xl transition-all sm:px-4 ${
+                isFilterOpen || hasActiveDropdownFilters
+                  ? "border-geoCyan bg-geoCyan/15 text-geoCyan"
+                  : "border-white/15 bg-gray-900/30 text-gray-300 hover:border-white/30 hover:text-white"
+              }`}
+              title="Toggle Region and Category Filters"
+              aria-label="Toggle filters"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Filter</span>
+              {hasActiveDropdownFilters && <span className="h-2 w-2 rounded-full bg-geoYellow" />}
+            </button>
+
+            {isFiltered && (
+              <button
+                onClick={handleResetFilters}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-gray-900/30 text-gray-300 backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-white"
+                title="Reset all filters"
+                aria-label="Reset all filters"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Animated Expandable Filter Row (Region & Category) */}
@@ -677,63 +683,97 @@ export default function InteractiveMap() {
           )}
         </AnimatePresence>
 
-        {/* Row 2: Location Index */}
-        <div className="mt-3 pt-1 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
-          <div className="flex items-center gap-2">
-            <Compass className="w-3.5 h-3.5 text-geoCyan" />
-            {isFocusedOnly ? (
-              <span>Focusing on <strong className="text-geoYellow font-semibold">{focusTitle || "Target Location"}</strong></span>
-            ) : (
-              <span>Atlas Pins: <strong className="text-white font-mono">{filteredVideos.length}</strong> active locations</span>
+        {searchTerm.trim() && (
+          <div
+            className="map-search-results mt-3 flex items-center gap-2 overflow-x-auto pb-1 text-xs"
+            aria-label="Map search results"
+          >
+            <span className="shrink-0 pr-1 font-semibold uppercase text-gray-500">
+              {filteredVideos.length} {filteredVideos.length === 1 ? "result" : "results"}
+            </span>
+            {filteredVideos.length > 0 ? filteredVideos.map((video) => (
+              <button
+                key={video.id}
+                onClick={() => handleFlyTo(video)}
+                className={`max-w-[280px] shrink-0 truncate rounded-full border px-3 py-1.5 transition-colors ${
+                  selectedLocationIdRef.current === video.id
+                    ? "border-geoCyan/50 bg-geoCyan/15 font-semibold text-geoCyan"
+                    : "border-white/5 bg-gray-900/50 text-gray-300 hover:border-white/15 hover:bg-gray-800 hover:text-white"
+                }`}
+                title={video.title}
+              >
+                {video.title}
+              </button>
+            )) : (
+              <span className="shrink-0 text-gray-500">No matching locations</span>
             )}
           </div>
+        )}
 
-          {isFocusedOnly && (
-            <button
-              onClick={() => setIsFocusedOnly(false)}
-              className="text-xs text-geoCyan hover:text-geoYellow font-semibold flex items-center gap-1 transition-colors"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Show All Locations</span>
-            </button>
-          )}
-        </div>
       </div>
-
-      {/* Quick Jump Bar for Filtered Locations */}
-      {!isFocusedOnly && filteredVideos.length > 0 && (
-        <div className="mb-5 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
-          <span className="text-gray-500 font-semibold uppercase tracking-wider text-[11px] shrink-0 mr-1">
-            Jump to:
-          </span>
-          {filteredVideos.map((video) => (
-            <button
-              key={video.id}
-              onClick={() => handleFlyTo(video)}
-              className={`px-3 py-1.5 rounded-full shrink-0 transition-all text-xs ${
-                selectedLocationId === video.id
-                  ? "bg-geoCyan text-gray-950 font-semibold shadow-sm"
-                  : "bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white border border-transparent hover:border-white/10 backdrop-blur-md"
-              }`}
-            >
-              {video.title.replace("The Truth About the ", "").replace("The Most Complex Border in the World ", "").replace("Why Bir Tawil is Unclaimed Land", "Bir Tawil")}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Map Card — Same styling as Portfolio hero card (rounded-[2.5rem], border-white/10, bg-gray-900/50, backdrop-blur-xl, shadow-2xl), with p-0 (no padding) and expandable full-screen toggle */}
       <div 
         className={
           isExpanded 
-            ? `fixed inset-0 w-screen h-screen z-[9999] bg-[#090d16] flex flex-col p-3 sm:p-5 m-0 ${
+            ? `map-shell map-shell-expanded fixed inset-0 w-screen h-screen z-[9999] bg-[#090d16] flex flex-col p-3 sm:p-5 m-0 ${
                 mapTheme === "dark" ? "minimalist-dark-map" : "minimalist-clean-map"
               }`
-            : `relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 ${
+                : `map-shell relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 ${
                 mapTheme === "dark" ? "minimalist-dark-map" : "minimalist-clean-map"
               }`
         }
       >
+        {/* Map Controls */}
+        <div
+          className={`absolute right-3 sm:right-5 ${isExpanded ? "top-16" : "top-3 sm:top-5"} z-30 flex items-center gap-1.5 sm:gap-2`}
+        >
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-1 sm:gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-2.5 sm:px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+            title={isExpanded ? "Contract map (Esc)" : "Expand map to fullscreen"}
+          >
+            {isExpanded ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5 text-geoYellow" />
+                <span>Contract</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5 text-geoCyan" />
+                <span>Expand</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
+            className="flex items-center gap-1 sm:gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-2.5 sm:px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+            title="Toggle Map Style"
+          >
+            {mapTheme === "dark" ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-geoYellow" />
+                <span>Natural</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-geoCyan" />
+                <span>Dark</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleResetView}
+            className="flex items-center gap-1 sm:gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/80 hover:bg-gray-800 px-2.5 sm:px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+            title="Reset to global view"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
+          </button>
+        </div>
+
         {/* Fullscreen Header Overlay (when expanded) */}
         {isExpanded && (
           <div className="flex items-center justify-between gap-3 mb-3 px-2 shrink-0">
@@ -747,46 +787,6 @@ export default function InteractiveMap() {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Map Theme Toggle */}
-              <button
-                onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
-                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-xl transition-all"
-                title="Toggle Map Style"
-              >
-                {mapTheme === "dark" ? (
-                  <>
-                    <Sun className="w-3.5 h-3.5 text-geoYellow" />
-                    <span>Natural</span>
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-3.5 h-3.5 text-geoCyan" />
-                    <span>Dark</span>
-                  </>
-                )}
-              </button>
-
-              {/* Reset View */}
-              <button
-                onClick={handleResetView}
-                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/80 hover:bg-gray-800 px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-xl transition-all"
-                title="Reset to global view"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset</span>
-              </button>
-
-              {/* Single Sleek Contract Button (matching dark styling, no blue button) */}
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-xl transition-all active:scale-95"
-                title="Contract map (Esc)"
-              >
-                <Minimize2 className="w-3.5 h-3.5 text-geoYellow" />
-                <span>Contract</span>
-              </button>
-            </div>
           </div>
         )}
 
@@ -815,7 +815,7 @@ export default function InteractiveMap() {
               </span>
             </div>
             <button
-              onClick={() => setIsFocusedOnly(false)}
+              onClick={handleResetView}
               className="text-geoCyan hover:text-geoYellow font-bold text-xs shrink-0 underline ml-1"
             >
               Reveal All
@@ -834,13 +834,17 @@ export default function InteractiveMap() {
         {/* Leaflet Map Container — Flush edge-to-edge inside rounded card */}
         <div
           ref={mapRef}
-          className={
-            isExpanded
-              ? "w-full flex-1 min-h-0 rounded-2xl md:rounded-3xl overflow-hidden z-0"
-              : "w-full h-[520px] md:h-[660px] lg:h-[700px] overflow-hidden z-0"
-          }
+          className="map-canvas w-full overflow-hidden z-0"
         ></div>
       </div>
     </motion.div>
+    {previewVideo && (
+      <VideoPreviewModal
+        video={previewVideo}
+        onClose={handleClosePreview}
+        onViewMap={handlePreviewMap}
+      />
+    )}
+    </>
   );
 }

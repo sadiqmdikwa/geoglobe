@@ -1,1 +1,88 @@
 @import "tailwindcss";
+
+.leaflet-layer.map-tiles-dark {
+	filter: invert(1) hue-rotate(180deg) brightness(0.82) saturate(0.75);
+}
+
+.map-canvas {
+	height: 520px;
+}
+
+@media (min-width: 768px) {
+	.map-canvas {
+		height: 660px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.map-canvas {
+		height: 700px;
+	}
+}
+
+.map-shell-expanded .map-canvas {
+	height: auto;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.map-search-results {
+	scrollbar-width: none;
+	overscroll-behavior-x: contain;
+}
+
+.map-search-results::-webkit-scrollbar {
+	display: none;
+}
+
+.video-preview-scroll {
+	scrollbar-color: #475569 transparent;
+	scrollbar-width: thin;
+}
+
+.video-preview-scroll::-webkit-scrollbar {
+	width: 8px;
+}
+
+.video-preview-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.video-preview-scroll::-webkit-scrollbar-thumb {
+	background: #475569;
+	border: 2px solid transparent;
+	border-radius: 999px;
+	background-clip: content-box;
+}
+
+@media (min-width: 720px) {
+	.video-preview-dialog {
+		width: min(92vw, 920px);
+		height: min(86vh, 560px);
+		max-height: 86vh;
+		display: grid;
+		grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.85fr);
+		grid-template-rows: auto minmax(0, 1fr);
+		overflow: hidden;
+	}
+
+	.video-preview-dialog > header {
+		grid-column: 1 / -1;
+	}
+
+	.video-preview-media {
+		grid-column: 1;
+		grid-row: 2;
+		align-self: center;
+	}
+
+	.video-preview-details {
+		grid-column: 2;
+		grid-row: 2;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		min-width: 0;
+		padding: clamp(16px, 3vh, 24px);
+	}
+}

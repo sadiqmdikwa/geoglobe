@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
-import { PlayCircle, Map, Trophy, ArrowRight, Compass } from "lucide-react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { useLayoutEffect, useRef } from "react";
+import { PlayCircle, Map as MapIcon, Trophy, ArrowRight, Compass } from "lucide-react";
+import { Routes, Route, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import VideoLibrary from "./components/VideoLibrary";
 import Header from "./components/Header";
 import InteractiveMap from "./components/InteractiveMap";
@@ -11,6 +12,37 @@ import SuggestionForm from "./components/SuggestionForm";
 import Portfolio from "./components/Portfolio";
 import BackToTop from "./components/BackToTop";
 import ScrollProgress from "./components/ScrollProgress";
+
+function RouteScrollRestoration() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const positions = useRef(new Map<string, number>());
+  const previousLocation = useRef({ key: location.key, pathname: location.pathname });
+
+  useLayoutEffect(() => {
+    const previous = previousLocation.current;
+    positions.current.set(previous.key, window.scrollY);
+
+    if (location.key !== previous.key) {
+      if (navigationType === "POP") {
+        window.scrollTo(0, positions.current.get(location.key) ?? 0);
+      } else if (location.pathname !== previous.pathname) {
+        window.scrollTo(0, 0);
+      }
+      previousLocation.current = { key: location.key, pathname: location.pathname };
+    }
+  }, [location.key, location.pathname, navigationType]);
+
+  useLayoutEffect(() => {
+    const originalBehavior = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = originalBehavior;
+    };
+  }, []);
+
+  return null;
+}
 
 function Home() {
   const navigate = useNavigate();
@@ -135,13 +167,13 @@ function Home() {
           className="bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-geoCyan/50 transition-all group cursor-pointer shadow-lg flex flex-col"
         >
           <div className="w-12 h-12 rounded-xl bg-geoCyan/10 text-geoCyan flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-            <Map className="w-6 h-6" />
+            <MapIcon className="w-6 h-6" />
           </div>
           <h3 className="text-white text-lg font-bold mb-2 group-hover:text-geoCyan transition-colors">
             Interactive Map
           </h3>
           <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-6 flex-grow">
-            Navigate the globe using 100% free OpenStreetMap tiles. Click any anomaly marker to inspect coordinates and launch the video.
+            Navigate the globe with a keyless basemap and English country and city labels. Click any anomaly marker to inspect coordinates and launch the video.
           </p>
           <div className="flex items-center text-geoCyan text-xs font-semibold gap-1.5 mt-auto">
             <span>Open Interactive Map</span>
@@ -181,6 +213,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100 antialiased">
+      <RouteScrollRestoration />
       <ScrollProgress />
       <Header />
 
