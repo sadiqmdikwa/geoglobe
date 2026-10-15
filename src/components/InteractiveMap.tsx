@@ -33,6 +33,7 @@ export default function InteractiveMap() {
   const baseTileLayerRef = useRef<L.TileLayer | null>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
   const focusMarkerRef = useRef<any>(null);
+  const hasOpenedInitialPopupRef = useRef(false);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -471,7 +472,8 @@ export default function InteractiveMap() {
       if (!map.hasLayer(focusMarkerRef.current)) {
         focusMarkerRef.current.addTo(map);
       }
-      if (isFocusedOnly) {
+      if (isFocusedOnly && !hasOpenedInitialPopupRef.current) {
+        hasOpenedInitialPopupRef.current = true;
         setTimeout(() => {
           if (focusMarkerRef.current && map.hasLayer(focusMarkerRef.current)) {
             focusMarkerRef.current.openPopup();
@@ -494,9 +496,11 @@ export default function InteractiveMap() {
       });
 
       const targetMarker = markersRef.current[video.id];
-      if (targetMarker) {
+      if (targetMarker && !targetMarker.isPopupOpen()) {
         setTimeout(() => {
-          targetMarker.openPopup();
+          if (!targetMarker.isPopupOpen()) {
+            targetMarker.openPopup();
+          }
         }, 1550);
       }
     }
