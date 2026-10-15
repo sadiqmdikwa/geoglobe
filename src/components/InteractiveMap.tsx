@@ -471,13 +471,17 @@ export default function InteractiveMap() {
       focusMarkerRef.current = standaloneMarker;
     }
 
-    if (isFocusedOnly && focusMarkerRef.current) {
-      focusMarkerRef.current.addTo(map);
-      setTimeout(() => {
-        if (focusMarkerRef.current && map.hasLayer(focusMarkerRef.current)) {
-          focusMarkerRef.current.openPopup();
-        }
-      }, 300);
+    if (focusMarkerRef.current) {
+      if (!map.hasLayer(focusMarkerRef.current)) {
+        focusMarkerRef.current.addTo(map);
+      }
+      if (isFocusedOnly) {
+        setTimeout(() => {
+          if (focusMarkerRef.current && map.hasLayer(focusMarkerRef.current)) {
+            focusMarkerRef.current.openPopup();
+          }
+        }, 300);
+      }
     }
   }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId, focusTitle, focusQuestion, focusAnswer]);
 
@@ -774,17 +778,17 @@ export default function InteractiveMap() {
         >
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center justify-center p-2 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
+            className="flex items-center justify-center p-2.5 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
             title={isExpanded ? "Contract map (Esc)" : "Expand map to fullscreen"}
           >
             {isExpanded ? (
               <>
-                <Minimize2 className="w-3.5 h-3.5 text-geoYellow shrink-0" />
+                <Minimize2 className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-geoYellow shrink-0" />
                 <span className="hidden sm:inline ml-1.5">Contract</span>
               </>
             ) : (
               <>
-                <Maximize2 className="w-3.5 h-3.5 text-geoCyan shrink-0" />
+                <Maximize2 className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-geoCyan shrink-0" />
                 <span className="hidden sm:inline ml-1.5">Expand</span>
               </>
             )}
@@ -792,17 +796,17 @@ export default function InteractiveMap() {
 
           <button
             onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
-            className="flex items-center justify-center p-2 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
+            className="flex items-center justify-center p-2.5 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
             title="Toggle Map Style"
           >
             {mapTheme === "dark" ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-geoYellow shrink-0" />
+                <Sun className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-geoYellow shrink-0" />
                 <span className="hidden sm:inline ml-1.5">Natural</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-geoCyan shrink-0" />
+                <Moon className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-geoCyan shrink-0" />
                 <span className="hidden sm:inline ml-1.5">Dark</span>
               </>
             )}
@@ -810,10 +814,10 @@ export default function InteractiveMap() {
 
           <button
             onClick={handleResetView}
-            className="flex items-center justify-center p-2 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-geoCyan bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
+            className="flex items-center justify-center p-2.5 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-geoCyan bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
             title="Reset to global view"
           >
-            <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+            <RotateCcw className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" />
             <span className="hidden sm:inline ml-1.5">Reset</span>
           </button>
         </div>
