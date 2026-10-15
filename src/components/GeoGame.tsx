@@ -383,7 +383,7 @@ export default function GeoGame() {
 
   // Active Session State
   const [questions, setQuestions] = useState<GameQuestion[]>([]);
-  const [questionBank, setQuestionBank] = useState<GameQuestion[]>(DEFAULT_QUESTIONS);
+  const [questionBank, setQuestionBank] = useState<GameQuestion[]>([]);
   const [isQuestionBankReady, setIsQuestionBankReady] = useState(false);
   const [questionBankError, setQuestionBankError] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);

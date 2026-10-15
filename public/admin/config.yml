@@ -1,0 +1,31 @@
+site_url: https://sadiqmdikwa.github.io/geoglobe
+backend:
+  name: github
+  repo: sadiqmdikwa/geoglobe
+  branch: main
+
+media_folder: "public/images"
+public_folder: "/images"
+
+collections:
+  - name: "videos"
+    label: "Videos"
+    folder: "src/data/videos"
+    create: true
+    extension: "json"
+    format: "json"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "YouTube ID", name: "youtubeId", widget: "string", hint: "Paste only the ID here, like z7Xr00C9LY0" }
+      - { label: "Latitude", name: "lat", widget: "number", value_type: "float", hint: "Example: 4.9" }
+      - { label: "Longitude", name: "lng", widget: "number", value_type: "float", hint: "Example: 35.3" }
+      - { label: "Category", name: "category", widget: "string", required: false }
+  - name: "game"
+    label: "Geography Quiz"
+    folder: "src/content/quiz"
+    create: true
+    fields:
+      - { label: "Country Name", name: "name", widget: "string" }
+      - { label: "Clue/Hint", name: "clue", widget: "text" }
+      - { label: "Fact", name: "fact", widget: "string" }

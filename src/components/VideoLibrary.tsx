@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { initialVideos, VideoItem } from "../data/videos";
+import { initialVideos, loadLiveVideos, VideoItem } from "../data/videos";
 import { VideoLibrarySkeleton } from "./skeletons/VideoCardSkeleton";
 import VideoPreviewModal from "./VideoPreviewModal";
 
@@ -29,6 +29,7 @@ const ITEMS_PER_PAGE = 12; // 4 rows x 3 cols on desktop, 6 rows x 2 cols on mob
 export default function VideoLibrary({ onBack }: VideoLibraryProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedRegion, setSelectedRegion] = useState("All");
@@ -51,38 +52,48 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
     navigate(`/map?lat=${activeVideo.lat}&lng=${activeVideo.lng}&id=${activeVideo.id}&title=${encodeURIComponent(activeVideo.title)}&from=videos`);
   }, [activeVideo, navigate]);
 
-  // Extract unique categories & regions
-  const categories = useMemo(() => {
-    return ["All", ...Array.from(new Set(initialVideos.map((v) => v.category)))];
-  }, []);
-
-  const regions = useMemo(() => {
-    return ["All", ...Array.from(new Set(initialVideos.map((v) => v.region)))];
-  }, []);
-
-  // Handle URL Deep-Linking for auto-opening modal
+  // Fetch live videos from Google Sheets
   useEffect(() => {
-    const playId = searchParams.get("play");
-    if (playId) {
-      const matched = initialVideos.find((v) => v.youtubeId === playId);
-      if (matched) {
-        setActiveVideo(matched);
-      }
-    }
+    let isMounted = true;
+    setIsLoading(true);
+    loadLiveVideos()
+      .then((loaded) => {
+        if (isMounted) {
+          setVideos(loaded);
+          setIsLoading(false);
+
+          const playId = searchParams.get("play");
+          if (playId) {
+            const matched = loaded.find((v) => v.youtubeId === playId || v.id === playId);
+            if (matched) {
+              setActiveVideo(matched);
+            }
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Failed loading live videos:", err);
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [searchParams]);
 
-  // Simulate ultra-smooth initial fetch
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, []);
+  // Extract unique categories & regions
+  const categories = useMemo(() => {
+    return ["All", ...Array.from(new Set(videos.map((v) => v.category)))];
+  }, [videos]);
+
+  const regions = useMemo(() => {
+    return ["All", ...Array.from(new Set(videos.map((v) => v.region)))];
+  }, [videos]);
 
   // Filter and sort videos
   const filteredVideos = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
-    let result = initialVideos.filter((video) => {
+    let result = videos.filter((video) => {
       const matchesSearch =
         q === "" ||
         video.title.toLowerCase().includes(q) ||
@@ -108,7 +119,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
     });
 
     return result;
-  }, [searchTerm, selectedCategory, selectedRegion, sortBy]);
+  }, [videos, searchTerm, selectedCategory, selectedRegion, sortBy]);
 
   // Reset to page 1 whenever filters or search query change
   useEffect(() => {

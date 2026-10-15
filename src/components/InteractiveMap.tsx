@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { initialVideos, VideoItem } from "../data/videos";
+import { initialVideos, loadLiveVideos, VideoItem } from "../data/videos";
 import { 
   Map as MapIcon, 
   RotateCcw, 
@@ -36,14 +36,28 @@ export default function InteractiveMap() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
+
+  useEffect(() => {
+    let isMounted = true;
+    loadLiveVideos()
+      .then((loaded) => {
+        if (isMounted) setVideos(loaded);
+      })
+      .catch((err) => console.error("Error loading live videos for map:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Read URL query coordinates (from Video or Game)
   const focusLat = searchParams.get("lat") ? parseFloat(searchParams.get("lat")!) : null;
   const focusLng = searchParams.get("lng") ? parseFloat(searchParams.get("lng")!) : null;
   const focusTitle = searchParams.get("title") || "";
   const focusId = searchParams.get("id") || "";
   const fromSource = searchParams.get("from");
-  const previewVideo = initialVideos.find((video) => video.id === searchParams.get("preview")) || null;
-  const initialSelectedLocationId = initialVideos.find((video) =>
+  const previewVideo = videos.find((video) => video.id === searchParams.get("preview")) || null;
+  const initialSelectedLocationId = videos.find((video) =>
     video.id === focusId ||
     (focusLat !== null && focusLng !== null &&
       Math.abs(video.lat - focusLat) < 0.005 && Math.abs(video.lng - focusLng) < 0.005),
@@ -78,17 +92,17 @@ export default function InteractiveMap() {
 
   // Extract unique categories & regions
   const categories = useMemo(() => {
-    return ["All", ...Array.from(new Set(initialVideos.map((v) => v.category)))];
-  }, []);
+    return ["All", ...Array.from(new Set(videos.map((v) => v.category)))];
+  }, [videos]);
 
   const regions = useMemo(() => {
-    return ["All", ...Array.from(new Set(initialVideos.map((v) => v.region)))];
-  }, []);
+    return ["All", ...Array.from(new Set(videos.map((v) => v.region)))];
+  }, [videos]);
 
   // Filtered list of locations
   const filteredVideos = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
-    return initialVideos.filter((v) => {
+    return videos.filter((v) => {
       const matchesSearch =
         q === "" ||
         v.title.toLowerCase().includes(q) ||
@@ -101,7 +115,7 @@ export default function InteractiveMap() {
 
       return matchesSearch && matchesCat && matchesReg;
     });
-  }, [searchTerm, selectedCategory, selectedRegion]);
+  }, [videos, searchTerm, selectedCategory, selectedRegion]);
 
   const hasActiveDropdownFilters = selectedCategory !== "All" || selectedRegion !== "All";
   const isFiltered = searchTerm !== "" || selectedCategory !== "All" || selectedRegion !== "All";
@@ -276,108 +290,6 @@ export default function InteractiveMap() {
     };
     updatePinIconsRef.current = updatePinIcons;
 
-    // Clear previous marker references
-    markersRef.current = {};
-    focusMarkerRef.current = null;
-
-    // Add pins for all videos
-    initialVideos.forEach((video) => {
-      const isTarget =
-        (focusId && video.id === focusId) ||
-        (hasCoords && Math.abs(video.lat - focusLat!) < 0.005 && Math.abs(video.lng - focusLng!) < 0.005);
-      const isCompact = initialZoomLevel <= 4;
-      const isMedium = initialZoomLevel > 4 && initialZoomLevel <= 7;
-
-      const marker = L.marker([video.lat, video.lng], {
-        icon: video.id === selectedLocationIdRef.current
-          ? isCompact ? compactFocusedIcon : isMedium ? mediumFocusedIcon : focusedTargetIcon
-          : isCompact ? compactIcon : isMedium ? mediumIcon : customIcon,
-        title: video.title,
-      });
-
-      // Professional glassmorphic popup
-      const popupContent = `
-        <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-white/10 shadow-2xl backdrop-blur-xl">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
-              ${video.region}
-            </span>
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
-              ${video.category}
-            </span>
-          </div>
-          <h4 class="font-bold text-sm text-white mb-1.5 leading-snug">${video.title}</h4>
-          <p class="text-xs text-gray-300 mb-3 line-clamp-3 leading-relaxed">${video.description}</p>
-          <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
-            <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
-            <a 
-              href="#/map?preview=${video.id}" 
-              class="text-geoCyan hover:text-geoYellow font-bold flex items-center gap-1 transition-colors uppercase tracking-wider text-[10px]"
-            >
-              Watch Video &rarr;
-            </a>
-          </div>
-        </div>
-      `;
-
-      marker.bindPopup(popupContent, {
-        className: "custom-leaflet-popup",
-        maxWidth: 320,
-      });
-
-      marker.on("click", () => {
-        selectedLocationIdRef.current = video.id;
-        hasFocusedPinRef.current = true;
-        updatePinIconsRef.current?.(map.getZoom());
-      });
-
-      markersRef.current[video.id] = marker;
-
-      if (isTarget) {
-        focusMarkerRef.current = marker;
-      }
-
-      // If NOT in isolated focus mode, attach to map
-      if (!hasCoords) {
-        marker.addTo(map);
-      }
-    });
-
-    // If URL coordinates exist: show only target marker initially
-    if (hasCoords) {
-      if (focusMarkerRef.current) {
-        focusMarkerRef.current.addTo(map);
-        setTimeout(() => {
-          if (focusMarkerRef.current) {
-            focusMarkerRef.current.openPopup();
-          }
-        }, 500);
-      } else {
-        // Dynamic standalone marker if coordinates don't match existing video id
-        const tempMarker = L.marker([focusLat!, focusLng!], {
-          icon: initialZoomLevel <= 4
-            ? compactFocusedIcon
-            : initialZoomLevel <= 7 ? mediumFocusedIcon : focusedTargetIcon,
-          title: focusTitle || "Target Anomaly",
-        }).addTo(map);
-
-        const tempPopup = `
-          <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-geoYellow/30 shadow-2xl backdrop-blur-xl">
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/20 text-geoYellow border border-geoYellow/30 mb-2 inline-block">
-              Target Location
-            </span>
-            <h4 class="font-bold text-sm text-white mb-1">${focusTitle || "Selected Coordinate"}</h4>
-            <p class="text-xs text-gray-300 font-mono mb-2">${focusLat!.toFixed(4)}°, ${focusLng!.toFixed(4)}°</p>
-          </div>
-        `;
-        tempMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup" });
-        setTimeout(() => {
-          tempMarker.openPopup();
-        }, 500);
-        focusMarkerRef.current = tempMarker;
-      }
-    }
-
     // Crucial: Invalidate size after layout settles so tiles never turn gray
     const resizeTimer1 = setTimeout(() => {
       map.invalidateSize();
@@ -406,41 +318,111 @@ export default function InteractiveMap() {
     };
   }, [focusLat, focusLng, focusId, focusTitle]);
 
-  // Handle Dynamic Marker Visibility (Isolated Focus vs Full Atlas Pins)
+  // Re-sync markers dynamically whenever `videos` or map readiness changes
   useEffect(() => {
-    if (!mapInstance.current) return;
+    const map = mapInstance.current;
+    if (!map || !isMapReady) return;
 
-    if (isFocusedOnly) {
-      // Remove all generic markers to keep the view focused ONLY on the requested place
-      initialVideos.forEach((video) => {
-        const marker = markersRef.current[video.id];
-        if (marker && mapInstance.current.hasLayer(marker)) {
-          mapInstance.current.removeLayer(marker);
-        }
+    // Clear existing marker layers
+    Object.values(markersRef.current).forEach((marker) => {
+      if (map.hasLayer(marker)) map.removeLayer(marker);
+    });
+    markersRef.current = {};
+    focusMarkerRef.current = null;
+
+    const zoom = map.getZoom();
+    const isCompact = zoom <= 4;
+    const isMedium = zoom > 4 && zoom <= 7;
+
+    const createPinIcon = (color: string, size: [number, number]) =>
+      L.divIcon({
+        className: "custom-map-pin",
+        html: `
+          <svg xmlns="http://www.w3.org/2000/svg" width="${size[0]}" height="${size[1]}" viewBox="0 0 32 44" aria-hidden="true" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))">
+            <path d="M16 1C7.72 1 1 7.72 1 16c0 10.45 15 27 15 27s15-16.55 15-27C31 7.72 24.28 1 16 1Z" fill="${color}" stroke="#e8fbff" stroke-width="1.5" />
+            <circle cx="16" cy="16" r="5" fill="#f8fafc" />
+          </svg>
+        `,
+        iconSize: size,
+        iconAnchor: [size[0] / 2, size[1] - 1],
+        popupAnchor: [0, -(size[1] - 1)],
       });
-      // Ensure target marker is on map
-      if (focusMarkerRef.current && !mapInstance.current.hasLayer(focusMarkerRef.current)) {
-        focusMarkerRef.current.addTo(mapInstance.current);
+
+    const customIcon = createPinIcon("#2999d4", [32, 44]);
+    const focusedTargetIcon = createPinIcon("#f4d03f", [36, 50]);
+    const compactIcon = createPinIcon("#2999d4", [22, 30]);
+    const compactFocusedIcon = createPinIcon("#f4d03f", [26, 36]);
+    const mediumIcon = createPinIcon("#2999d4", [27, 37]);
+    const mediumFocusedIcon = createPinIcon("#f4d03f", [32, 44]);
+
+    const activeIds = new Set(filteredVideos.map((v) => v.id));
+
+    videos.forEach((video) => {
+      const isTarget =
+        (focusId && video.id === focusId) ||
+        (focusLat !== null && focusLng !== null && Math.abs(video.lat - focusLat) < 0.005 && Math.abs(video.lng - focusLng) < 0.005);
+
+      const marker = L.marker([video.lat, video.lng], {
+        icon: video.id === selectedLocationIdRef.current
+          ? isCompact ? compactFocusedIcon : isMedium ? mediumFocusedIcon : focusedTargetIcon
+          : isCompact ? compactIcon : isMedium ? mediumIcon : customIcon,
+        title: video.title,
+      });
+
+      const popupContent = `
+        <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-white/10 shadow-2xl backdrop-blur-xl">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
+              ${video.region}
+            </span>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
+              ${video.category}
+            </span>
+          </div>
+          <h4 class="font-bold text-sm text-white mb-1.5 leading-snug">${video.title}</h4>
+          <p class="text-xs text-gray-300 mb-3 line-clamp-3 leading-relaxed">${video.description}</p>
+          <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
+            <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
+            ${video.youtubeId ? `
+              <a href="/videos?play=${encodeURIComponent(video.youtubeId)}" class="text-geoCyan hover:text-geoYellow font-bold flex items-center gap-1 transition-colors uppercase tracking-wider text-[10px]">
+                Watch Video &rarr;
+              </a>
+            ` : `
+              <span class="text-geoYellow font-bold text-[10px] uppercase">Atlas Location Pin</span>
+            `}
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, {
+        className: "custom-leaflet-popup",
+        maxWidth: 320,
+      });
+
+      marker.on("click", () => {
+        selectedLocationIdRef.current = video.id;
+        hasFocusedPinRef.current = true;
+        updatePinIconsRef.current?.(map.getZoom());
+      });
+
+      markersRef.current[video.id] = marker;
+
+      if (isTarget) {
+        focusMarkerRef.current = marker;
       }
-    } else {
-      // Show filtered markers
-      const activeIds = new Set(filteredVideos.map((v) => v.id));
-      initialVideos.forEach((video) => {
-        const marker = markersRef.current[video.id];
-        if (marker) {
-          if (activeIds.has(video.id)) {
-            if (!mapInstance.current.hasLayer(marker)) {
-              marker.addTo(mapInstance.current);
-            }
-          } else {
-            if (mapInstance.current.hasLayer(marker)) {
-              mapInstance.current.removeLayer(marker);
-            }
-          }
-        }
-      });
+
+      if (!isFocusedOnly && activeIds.has(video.id)) {
+        marker.addTo(map);
+      }
+    });
+
+    if (isFocusedOnly && focusMarkerRef.current) {
+      focusMarkerRef.current.addTo(map);
+      setTimeout(() => {
+        if (focusMarkerRef.current) focusMarkerRef.current.openPopup();
+      }, 300);
     }
-  }, [isFocusedOnly, filteredVideos, isMapReady]);
+  }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId]);
 
   // Quick Jump camera to anomaly
   const handleFlyTo = (video: VideoItem) => {

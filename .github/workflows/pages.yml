@@ -34,9 +34,6 @@ jobs:
       - name: Build site
         run: npm run build
 
-      - name: Remove unrelated custom-domain marker
-        run: rm -f dist/CNAME
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
