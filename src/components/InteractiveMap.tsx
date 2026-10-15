@@ -252,6 +252,7 @@ export default function InteractiveMap() {
       updatePinIconsRef.current?.(zoom);
       if (zoom <= 5) {
         setIsFocusedOnly(false);
+        map.closePopup();
       }
     });
 
@@ -397,6 +398,8 @@ export default function InteractiveMap() {
       marker.bindPopup(popupDiv, {
         className: "custom-leaflet-popup",
         maxWidth: 320,
+        autoClose: false,
+        closeOnClick: false,
       });
 
       marker.on("popupopen", () => {
@@ -463,7 +466,12 @@ export default function InteractiveMap() {
         </div>
       `;
 
-      standaloneMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup", maxWidth: 320 });
+      standaloneMarker.bindPopup(tempPopup, {
+        className: "custom-leaflet-popup",
+        maxWidth: 320,
+        autoClose: false,
+        closeOnClick: false,
+      });
       markersRef.current["standalone-target"] = standaloneMarker;
       focusMarkerRef.current = standaloneMarker;
     }
