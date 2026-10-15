@@ -33,11 +33,30 @@ export default function SuggestionForm() {
 
   // Game Bulk State
   const [bulkText, setBulkText] = useState("");
-  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number; log: string } | null>(null);
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number; percent: number; log: string } | null>(null);
 
   // Status
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [feedback, setFeedback] = useState("");
+
+  const playSuccessSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+      console.warn("Audio Context error:", e);
+    }
+  };
 
   // Submit Video & Pins
   const handleVideoSubmit = async (e: FormEvent) => {
@@ -69,6 +88,7 @@ export default function SuggestionForm() {
 
       setStatus("success");
       setFeedback("Video location successfully submitted to Google Sheet!");
+      playSuccessSound();
       setVideoForm({
         title: "",
         lat: "",
@@ -114,6 +134,7 @@ export default function SuggestionForm() {
 
       setStatus("success");
       setFeedback("Trivia question successfully added to Game database!");
+      playSuccessSound();
       setSingleGameForm({
         title: "",
         lat: "",
@@ -154,6 +175,8 @@ export default function SuggestionForm() {
       let category = "Mixed Global";
       let region = "Global";
 
+      const percent = Math.round(((i + 1) / lines.length) * 100);
+
       // Check if format is Question:Lat:Lng:CorrectAnswer:Category:Region
       if (parts.length >= 6 && !isNaN(parseFloat(parts[1])) && !isNaN(parseFloat(parts[2]))) {
         lat = parseFloat(parts[1]);
@@ -161,6 +184,13 @@ export default function SuggestionForm() {
         answer = parts[3] || "";
         category = parts[4] || "Mixed Global";
         region = parts[5] || "Global";
+
+        setBulkProgress({
+          current: i + 1,
+          total: lines.length,
+          percent,
+          log: `Uploading question ${i + 1} of ${lines.length}...`
+        });
       } else {
         // Format: Question:Answer:SearchPlace:Category:Region
         answer = parts[1] || "";
@@ -171,7 +201,8 @@ export default function SuggestionForm() {
         setBulkProgress({
           current: i + 1,
           total: lines.length,
-          log: `Geocoding '${searchPlace}'...`
+          percent,
+          log: `Geocoding '${searchPlace}' (${i + 1}/${lines.length})...`
         });
 
         try {
@@ -217,6 +248,7 @@ export default function SuggestionForm() {
     setFeedback(`Bulk import completed! Successfully processed and uploaded ${successCount} of ${lines.length} questions.`);
     setBulkProgress(null);
     setBulkText("");
+    playSuccessSound();
   };
 
   return (
@@ -612,12 +644,18 @@ export default function SuggestionForm() {
               ></textarea>
 
               {bulkProgress && (
-                <div className="p-4 bg-black/40 rounded-2xl border border-geoYellow/30 text-xs">
-                  <div className="flex justify-between items-center mb-2 font-bold text-geoYellow">
-                    <span>Processing {bulkProgress.current} / {bulkProgress.total}</span>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="p-5 bg-black/50 rounded-3xl border border-geoYellow/30 text-xs space-y-3">
+                  <div className="flex justify-between items-center font-bold text-geoYellow">
+                    <span>{bulkProgress.percent}% — Processing {bulkProgress.current} of {bulkProgress.total}</span>
+                    <Loader2 className="w-4 h-4 animate-spin text-geoYellow" />
                   </div>
-                  <p className="text-gray-400">{bulkProgress.log}</p>
+                  <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden border border-white/5">
+                    <div
+                      className="bg-geoYellow h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${bulkProgress.percent}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-gray-400 font-mono truncate">{bulkProgress.log}</p>
                 </div>
               )}
 
