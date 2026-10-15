@@ -53,7 +53,9 @@ export default function InteractiveMap() {
   // Read URL query coordinates (from Video or Game)
   const focusLat = searchParams.get("lat") ? parseFloat(searchParams.get("lat")!) : null;
   const focusLng = searchParams.get("lng") ? parseFloat(searchParams.get("lng")!) : null;
-  const focusTitle = searchParams.get("title") || "";
+  const focusQuestion = searchParams.get("question") || "";
+  const focusAnswer = searchParams.get("answer") || searchParams.get("title") || "";
+  const focusTitle = focusAnswer || focusQuestion || "Target Location";
   const focusId = searchParams.get("id") || "";
   const fromSource = searchParams.get("from");
   const previewVideo = videos.find((video) => video.id === searchParams.get("preview")) || null;
@@ -433,20 +435,38 @@ export default function InteractiveMap() {
     if (hasFocusCoords && !focusMarkerRef.current) {
       const standaloneMarker = L.marker([focusLat, focusLng], {
         icon: focusedTargetIcon,
-        title: focusTitle || "Target Anomaly",
+        title: focusTitle,
       });
 
       const tempPopup = `
-        <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-geoYellow/30 shadow-2xl backdrop-blur-xl">
-          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/20 text-geoYellow border border-geoYellow/30 mb-2 inline-block">
-            Target Location
-          </span>
-          <h4 class="font-bold text-sm text-white mb-1 leading-snug">${focusTitle || "Selected Coordinate"}</h4>
-          <p class="text-xs text-gray-300 font-mono mb-2">${focusLat.toFixed(4)}°, ${focusLng.toFixed(4)}°</p>
+        <div class="p-4 bg-gray-950/95 text-white rounded-2xl font-sans max-w-xs border border-geoYellow/30 shadow-2xl backdrop-blur-xl">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-geoYellow/20 text-geoYellow border border-geoYellow/30">
+              🎯 Geo Game Location
+            </span>
+          </div>
+
+          ${focusAnswer ? `
+            <div class="mb-2">
+              <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Answer</span>
+              <h4 class="font-black text-base text-geoCyan leading-tight">${focusAnswer}</h4>
+            </div>
+          ` : ""}
+
+          ${focusQuestion ? `
+            <div class="mb-3">
+              <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Question</span>
+              <p class="text-xs text-gray-200 leading-relaxed font-medium">${focusQuestion}</p>
+            </div>
+          ` : ""}
+
+          <div class="pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400 flex items-center justify-between">
+            <span>📍 ${focusLat.toFixed(4)}°, ${focusLng.toFixed(4)}°</span>
+          </div>
         </div>
       `;
 
-      standaloneMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup", maxWidth: 300 });
+      standaloneMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup", maxWidth: 320 });
       markersRef.current["standalone-target"] = standaloneMarker;
       focusMarkerRef.current = standaloneMarker;
     }
@@ -457,7 +477,7 @@ export default function InteractiveMap() {
         if (focusMarkerRef.current) focusMarkerRef.current.openPopup();
       }, 300);
     }
-  }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId, focusTitle]);
+  }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId, focusTitle, focusQuestion, focusAnswer]);
 
   // Quick Jump camera to anomaly
   const handleFlyTo = (video: VideoItem) => {

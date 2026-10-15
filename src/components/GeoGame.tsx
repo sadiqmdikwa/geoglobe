@@ -1005,7 +1005,7 @@ export default function GeoGame() {
                   {/* View on Map Button linking directly to /map */}
                   <div className="mt-3 flex justify-center">
                     <button
-                      onClick={() => navigate(`/map?lat=${current.lat}&lng=${current.lng}&title=${encodeURIComponent(current.name)}&from=game`)}
+                      onClick={() => navigate(`/map?lat=${current.lat}&lng=${current.lng}&question=${encodeURIComponent(current.clue || current.title)}&answer=${encodeURIComponent(current.name)}&from=game`)}
                       className="bg-gray-900/60 hover:bg-geoCyan hover:text-gray-950 text-geoCyan px-4 py-2 rounded-full text-xs font-bold transition-all border border-geoCyan/40 flex items-center gap-1.5 shadow-sm active:scale-95 backdrop-blur-md"
                     >
                       <MapPin className="w-3.5 h-3.5" />
