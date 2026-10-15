@@ -400,8 +400,6 @@ export default function InteractiveMap() {
       marker.bindPopup(popupDiv, {
         className: "custom-leaflet-popup",
         maxWidth: 320,
-        autoPan: true,
-        autoPanPadding: [40, 160],
       });
 
       marker.on("popupopen", () => {
@@ -468,24 +466,18 @@ export default function InteractiveMap() {
         </div>
       `;
 
-      standaloneMarker.bindPopup(tempPopup, {
-        className: "custom-leaflet-popup",
-        maxWidth: 320,
-        autoPan: true,
-        autoPanPadding: [40, 160],
-      });
+      standaloneMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup", maxWidth: 320 });
       markersRef.current["standalone-target"] = standaloneMarker;
       focusMarkerRef.current = standaloneMarker;
     }
 
     if (isFocusedOnly && focusMarkerRef.current) {
       focusMarkerRef.current.addTo(map);
-      map.panTo(focusMarkerRef.current.getLatLng(), { animate: true });
       setTimeout(() => {
         if (focusMarkerRef.current && map.hasLayer(focusMarkerRef.current)) {
           focusMarkerRef.current.openPopup();
         }
-      }, 350);
+      }, 300);
     }
   }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId, focusTitle, focusQuestion, focusAnswer]);
 
@@ -778,51 +770,51 @@ export default function InteractiveMap() {
       >
         {/* Map Controls */}
         <div
-          className={`absolute right-3 sm:right-5 ${isExpanded ? "top-16" : "top-3 sm:top-5"} z-30 flex items-center gap-1.5 sm:gap-2`}
+          className={`absolute right-3 sm:right-5 ${isExpanded ? "top-16" : "top-3 sm:top-5"} z-30 flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2`}
         >
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1 sm:gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-2.5 sm:px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+            className="flex items-center justify-center p-2 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
             title={isExpanded ? "Contract map (Esc)" : "Expand map to fullscreen"}
           >
             {isExpanded ? (
               <>
-                <Minimize2 className="w-3.5 h-3.5 text-geoYellow" />
-                <span>Contract</span>
+                <Minimize2 className="w-3.5 h-3.5 text-geoYellow shrink-0" />
+                <span className="hidden sm:inline ml-1.5">Contract</span>
               </>
             ) : (
               <>
-                <Maximize2 className="w-3.5 h-3.5 text-geoCyan" />
-                <span>Expand</span>
+                <Maximize2 className="w-3.5 h-3.5 text-geoCyan shrink-0" />
+                <span className="hidden sm:inline ml-1.5">Expand</span>
               </>
             )}
           </button>
 
           <button
             onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
-            className="flex items-center gap-1 sm:gap-1.5 text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 px-2.5 sm:px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+            className="flex items-center justify-center p-2 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
             title="Toggle Map Style"
           >
             {mapTheme === "dark" ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-geoYellow" />
-                <span>Natural</span>
+                <Sun className="w-3.5 h-3.5 text-geoYellow shrink-0" />
+                <span className="hidden sm:inline ml-1.5">Natural</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-geoCyan" />
-                <span>Dark</span>
+                <Moon className="w-3.5 h-3.5 text-geoCyan shrink-0" />
+                <span className="hidden sm:inline ml-1.5">Dark</span>
               </>
             )}
           </button>
 
           <button
             onClick={handleResetView}
-            className="flex items-center gap-1 sm:gap-1.5 text-xs text-gray-300 hover:text-geoCyan bg-gray-900/80 hover:bg-gray-800 px-2.5 sm:px-3.5 py-2 rounded-full border border-white/10 backdrop-blur-xl transition-all"
+            className="flex items-center justify-center p-2 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-geoCyan bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
             title="Reset to global view"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset</span>
+            <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline ml-1.5">Reset</span>
           </button>
         </div>
 
@@ -857,18 +849,18 @@ export default function InteractiveMap() {
           )}
         </AnimatePresence>
 
-        {/* Focused Location Active Notification Pill (Zoom out text removed as requested) */}
+        {/* Focused Location Active Notification Pill */}
         {isFocusedOnly && isMapReady && (
-          <div className="absolute top-4 left-4 right-16 sm:right-auto z-10 flex items-center justify-between sm:justify-start gap-3 bg-gray-950/90 border border-geoCyan/40 px-4 py-2 rounded-full text-xs shadow-xl backdrop-blur-xl animate-fadeIn">
-            <div className="flex items-center gap-2 text-white truncate">
-              <span className="w-2 h-2 rounded-full bg-geoYellow animate-ping"></span>
+          <div className="absolute top-3 left-3 right-24 sm:right-auto sm:top-4 sm:left-4 z-10 flex items-center justify-between sm:justify-start gap-2 sm:gap-3 bg-gray-950/90 border border-geoCyan/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs shadow-xl backdrop-blur-xl animate-fadeIn">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-white truncate">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-geoYellow animate-ping shrink-0"></span>
               <span className="truncate">
-                Showing <strong>{focusTitle || "Target Location"}</strong> only
+                Showing <strong>{focusTitle || "Target Location"}</strong>
               </span>
             </div>
             <button
               onClick={handleResetView}
-              className="text-geoCyan hover:text-geoYellow font-bold text-xs shrink-0 underline ml-1"
+              className="text-geoCyan hover:text-geoYellow font-bold text-[11px] sm:text-xs shrink-0 underline ml-1"
             >
               Reveal All
             </button>
