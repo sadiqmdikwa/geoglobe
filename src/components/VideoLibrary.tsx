@@ -52,7 +52,7 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
     navigate(`/map?lat=${activeVideo.lat}&lng=${activeVideo.lng}&id=${activeVideo.id}&title=${encodeURIComponent(activeVideo.title)}&from=videos`);
   }, [activeVideo, navigate]);
 
-  // Fetch live videos from Google Sheets
+  // Fetch live videos once on mount
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -79,7 +79,20 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
     return () => {
       isMounted = false;
     };
-  }, [searchParams]);
+  }, []);
+
+  // Handle URL play parameter changes without re-fetching data
+  useEffect(() => {
+    const playId = searchParams.get("play");
+    if (playId && videos.length > 0) {
+      const matched = videos.find((v) => v.youtubeId === playId || v.id === playId);
+      if (matched) {
+        setActiveVideo(matched);
+      }
+    } else if (!playId) {
+      setActiveVideo(null);
+    }
+  }, [searchParams, videos]);
 
   // Extract unique categories & regions
   const categories = useMemo(() => {
