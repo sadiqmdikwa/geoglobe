@@ -435,6 +435,29 @@ export default function InteractiveMap() {
     const hasFocusCoords = focusLat !== null && focusLng !== null && !isNaN(focusLat) && !isNaN(focusLng);
     if (!hasFocusCoords) return;
 
+    // Check if this location matches an existing video pin
+    const matchingVideo = videos.find(v =>
+      (focusId && v.id === focusId) ||
+      (Math.abs(v.lat - focusLat) < 0.0005 && Math.abs(v.lng - focusLng) < 0.0005)
+    );
+
+    if (fromSource === "videos" || matchingVideo) {
+      if (matchingVideo) {
+        selectedLocationIdRef.current = matchingVideo.id;
+        updatePinIconsRef.current?.(map.getZoom());
+        const targetMarker = markersRef.current[matchingVideo.id];
+        if (targetMarker) {
+          if (!map.hasLayer(targetMarker)) targetMarker.addTo(map);
+          map.setView([matchingVideo.lat, matchingVideo.lng], 7, { animate: true });
+          if (!hasOpenedInitialPopupRef.current) {
+            hasOpenedInitialPopupRef.current = true;
+            targetMarker.openPopup();
+          }
+        }
+      }
+      return;
+    }
+
     if (!focusMarkerRef.current) {
       const createPinIcon = (color: string, size: [number, number]) =>
         L.divIcon({
@@ -500,7 +523,7 @@ export default function InteractiveMap() {
         standaloneMarker.openPopup();
       }
     }
-  }, [isMapReady, focusLat, focusLng, focusTitle, focusQuestion, focusAnswer]);
+  }, [isMapReady, focusLat, focusLng, focusTitle, focusQuestion, focusAnswer, fromSource, focusId, videos]);
 
   // Quick Jump camera to anomaly
   const handleFlyTo = (video: VideoItem) => {
