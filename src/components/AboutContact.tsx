@@ -161,8 +161,8 @@ export default function AboutContact() {
           </div>
         </div>
 
-        {/* Right Column: Glassmorphic Contact Form */}
-        <div className="bg-gray-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/5 shadow-2xl w-full">
+        {/* Right Column: Professional Glassmorphic Contact Form */}
+        <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/10 shadow-2xl w-full">
           {status === "success" ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
@@ -178,7 +178,7 @@ export default function AboutContact() {
               </p>
               <button
                 onClick={() => setStatus("idle")}
-                className="bg-geoCyan hover:bg-geoYellow text-gray-900 font-bold px-6 py-2.5 rounded-xl transition-all text-sm mt-4 shadow-md"
+                className="bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold px-8 py-3 rounded-full transition-all text-sm mt-4 shadow-md"
               >
                 Send Another Message
               </button>
@@ -212,7 +212,7 @@ export default function AboutContact() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter your name"
-                    className="w-full bg-gray-900/80 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl transition-all placeholder-gray-500 text-sm"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                   />
                 </div>
 
@@ -226,7 +226,7 @@ export default function AboutContact() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="your.email@example.com"
-                    className="w-full bg-gray-900/80 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl transition-all placeholder-gray-500 text-sm"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                   />
                 </div>
 
@@ -237,7 +237,7 @@ export default function AboutContact() {
                   <select
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full bg-gray-900/80 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl transition-all text-sm cursor-pointer"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
                   >
                     <option value="General Feedback">General Feedback</option>
                     <option value="Topic Suggestion">Topic Suggestion</option>
@@ -256,14 +256,14 @@ export default function AboutContact() {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     placeholder="Tell us what's on your mind or suggest a topic..."
-                    className="w-full bg-gray-900/80 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl transition-all placeholder-gray-500 resize-none text-sm"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white p-5 rounded-3xl transition-all placeholder-gray-500 resize-none text-sm shadow-inner video-preview-scroll"
                   ></textarea>
                 </div>
 
                 <button
                   type="submit"
                   disabled={status === "submitting"}
-                  className="w-full bg-geoCyan hover:bg-geoYellow text-gray-900 font-bold text-sm md:text-base py-3.5 rounded-2xl transition-all mt-4 flex items-center justify-center gap-2 shadow-lg shadow-geoCyan/20 disabled:opacity-50"
+                  className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold text-sm md:text-base py-4 rounded-full transition-all mt-4 flex items-center justify-center gap-2 shadow-lg shadow-geoCyan/20 disabled:opacity-50 cursor-pointer"
                 >
                   {status === "submitting" ? (
                     <>
