@@ -41,7 +41,7 @@
 }
 
 .video-preview-scroll::-webkit-scrollbar {
-	width: 8px;
+	width: 6px;
 }
 
 .video-preview-scroll::-webkit-scrollbar-track {
@@ -53,6 +53,24 @@
 	border: 2px solid transparent;
 	border-radius: 999px;
 	background-clip: content-box;
+}
+
+/* Custom Leaflet Popup Overrides to eliminate default oversized borders and padding */
+.custom-leaflet-popup .leaflet-popup-content-wrapper {
+	background: transparent !important;
+	box-shadow: none !important;
+	padding: 0 !important;
+	border-radius: 1rem !important;
+}
+
+.custom-leaflet-popup .leaflet-popup-tip {
+	background: #090d16 !important;
+	border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.custom-leaflet-popup .leaflet-popup-content {
+	margin: 0 !important;
+	line-height: normal !important;
 }
 
 @media (min-width: 720px) {

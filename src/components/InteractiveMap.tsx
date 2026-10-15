@@ -384,7 +384,7 @@ export default function InteractiveMap() {
           </span>
         </div>
         <h4 class="font-bold text-sm text-white mb-1.5 leading-snug">${video.title}</h4>
-        <p class="text-xs text-gray-300 mb-3 line-clamp-3 leading-relaxed">${video.description}</p>
+        <p class="text-xs text-gray-300 mb-3 max-h-28 overflow-y-auto pr-1 leading-relaxed video-preview-scroll">${video.description}</p>
         <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
           <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
           ${video.youtubeId ? `
