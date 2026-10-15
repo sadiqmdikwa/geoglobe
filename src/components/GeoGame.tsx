@@ -910,7 +910,7 @@ export default function GeoGame() {
           <div className="bg-gray-800/90 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 shadow-2xl border border-white/10 relative overflow-hidden">
             {/* Visual Flag / Media Container */}
             <div className="w-full h-36 md:h-48 bg-gray-900 rounded-2xl flex items-center justify-center mb-6 border border-gray-700/80 overflow-hidden relative shadow-inner">
-              {current.countryCode ? (
+              {current.category?.toLowerCase() === "flags" && current.countryCode ? (
                 <img
                   src={`https://flagcdn.com/w640/${current.countryCode.toLowerCase()}.png`}
                   alt="Country Flag"
@@ -919,10 +919,12 @@ export default function GeoGame() {
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center p-4 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-geoCyan/10 text-geoCyan flex items-center justify-center mb-2 border border-geoCyan/20">
-                    <Compass className="w-6 h-6" />
-                  </div>
-                  <span className="text-xs font-bold text-geoYellow uppercase tracking-widest">
+                  <img
+                    src="https://lh3.googleusercontent.com/d/1PYQ705DpgwDPAV7kERrpa8a0m8hFdq5w"
+                    alt="GeoGlobe Logo"
+                    className="w-12 h-12 object-contain mb-2 filter drop-shadow-[0_2px_8px_rgba(66,194,203,0.3)] animate-float"
+                  />
+                  <span className="text-xs font-bold text-geoCyan uppercase tracking-widest">
                     {current.category} • {current.region}
                   </span>
                 </div>
