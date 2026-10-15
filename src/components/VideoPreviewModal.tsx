@@ -13,7 +13,7 @@ export default function VideoPreviewModal({ video, onClose, onViewMap }: VideoPr
   const [isPlaying, setIsPlaying] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const shareUrl = `${window.location.origin}${window.location.pathname}#/map?preview=${video.id}`;
+  const shareUrl = `${window.location.origin}${window.location.pathname}?preview=${video.id}`;
   const shareText = `${video.title} ${shareUrl}`;
 
   useEffect(() => {

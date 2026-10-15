@@ -540,13 +540,27 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const shareUrl = `${window.location.origin}${window.location.pathname}#/videos?play=${video.youtubeId}`;
-                      navigator.clipboard.writeText(shareUrl);
-                      setCopiedVideoId(video.id);
-                      setTimeout(() => setCopiedVideoId(null), 2500);
+                      const shareUrl = `${window.location.origin}${window.location.pathname}?play=${encodeURIComponent(video.youtubeId)}`;
+                      if (navigator.share) {
+                        navigator.share({
+                          title: video.title,
+                          text: `Watch "${video.title}" on GeoGlobe!`,
+                          url: shareUrl,
+                        }).catch((err) => {
+                          if (err.name !== "AbortError") {
+                            navigator.clipboard.writeText(shareUrl);
+                            setCopiedVideoId(video.id);
+                            setTimeout(() => setCopiedVideoId(null), 2500);
+                          }
+                        });
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        setCopiedVideoId(video.id);
+                        setTimeout(() => setCopiedVideoId(null), 2500);
+                      }
                     }}
                     className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 transition-colors"
-                    title="Copy direct share link"
+                    title="Share video"
                     aria-label="Share video link"
                   >
                     <Share2 className="w-3.5 h-3.5" />

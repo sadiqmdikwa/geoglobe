@@ -369,34 +369,44 @@ export default function InteractiveMap() {
         title: video.title,
       });
 
-      const popupContent = `
-        <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-white/10 shadow-2xl backdrop-blur-xl">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
-              ${video.region}
-            </span>
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
-              ${video.category}
-            </span>
-          </div>
-          <h4 class="font-bold text-sm text-white mb-1.5 leading-snug">${video.title}</h4>
-          <p class="text-xs text-gray-300 mb-3 line-clamp-3 leading-relaxed">${video.description}</p>
-          <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
-            <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
-            ${video.youtubeId ? `
-              <a href="/videos?play=${encodeURIComponent(video.youtubeId)}" class="text-geoCyan hover:text-geoYellow font-bold flex items-center gap-1 transition-colors uppercase tracking-wider text-[10px]">
-                Watch Video &rarr;
-              </a>
-            ` : `
-              <span class="text-geoYellow font-bold text-[10px] uppercase">Atlas Location Pin</span>
-            `}
-          </div>
+      const popupDiv = document.createElement("div");
+      popupDiv.className = "p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-white/10 shadow-2xl backdrop-blur-xl";
+      popupDiv.innerHTML = `
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
+            ${video.region}
+          </span>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
+            ${video.category}
+          </span>
+        </div>
+        <h4 class="font-bold text-sm text-white mb-1.5 leading-snug">${video.title}</h4>
+        <p class="text-xs text-gray-300 mb-3 line-clamp-3 leading-relaxed">${video.description}</p>
+        <div class="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] font-mono text-gray-400">
+          <span>${video.lat.toFixed(2)}°, ${video.lng.toFixed(2)}°</span>
+          ${video.youtubeId ? `
+            <button id="pin-watch-btn-${video.id}" class="text-geoCyan hover:text-geoYellow font-bold flex items-center gap-1 transition-colors uppercase tracking-wider text-[10px] bg-transparent border-none cursor-pointer">
+              Watch Video &rarr;
+            </button>
+          ` : `
+            <span class="text-geoYellow font-bold text-[10px] uppercase">Atlas Location Pin</span>
+          `}
         </div>
       `;
 
-      marker.bindPopup(popupContent, {
+      marker.bindPopup(popupDiv, {
         className: "custom-leaflet-popup",
         maxWidth: 320,
+      });
+
+      marker.on("popupopen", () => {
+        const watchBtn = popupDiv.querySelector(`#pin-watch-btn-${video.id}`);
+        if (watchBtn) {
+          (watchBtn as HTMLElement).onclick = (e) => {
+            e.preventDefault();
+            navigate(`/videos?play=${encodeURIComponent(video.youtubeId)}`);
+          };
+        }
       });
 
       marker.on("click", () => {
