@@ -64,6 +64,7 @@ export default function InteractiveMap() {
   )?.id || "";
 
   const [isMapReady, setIsMapReady] = useState(false);
+  const [activeMapVideo, setActiveMapVideo] = useState<VideoItem | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mapTheme, setMapTheme] = useState<"dark" | "clean">("dark");
   const [currentZoom, setCurrentZoom] = useState<number>(3);
@@ -404,7 +405,7 @@ export default function InteractiveMap() {
         if (watchBtn) {
           (watchBtn as HTMLElement).onclick = (e) => {
             e.preventDefault();
-            navigate(`/videos?play=${encodeURIComponent(video.youtubeId)}`);
+            setActiveMapVideo(video);
           };
         }
       });
@@ -479,16 +480,21 @@ export default function InteractiveMap() {
     }
   };
 
+  const modalVideo = activeMapVideo || previewVideo;
+
   const handleClosePreview = useCallback(() => {
+    setActiveMapVideo(null);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("preview");
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
   const handlePreviewMap = useCallback(() => {
-    if (!previewVideo) return;
-    navigate(`/map?lat=${previewVideo.lat}&lng=${previewVideo.lng}&id=${previewVideo.id}&title=${encodeURIComponent(previewVideo.title)}&from=videos`);
-  }, [navigate, previewVideo]);
+    setActiveMapVideo(null);
+    if (modalVideo) {
+      handleFlyTo(modalVideo);
+    }
+  }, [modalVideo, handleFlyTo]);
 
   return (
     <>
@@ -830,9 +836,9 @@ export default function InteractiveMap() {
         ></div>
       </div>
     </motion.div>
-    {previewVideo && (
+    {modalVideo && (
       <VideoPreviewModal
-        video={previewVideo}
+        video={modalVideo}
         onClose={handleClosePreview}
         onViewMap={handlePreviewMap}
       />
