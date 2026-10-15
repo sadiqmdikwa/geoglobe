@@ -15,7 +15,10 @@ export default function SuggestionForm() {
     title: "",
     lat: "",
     lng: "",
-    youtubeId: ""
+    youtubeId: "",
+    description: "",
+    category: "Borders",
+    region: "Global"
   });
 
   // Game Single State
@@ -57,13 +60,24 @@ export default function SuggestionForm() {
           title: videoForm.title.trim(),
           lat: parseFloat(videoForm.lat) || 0,
           lng: parseFloat(videoForm.lng) || 0,
-          youtubeId: videoForm.youtubeId.trim()
+          youtubeId: videoForm.youtubeId.trim(),
+          description: videoForm.description.trim(),
+          category: videoForm.category,
+          region: videoForm.region
         }),
       });
 
       setStatus("success");
       setFeedback("Video location successfully submitted to Google Sheet!");
-      setVideoForm({ title: "", lat: "", lng: "", youtubeId: "" });
+      setVideoForm({
+        title: "",
+        lat: "",
+        lng: "",
+        youtubeId: "",
+        description: "",
+        category: "Borders",
+        region: "Global"
+      });
     } catch (err: any) {
       console.error(err);
       setStatus("error");
@@ -335,6 +349,60 @@ export default function SuggestionForm() {
                 placeholder="e.g. 3Zp_vR6P6mI (from watch?v=...)"
                 className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm font-mono"
               />
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                Description / Summary
+              </label>
+              <textarea
+                rows={3}
+                value={videoForm.description}
+                onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+                placeholder="Brief professional summary of the video topic or anomaly..."
+                className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                  Category
+                </label>
+                <select
+                  value={videoForm.category}
+                  onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
+                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                >
+                  <option value="Borders">Borders</option>
+                  <option value="Anomalies">Anomalies</option>
+                  <option value="Flags">Flags</option>
+                  <option value="Mixed Global">Mixed Global</option>
+                  <option value="Enclaves & Exclaves">Enclaves & Exclaves</option>
+                  <option value="No Man's Land">No Man's Land</option>
+                  <option value="Natural Wonders & Waterways">Natural Wonders & Waterways</option>
+                  <option value="Geopolitical Frontiers">Geopolitical Frontiers</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                  Region
+                </label>
+                <select
+                  value={videoForm.region}
+                  onChange={(e) => setVideoForm({ ...videoForm, region: e.target.value })}
+                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                >
+                  <option value="Global">Global</option>
+                  <option value="Africa">Africa</option>
+                  <option value="Asia">Asia</option>
+                  <option value="Europe">Europe</option>
+                  <option value="Americas">Americas</option>
+                  <option value="Oceania">Oceania</option>
+                  <option value="Middle East">Middle East</option>
+                </select>
+              </div>
             </div>
 
             <button

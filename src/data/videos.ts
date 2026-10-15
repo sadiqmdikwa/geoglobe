@@ -31,24 +31,30 @@ export async function loadLiveVideos(): Promise<VideoItem[]> {
       const lat = parseFloat(latRaw);
       const lng = parseFloat(lngRaw);
       const youtubeId = cols[4]?.replace(/"/g, "").trim() || "";
-      const correctAnswer = cols[5]?.replace(/"/g, "").trim() || "";
-      const category = cols[6]?.replace(/"/g, "").trim() || "General";
+
+      // Column F (index 5): Description
+      const rawDesc = cols[5]?.replace(/"/g, "").trim() || "";
+      // Column G (index 6): Category
+      const category = cols[6]?.replace(/"/g, "").trim() || "Borders";
+      // Column H (index 7): Region
       const region = cols[7]?.replace(/"/g, "").trim() || "Global";
 
       // Fix encoding artifacts if present (e.g. â€“ -> –)
       const cleanTitle = rawTitle.replace(/â€“/g, "–").replace(/â/g, "–");
-      const title = correctAnswer ? `${cleanTitle} (${correctAnswer})` : cleanTitle;
+      const cleanDesc = rawDesc.replace(/â€“/g, "–").replace(/â/g, "–");
 
-      if (title && !isNaN(lat) && !isNaN(lng)) {
+      const description = cleanDesc || cleanTitle;
+
+      if (cleanTitle && !isNaN(lat) && !isNaN(lng)) {
         liveItems.push({
           id: `v-sheet-${index + 1}`,
-          title,
+          title: cleanTitle,
           lat,
           lng,
           youtubeId,
           category,
           region,
-          description: title,
+          description,
           duration: youtubeId ? "03:00" : undefined,
           date: cols[0]?.split(" ")[0] || "2026-03-13",
         });
