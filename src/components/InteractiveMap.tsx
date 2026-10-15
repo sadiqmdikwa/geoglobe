@@ -426,11 +426,32 @@ export default function InteractiveMap() {
         marker.addTo(map);
       }
     });
+  }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId]);
 
-    // Handle target location pin if coming from GeoGame or coordinate link
+  // Handle game trivia target location pin independently so it never gets wiped by async video loads
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !isMapReady) return;
     const hasFocusCoords = focusLat !== null && focusLng !== null && !isNaN(focusLat) && !isNaN(focusLng);
+    if (!hasFocusCoords) return;
 
-    if (hasFocusCoords && !focusMarkerRef.current) {
+    if (!focusMarkerRef.current) {
+      const createPinIcon = (color: string, size: [number, number]) =>
+        L.divIcon({
+          className: "custom-map-pin",
+          html: `
+            <svg xmlns="http://www.w3.org/2000/svg" width="${size[0]}" height="${size[1]}" viewBox="0 0 32 44" aria-hidden="true" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))">
+              <path d="M16 1C7.72 1 1 7.72 1 16c0 10.45 15 27 15 27s15-16.55 15-27C31 7.72 24.28 1 16 1Z" fill="${color}" stroke="#e8fbff" stroke-width="1.5" />
+              <circle cx="16" cy="16" r="5" fill="#f8fafc" />
+            </svg>
+          `,
+          iconSize: size,
+          iconAnchor: [size[0] / 2, size[1] - 1],
+          popupAnchor: [0, -(size[1] - 1)],
+        });
+
+      const focusedTargetIcon = createPinIcon("#f4d03f", [36, 50]);
+
       const standaloneMarker = L.marker([focusLat, focusLng], {
         icon: focusedTargetIcon,
         title: focusTitle,
@@ -467,21 +488,19 @@ export default function InteractiveMap() {
       standaloneMarker.bindPopup(tempPopup, {
         className: "custom-leaflet-popup",
         maxWidth: 320,
+        autoClose: false,
+        closeOnClick: false,
       });
-      markersRef.current["standalone-target"] = standaloneMarker;
-      focusMarkerRef.current = standaloneMarker;
-    }
 
-    if (focusMarkerRef.current) {
-      if (!map.hasLayer(focusMarkerRef.current)) {
-        focusMarkerRef.current.addTo(map);
-      }
-      if (isFocusedOnly && !hasOpenedInitialPopupRef.current) {
+      standaloneMarker.addTo(map);
+      focusMarkerRef.current = standaloneMarker;
+
+      if (!hasOpenedInitialPopupRef.current) {
         hasOpenedInitialPopupRef.current = true;
-        focusMarkerRef.current.openPopup();
+        standaloneMarker.openPopup();
       }
     }
-  }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId, focusTitle, focusQuestion, focusAnswer]);
+  }, [isMapReady, focusLat, focusLng, focusTitle, focusQuestion, focusAnswer]);
 
   // Quick Jump camera to anomaly
   const handleFlyTo = (video: VideoItem) => {
