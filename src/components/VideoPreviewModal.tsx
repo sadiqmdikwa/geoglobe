@@ -128,7 +128,9 @@ export default function VideoPreviewModal({ video, onClose, onViewMap }: VideoPr
 
         <div className="video-preview-details p-4 sm:p-6">
           <h2 className="mb-2 text-lg font-bold text-white sm:text-xl">{video.title}</h2>
-          <p className="mb-5 text-sm leading-relaxed text-gray-400">{video.description}</p>
+          <div className="mb-5 max-h-36 overflow-y-auto pr-1 video-preview-scroll">
+            <p className="text-sm leading-relaxed text-gray-400">{video.description}</p>
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
             <span className="flex items-center gap-2 font-mono text-xs text-gray-400">
               <MapPin className="h-3.5 w-3.5 text-geoCyan" />
