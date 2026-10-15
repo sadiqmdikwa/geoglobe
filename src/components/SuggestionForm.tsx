@@ -229,16 +229,16 @@ export default function SuggestionForm() {
       </div>
 
       {/* Top Main Tab Toggle */}
-      <div className="grid grid-cols-2 gap-3 mb-8 bg-gray-900/60 p-2 rounded-2xl border border-white/5 backdrop-blur-xl">
+      <div className="grid grid-cols-2 gap-3 mb-8 bg-gray-900/60 p-2 rounded-3xl border border-white/5 backdrop-blur-xl">
         <button
           onClick={() => {
             setActiveTab("videos");
             setStatus("idle");
             setFeedback("");
           }}
-          className={`py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+          className={`py-3 px-4 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "videos"
-              ? "bg-geoCyan text-gray-900 shadow-md"
+              ? "bg-geoCyan text-gray-950 shadow-md"
               : "text-gray-400 hover:text-white"
           }`}
         >
@@ -252,9 +252,9 @@ export default function SuggestionForm() {
             setStatus("idle");
             setFeedback("");
           }}
-          className={`py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+          className={`py-3 px-4 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "game"
-              ? "bg-geoYellow text-gray-900 shadow-md"
+              ? "bg-geoYellow text-gray-950 shadow-md"
               : "text-gray-400 hover:text-white"
           }`}
         >
@@ -280,21 +280,21 @@ export default function SuggestionForm() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          1. VIDEO & PINS FORM (4 ESSENTIAL INPUTS)
+          1. VIDEO & PINS FORM
          ───────────────────────────────────────────────────────────── */}
       {activeTab === "videos" && (
-        <div className="bg-gray-800/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
+        <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
           <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-geoCyan" />
             Add Map Video Pin
           </h2>
           <p className="text-gray-400 text-xs mb-6">
-            Enter the exact 4 parameters to plot a new documentary video onto the interactive map.
+            Enter the parameters to plot a new documentary video onto the interactive map.
           </p>
 
-          <form onSubmit={handleVideoSubmit} className="space-y-4">
+          <form onSubmit={handleVideoSubmit} className="space-y-4 text-left">
             <div>
-              <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+              <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                 Location Name / Video Title <span className="text-geoCyan">*</span>
               </label>
               <input
@@ -303,13 +303,13 @@ export default function SuggestionForm() {
                 value={videoForm.title}
                 onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
                 placeholder="e.g. The Truth About the Ilemi Triangle"
-                className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                   Latitude
                 </label>
                 <input
@@ -318,12 +318,12 @@ export default function SuggestionForm() {
                   value={videoForm.lat}
                   onChange={(e) => setVideoForm({ ...videoForm, lat: e.target.value })}
                   placeholder="e.g. 4.9000"
-                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                   Longitude
                 </label>
                 <input
@@ -332,13 +332,13 @@ export default function SuggestionForm() {
                   value={videoForm.lng}
                   onChange={(e) => setVideoForm({ ...videoForm, lng: e.target.value })}
                   placeholder="e.g. 35.3000"
-                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+              <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                 YouTube Video ID <span className="text-geoCyan">*</span>
               </label>
               <input
@@ -347,12 +347,12 @@ export default function SuggestionForm() {
                 value={videoForm.youtubeId}
                 onChange={(e) => setVideoForm({ ...videoForm, youtubeId: e.target.value })}
                 placeholder="e.g. 3Zp_vR6P6mI (from watch?v=...)"
-                className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm font-mono"
+                className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm font-mono shadow-inner"
               />
             </div>
 
             <div>
-              <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+              <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                 Description / Summary
               </label>
               <textarea
@@ -360,19 +360,19 @@ export default function SuggestionForm() {
                 value={videoForm.description}
                 onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
                 placeholder="Brief professional summary of the video topic or anomaly..."
-                className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white p-5 rounded-3xl transition-all placeholder-gray-500 text-sm resize-none shadow-inner video-preview-scroll"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                   Category
                 </label>
                 <select
                   value={videoForm.category}
                   onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
-                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
                 >
                   <option value="Borders">Borders</option>
                   <option value="Anomalies">Anomalies</option>
@@ -386,13 +386,13 @@ export default function SuggestionForm() {
               </div>
 
               <div>
-                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                   Region
                 </label>
                 <select
                   value={videoForm.region}
                   onChange={(e) => setVideoForm({ ...videoForm, region: e.target.value })}
-                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoCyan outline-none text-white p-3 rounded-2xl text-sm"
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
                 >
                   <option value="Global">Global</option>
                   <option value="Africa">Africa</option>
@@ -408,7 +408,7 @@ export default function SuggestionForm() {
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="w-full bg-geoCyan hover:bg-geoYellow text-gray-900 font-bold py-3.5 rounded-2xl transition-all mt-4 flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+              className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold py-4 rounded-full transition-all mt-4 flex items-center justify-center gap-2 shadow-lg shadow-geoCyan/20 disabled:opacity-50 cursor-pointer"
             >
               {status === "submitting" ? (
                 <>
@@ -430,17 +430,17 @@ export default function SuggestionForm() {
           2. GAME DATA FORM (SINGLE vs AI BULK)
          ───────────────────────────────────────────────────────────── */}
       {activeTab === "game" && (
-        <div className="bg-gray-800/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
+        <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
           {/* Sub-mode Toggle */}
-          <div className="flex gap-2 p-1.5 bg-gray-900 rounded-xl mb-6 max-w-xs mx-auto">
+          <div className="flex gap-2 p-1.5 bg-black/40 rounded-full mb-6 max-w-xs mx-auto border border-white/5">
             <button
               onClick={() => {
                 setGameMode("single");
                 setStatus("idle");
               }}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${
+              className={`flex-1 py-2 px-4 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 gameMode === "single"
-                  ? "bg-geoYellow text-gray-900 shadow"
+                  ? "bg-geoYellow text-gray-950 shadow"
                   : "text-gray-400 hover:text-white"
               }`}
             >
@@ -451,9 +451,9 @@ export default function SuggestionForm() {
                 setGameMode("bulk");
                 setStatus("idle");
               }}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+              className={`flex-1 py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
                 gameMode === "bulk"
-                  ? "bg-geoYellow text-gray-900 shadow"
+                  ? "bg-geoYellow text-gray-950 shadow"
                   : "text-gray-400 hover:text-white"
               }`}
             >
@@ -463,9 +463,9 @@ export default function SuggestionForm() {
           </div>
 
           {gameMode === "single" ? (
-            <form onSubmit={handleSingleGameSubmit} className="space-y-4">
+            <form onSubmit={handleSingleGameSubmit} className="space-y-4 text-left">
               <div>
-                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                   Question Prompt / Title <span className="text-geoYellow">*</span>
                 </label>
                 <input
@@ -474,12 +474,12 @@ export default function SuggestionForm() {
                   value={singleGameForm.title}
                   onChange={(e) => setSingleGameForm({ ...singleGameForm, title: e.target.value })}
                   placeholder="e.g. Unclaimed desert territory between Egypt and Sudan"
-                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoYellow outline-none text-white p-3 rounded-2xl text-sm"
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                   Correct Answer (Official Name) <span className="text-geoYellow">*</span>
                 </label>
                 <input
@@ -488,35 +488,39 @@ export default function SuggestionForm() {
                   value={singleGameForm.correctAnswer}
                   onChange={(e) => setSingleGameForm({ ...singleGameForm, correctAnswer: e.target.value })}
                   placeholder="e.g. Bir Tawil"
-                  className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoYellow outline-none text-white p-3 rounded-2xl text-sm"
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                     Category
                   </label>
                   <select
                     value={singleGameForm.category}
                     onChange={(e) => setSingleGameForm({ ...singleGameForm, category: e.target.value })}
-                    className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoYellow outline-none text-white p-3 rounded-2xl text-sm cursor-pointer"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
                   >
                     <option value="Borders">Borders</option>
                     <option value="Anomalies">Anomalies</option>
                     <option value="Flags">Flags</option>
                     <option value="Mixed Global">Mixed Global</option>
+                    <option value="Enclaves & Exclaves">Enclaves & Exclaves</option>
+                    <option value="No Man's Land">No Man's Land</option>
+                    <option value="Natural Wonders & Waterways">Natural Wonders & Waterways</option>
+                    <option value="Geopolitical Frontiers">Geopolitical Frontiers</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                     Region
                   </label>
                   <select
                     value={singleGameForm.region}
                     onChange={(e) => setSingleGameForm({ ...singleGameForm, region: e.target.value })}
-                    className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoYellow outline-none text-white p-3 rounded-2xl text-sm cursor-pointer"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
                   >
                     <option value="Global">Global</option>
                     <option value="Africa">Africa</option>
@@ -524,13 +528,14 @@ export default function SuggestionForm() {
                     <option value="Europe">Europe</option>
                     <option value="Americas">Americas</option>
                     <option value="Oceania">Oceania</option>
+                    <option value="Middle East">Middle East</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                     Latitude
                   </label>
                   <input
@@ -539,12 +544,12 @@ export default function SuggestionForm() {
                     value={singleGameForm.lat}
                     onChange={(e) => setSingleGameForm({ ...singleGameForm, lat: e.target.value })}
                     placeholder="e.g. 21.8706"
-                    className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoYellow outline-none text-white p-3 rounded-2xl text-sm"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-xs font-semibold mb-1 ml-1">
+                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
                     Longitude
                   </label>
                   <input
@@ -553,7 +558,7 @@ export default function SuggestionForm() {
                     value={singleGameForm.lng}
                     onChange={(e) => setSingleGameForm({ ...singleGameForm, lng: e.target.value })}
                     placeholder="e.g. 33.7342"
-                    className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoYellow outline-none text-white p-3 rounded-2xl text-sm"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                   />
                 </div>
               </div>
@@ -561,7 +566,7 @@ export default function SuggestionForm() {
               <button
                 type="submit"
                 disabled={status === "submitting"}
-                className="w-full bg-geoYellow hover:bg-geoCyan text-gray-900 font-bold py-3.5 rounded-2xl transition-all mt-4 flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                className="w-full bg-geoYellow hover:bg-geoCyan text-gray-950 font-bold py-4 rounded-full transition-all mt-4 flex items-center justify-center gap-2 shadow-lg shadow-geoYellow/20 disabled:opacity-50 cursor-pointer"
               >
                 {status === "submitting" ? (
                   <>
@@ -577,8 +582,8 @@ export default function SuggestionForm() {
               </button>
             </form>
           ) : (
-            <div className="space-y-4">
-              <div className="bg-gray-900/80 p-4 rounded-2xl border border-white/5 text-xs text-gray-300 space-y-1">
+            <div className="space-y-4 text-left">
+              <div className="bg-black/40 p-5 rounded-3xl border border-white/5 text-xs text-gray-300 space-y-1.5">
                 <p className="font-bold text-geoYellow">AI Bulk Syntax Format (1 question per line):</p>
                 <p className="font-mono text-gray-400">Question:Answer:SearchPlace:Category:Region</p>
                 <p className="text-gray-400 mt-1">
@@ -591,11 +596,11 @@ export default function SuggestionForm() {
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
                 placeholder="Unclaimed desert trapezoid:Bir Tawil:Bir Tawil:Anomalies:Africa&#10;Belgian enclave town in Netherlands:Baarle-Hertog:Baarle-Hertog:Borders:Europe"
-                className="w-full bg-gray-900 border-2 border-gray-700/80 focus:border-geoYellow outline-none text-white p-3 rounded-2xl font-mono text-xs md:text-sm leading-relaxed resize-none"
+                className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white p-5 rounded-3xl font-mono text-xs md:text-sm leading-relaxed resize-none shadow-inner video-preview-scroll"
               ></textarea>
 
               {bulkProgress && (
-                <div className="p-4 bg-gray-900 rounded-2xl border border-geoYellow/30 text-xs">
+                <div className="p-4 bg-black/40 rounded-2xl border border-geoYellow/30 text-xs">
                   <div className="flex justify-between items-center mb-2 font-bold text-geoYellow">
                     <span>Processing {bulkProgress.current} / {bulkProgress.total}</span>
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -607,7 +612,7 @@ export default function SuggestionForm() {
               <button
                 onClick={handleBulkSubmit}
                 disabled={status === "submitting" || !bulkText.trim()}
-                className="w-full bg-geoYellow hover:bg-geoCyan text-gray-900 font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                className="w-full bg-geoYellow hover:bg-geoCyan text-gray-950 font-bold py-4 rounded-full transition-all flex items-center justify-center gap-2 shadow-lg shadow-geoYellow/20 disabled:opacity-50 cursor-pointer"
               >
                 {status === "submitting" ? (
                   <>
