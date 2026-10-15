@@ -427,13 +427,37 @@ export default function InteractiveMap() {
       }
     });
 
+    // Handle target location pin if coming from GeoGame or coordinate link
+    const hasFocusCoords = focusLat !== null && focusLng !== null && !isNaN(focusLat) && !isNaN(focusLng);
+
+    if (hasFocusCoords && !focusMarkerRef.current) {
+      const standaloneMarker = L.marker([focusLat, focusLng], {
+        icon: focusedTargetIcon,
+        title: focusTitle || "Target Anomaly",
+      });
+
+      const tempPopup = `
+        <div class="p-4 bg-gray-950/95 text-white rounded-xl font-sans max-w-xs border border-geoYellow/30 shadow-2xl backdrop-blur-xl">
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-geoYellow/20 text-geoYellow border border-geoYellow/30 mb-2 inline-block">
+            Target Location
+          </span>
+          <h4 class="font-bold text-sm text-white mb-1 leading-snug">${focusTitle || "Selected Coordinate"}</h4>
+          <p class="text-xs text-gray-300 font-mono mb-2">${focusLat.toFixed(4)}°, ${focusLng.toFixed(4)}°</p>
+        </div>
+      `;
+
+      standaloneMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup", maxWidth: 300 });
+      markersRef.current["standalone-target"] = standaloneMarker;
+      focusMarkerRef.current = standaloneMarker;
+    }
+
     if (isFocusedOnly && focusMarkerRef.current) {
       focusMarkerRef.current.addTo(map);
       setTimeout(() => {
         if (focusMarkerRef.current) focusMarkerRef.current.openPopup();
       }, 300);
     }
-  }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId]);
+  }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId, focusTitle]);
 
   // Quick Jump camera to anomaly
   const handleFlyTo = (video: VideoItem) => {
