@@ -596,11 +596,10 @@ export default function SuggestionForm() {
           ) : (
             <div className="space-y-4 text-left">
               <div className="bg-black/40 p-5 rounded-3xl border border-white/5 text-xs text-gray-300 space-y-1.5">
-                <p className="font-bold text-geoYellow">AI Bulk Syntax Formats (1 question per line):</p>
-                <p className="font-mono text-gray-400">1. Question:Lat:Lng:CorrectAnswer:Category:Region</p>
-                <p className="font-mono text-gray-400">2. Question:CorrectAnswer:SearchPlace:Category:Region (Auto-Geocoded)</p>
+                <p className="font-bold text-geoYellow">AI Bulk Syntax Format (1 question per line):</p>
+                <p className="font-mono text-gray-400">Question:Lat:Lng:CorrectAnswer:Category:Region</p>
                 <p className="text-gray-400 mt-1">
-                  Matches sheet columns: <code>Question • Lat • Lng • CorrectAnswer • Category • Region</code>
+                  Matches exact sheet order: <code>Question • Lat • Lng • CorrectAnswer • Category • Region</code>
                 </p>
               </div>
 
@@ -608,7 +607,7 @@ export default function SuggestionForm() {
                 rows={6}
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
-                placeholder="Unclaimed desert trapezoid:Bir Tawil:Bir Tawil:Anomalies:Africa&#10;Belgian enclave town in Netherlands:Baarle-Hertog:Baarle-Hertog:Borders:Europe"
+                placeholder="Which country is surrounded by South Africa?:-29.3100:27.4782:Lesotho:Anomalies:Africa&#10;What is the largest country in Africa?:36.7729:3.0588:Algeria:Mixed Global:Africa"
                 className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white p-5 rounded-3xl font-mono text-xs md:text-sm leading-relaxed resize-none shadow-inner video-preview-scroll"
               ></textarea>
 
