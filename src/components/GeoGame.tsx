@@ -967,7 +967,8 @@ export default function GeoGame() {
                 }}
                 disabled={gameState === "revealed"}
                 placeholder={gameState === "revealed" ? "Answer revealed" : "Type your answer..."}
-                className={`w-full bg-gray-900 border-2 outline-none text-white text-center text-sm md:text-base p-3 md:p-3.5 rounded-2xl transition-all placeholder-gray-500 shadow-inner ${
+                style={{ fontSize: "16px" }}
+                className={`w-full bg-gray-900 border-2 outline-none text-white text-center text-base md:text-lg p-3.5 md:p-4 rounded-2xl transition-all placeholder-gray-500 shadow-inner ${
                   gameState === "revealed"
                     ? isCorrect
                       ? "border-emerald-500/50 bg-emerald-950/20 text-emerald-300"

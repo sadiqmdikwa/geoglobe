@@ -400,6 +400,8 @@ export default function InteractiveMap() {
       marker.bindPopup(popupDiv, {
         className: "custom-leaflet-popup",
         maxWidth: 320,
+        autoPan: true,
+        autoPanPadding: [40, 160],
       });
 
       marker.on("popupopen", () => {
@@ -466,16 +468,24 @@ export default function InteractiveMap() {
         </div>
       `;
 
-      standaloneMarker.bindPopup(tempPopup, { className: "custom-leaflet-popup", maxWidth: 320 });
+      standaloneMarker.bindPopup(tempPopup, {
+        className: "custom-leaflet-popup",
+        maxWidth: 320,
+        autoPan: true,
+        autoPanPadding: [40, 160],
+      });
       markersRef.current["standalone-target"] = standaloneMarker;
       focusMarkerRef.current = standaloneMarker;
     }
 
     if (isFocusedOnly && focusMarkerRef.current) {
       focusMarkerRef.current.addTo(map);
+      map.panTo(focusMarkerRef.current.getLatLng(), { animate: true });
       setTimeout(() => {
-        if (focusMarkerRef.current) focusMarkerRef.current.openPopup();
-      }, 300);
+        if (focusMarkerRef.current && map.hasLayer(focusMarkerRef.current)) {
+          focusMarkerRef.current.openPopup();
+        }
+      }, 350);
     }
   }, [videos, filteredVideos, isMapReady, isFocusedOnly, focusLat, focusLng, focusId, focusTitle, focusQuestion, focusAnswer]);
 
