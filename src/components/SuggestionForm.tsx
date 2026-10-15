@@ -129,12 +129,12 @@ export default function SuggestionForm() {
     }
   };
 
-  // Process AI Bulk Questions with Geocoding
+  // Process AI Bulk Questions (Supports Question:Lat:Lng:CorrectAnswer:Category:Region OR Question:CorrectAnswer:SearchPlace:Category:Region)
   const handleBulkSubmit = async () => {
     const lines = bulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0 && l.includes(":"));
     if (lines.length === 0) {
       setStatus("error");
-      setFeedback("Please enter lines in the format: Question:Answer:SearchPlace:Category:Region");
+      setFeedback("Please enter lines in the format: Question:Lat:Lng:CorrectAnswer:Category:Region or Question:Answer:SearchPlace:Category:Region");
       return;
     }
 
@@ -147,33 +147,46 @@ export default function SuggestionForm() {
       const line = lines[i];
       const parts = line.split(":").map(p => p.trim());
       const question = parts[0] || "Geography Trivia";
-      const answer = parts[1] || "";
-      const searchPlace = parts[2] || answer;
-      const category = parts[3] || "Mixed Global";
-      const region = parts[4] || "Global";
-
-      setBulkProgress({
-        current: i + 1,
-        total: lines.length,
-        log: `Geocoding '${searchPlace}'...`
-      });
 
       let lat = 0;
       let lng = 0;
+      let answer = "";
+      let category = "Mixed Global";
+      let region = "Global";
 
-      // Geocode with Nominatim API (1000ms delay to adhere to rate limits)
-      try {
-        const geoRes = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchPlace)}&limit=1`,
-          { headers: { "Accept-Language": "en" } }
-        );
-        const geoData = await geoRes.json();
-        if (geoData && geoData.length > 0) {
-          lat = parseFloat(geoData[0].lat);
-          lng = parseFloat(geoData[0].lon);
+      // Check if format is Question:Lat:Lng:CorrectAnswer:Category:Region
+      if (parts.length >= 6 && !isNaN(parseFloat(parts[1])) && !isNaN(parseFloat(parts[2]))) {
+        lat = parseFloat(parts[1]);
+        lng = parseFloat(parts[2]);
+        answer = parts[3] || "";
+        category = parts[4] || "Mixed Global";
+        region = parts[5] || "Global";
+      } else {
+        // Format: Question:Answer:SearchPlace:Category:Region
+        answer = parts[1] || "";
+        const searchPlace = parts[2] || answer;
+        category = parts[3] || "Mixed Global";
+        region = parts[4] || "Global";
+
+        setBulkProgress({
+          current: i + 1,
+          total: lines.length,
+          log: `Geocoding '${searchPlace}'...`
+        });
+
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchPlace)}&limit=1`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const geoData = await geoRes.json();
+          if (geoData && geoData.length > 0) {
+            lat = parseFloat(geoData[0].lat);
+            lng = parseFloat(geoData[0].lon);
+          }
+        } catch (geoErr) {
+          console.warn(`Geocoding error for ${searchPlace}:`, geoErr);
         }
-      } catch (geoErr) {
-        console.warn(`Geocoding error for ${searchPlace}:`, geoErr);
       }
 
       // Submit to Google Sheet Apps Script
@@ -197,8 +210,7 @@ export default function SuggestionForm() {
         console.warn("Row submit error:", submitErr);
       }
 
-      // 1000ms polite delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
     }
 
     setStatus("success");
@@ -584,10 +596,11 @@ export default function SuggestionForm() {
           ) : (
             <div className="space-y-4 text-left">
               <div className="bg-black/40 p-5 rounded-3xl border border-white/5 text-xs text-gray-300 space-y-1.5">
-                <p className="font-bold text-geoYellow">AI Bulk Syntax Format (1 question per line):</p>
-                <p className="font-mono text-gray-400">Question:Answer:SearchPlace:Category:Region</p>
+                <p className="font-bold text-geoYellow">AI Bulk Syntax Formats (1 question per line):</p>
+                <p className="font-mono text-gray-400">1. Question:Lat:Lng:CorrectAnswer:Category:Region</p>
+                <p className="font-mono text-gray-400">2. Question:CorrectAnswer:SearchPlace:Category:Region (Auto-Geocoded)</p>
                 <p className="text-gray-400 mt-1">
-                  Example: <code>Unclaimed desert trapezoid:Bir Tawil:Bir Tawil:Anomalies:Africa</code>
+                  Matches sheet columns: <code>Question • Lat • Lng • CorrectAnswer • Category • Region</code>
                 </p>
               </div>
 
