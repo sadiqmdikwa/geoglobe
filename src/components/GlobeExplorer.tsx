@@ -21,10 +21,22 @@ export interface FeatureData {
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   // Countries
   "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753 },
+  "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", lat: 17.5707, lng: -3.9962 },
+  "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", lat: 28.0339, lng: 1.6596 },
+  "Niger": { name: "Niger", code: "NE", type: "country", capital: "Niamey", population: "25,250,000 people", region: "Africa • Western Africa", area: "1,267,000 km²", languages: "French, Hausa", lat: 17.6078, lng: 8.0817 },
+  "Chad": { name: "Chad", code: "TD", type: "country", capital: "N'Djamena", population: "17,180,000 people", region: "Africa • Central Africa", area: "1,284,000 km²", languages: "French, Arabic", lat: 15.4542, lng: 18.7322 },
+  "Sudan": { name: "Sudan", code: "SD", type: "country", capital: "Khartoum", population: "45,660,000 people", region: "Africa • Northern Africa", area: "1,886,068 km²", languages: "Arabic, English", lat: 12.8628, lng: 30.2176 },
+  "Senegal": { name: "Senegal", code: "SN", type: "country", capital: "Dakar", population: "16,880,000 people", region: "Africa • Western Africa", area: "196,712 km²", languages: "French, Wolof", lat: 14.4974, lng: -14.4524 },
+  "Ghana": { name: "Ghana", code: "GH", type: "country", capital: "Accra", population: "32,830,000 people", region: "Africa • Western Africa", area: "238,535 km²", languages: "English", lat: 7.9465, lng: -1.0232 },
+  "Morocco": { name: "Morocco", code: "MA", type: "country", capital: "Rabat", population: "37,080,000 people", region: "Africa • Northern Africa", area: "446,550 km²", languages: "Arabic, Berber", lat: 31.7917, lng: -7.0926 },
+  "Ethiopia": { name: "Ethiopia", code: "ET", type: "country", capital: "Addis Ababa", population: "120,300,000 people", region: "Africa • Eastern Africa", area: "1,104,300 km²", languages: "Amharic", lat: 9.145, lng: 40.4897 },
+  "Kenya": { name: "Kenya", code: "KE", type: "country", capital: "Nairobi", population: "53,010,000 people", region: "Africa • Eastern Africa", area: "580,367 km²", languages: "Swahili, English", lat: -0.0236, lng: 37.9062 },
   "United States of America": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129 },
   "United Kingdom": { name: "United Kingdom", code: "GB", type: "country", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", lat: 55.3781, lng: -3.4360 },
   "France": { name: "France", code: "FR", type: "country", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", lat: 46.2276, lng: 2.2137 },
   "Germany": { name: "Germany", code: "DE", type: "country", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", lat: 51.1657, lng: 10.4515 },
+  "Spain": { name: "Spain", code: "ES", type: "country", capital: "Madrid", population: "47,420,000 people", region: "Europe • Southern Europe", area: "505,990 km²", languages: "Spanish", lat: 40.4637, lng: -3.7492 },
+  "Italy": { name: "Italy", code: "IT", type: "country", capital: "Rome", population: "59,110,000 people", region: "Europe • Southern Europe", area: "301,340 km²", languages: "Italian", lat: 41.8719, lng: 12.5674 },
   "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", lat: 36.2048, lng: 138.2529 },
   "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", lat: -14.2350, lng: -51.9253 },
   "Australia": { name: "Australia", code: "AU", type: "country", capital: "Canberra", population: "26,068,792 people", region: "Oceania • Australasia", area: "7,692,024 km²", languages: "English", lat: -25.2744, lng: 133.7751 },
@@ -64,7 +76,9 @@ export default function GlobeExplorer() {
   const scaleRef = useRef<number>(260);
   const targetScaleRef = useRef<number>(260);
   const isDraggingRef = useRef<boolean>(false);
+  const hasDraggedRef = useRef<boolean>(false); // Tracks if movement was a drag vs tap
   const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Fetch 110m TopoJSON world atlas
   useEffect(() => {
@@ -96,14 +110,10 @@ export default function GlobeExplorer() {
       // Smooth zoom interpolation
       scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.1;
 
-      // Adjust translation center so globe is never hidden by side drawer on desktop
-      const isCardOpen = selectedFeature !== null;
-      const isDesktop = window.innerWidth >= 1024;
-      const centerX = isCardOpen && isDesktop ? width * 0.32 : width / 2;
-
+      // Keep projection centered at width/2 to avoid clipping sphere when zoomed
       const projection = d3.geoOrthographic()
         .scale(scaleRef.current)
-        .translate([centerX, height / 2])
+        .translate([width / 2, height / 2])
         .rotate(rotationRef.current)
         .clipAngle(90);
 
@@ -172,9 +182,11 @@ export default function GlobeExplorer() {
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     setIsAutoSpinning(false); // Stop auto-spinning on interaction!
     isDraggingRef.current = true;
+    hasDraggedRef.current = false; // Reset drag flag
     const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
     lastMouseRef.current = { x: clientX, y: clientY };
+    startMouseRef.current = { x: clientX, y: clientY };
   };
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -184,6 +196,11 @@ export default function GlobeExplorer() {
 
     const dx = clientX - lastMouseRef.current.x;
     const dy = clientY - lastMouseRef.current.y;
+
+    // If mouse moved more than 6px, mark as drag so releasing won't trigger click selection
+    if (Math.abs(clientX - startMouseRef.current.x) > 6 || Math.abs(clientY - startMouseRef.current.y) > 6) {
+      hasDraggedRef.current = true;
+    }
 
     rotationRef.current[0] += dx * 0.4;
     rotationRef.current[1] -= dy * 0.4;
@@ -195,21 +212,24 @@ export default function GlobeExplorer() {
     isDraggingRef.current = false;
   };
 
-  // Canvas Click Detection (Countries & Ocean Water Bodies)
+  // Canvas Click Detection (Triggered ONLY on intentional tap/click, NOT after drag!)
   const handleCanvasClick = (e: React.MouseEvent) => {
     setIsAutoSpinning(false); // Stop auto-spin permanently when user taps!
+
+    // Prevent selection if user was dragging/turning the map!
+    if (hasDraggedRef.current) {
+      hasDraggedRef.current = false;
+      return;
+    }
+
     if (!canvasRef.current || !worldGeoJson) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const isCardOpen = selectedFeature !== null;
-    const isDesktop = window.innerWidth >= 1024;
-    const centerX = isCardOpen && isDesktop ? canvasRef.current.width * 0.32 : canvasRef.current.width / 2;
-
     const projection = d3.geoOrthographic()
       .scale(scaleRef.current)
-      .translate([centerX, canvasRef.current.height / 2])
+      .translate([canvasRef.current.width / 2, canvasRef.current.height / 2])
       .rotate(rotationRef.current);
 
     const coords = projection.invert?.([x, y]);
@@ -283,11 +303,11 @@ export default function GlobeExplorer() {
 
   return (
     <div className="relative w-full h-[calc(100vh-120px)] max-h-[850px] rounded-[2.5rem] overflow-hidden bg-[#070b14] font-sans text-white border border-white/10 shadow-2xl flex items-center justify-center select-none">
-      {/* 2D/3D Canvas Vector Globe */}
+      {/* 2D/3D Canvas Vector Globe (Full Resolution to prevent clipping) */}
       <canvas
         ref={canvasRef}
-        width={900}
-        height={700}
+        width={1100}
+        height={850}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -350,8 +370,8 @@ export default function GlobeExplorer() {
         <span className="text-geoCyan font-bold">click</span> select • <span className="text-geoCyan font-bold">drag</span> pan • <span className="text-geoCyan font-bold">scroll</span> zoom
       </div>
 
-      {/* Bottom Right Floating Zoom Buttons */}
-      <div className="absolute bottom-5 right-5 z-30 flex flex-col gap-2">
+      {/* Bottom Left Floating Zoom & Controls (+ / - / Reset) */}
+      <div className="absolute bottom-16 left-5 z-30 flex flex-col gap-2">
         <button
           onClick={handleZoomIn}
           className="w-10 h-10 rounded-2xl bg-gray-900/80 hover:bg-gray-800 border border-white/15 text-white flex items-center justify-center shadow-xl backdrop-blur-xl transition-all cursor-pointer hover:border-geoCyan/60 text-lg font-bold"
@@ -375,7 +395,7 @@ export default function GlobeExplorer() {
         </button>
       </div>
 
-      {/* Right Side Detail Drawer (Does NOT hide the map!) */}
+      {/* Right Side Detail Drawer */}
       {selectedFeature && (
         <div className="absolute top-4 right-4 bottom-4 w-full max-w-sm z-40 bg-[#080e1a]/95 backdrop-blur-2xl border border-white/15 rounded-[2.5rem] shadow-2xl p-6 flex flex-col justify-between overflow-y-auto video-preview-scroll animate-fadeIn">
           {/* Top Close Button */}
