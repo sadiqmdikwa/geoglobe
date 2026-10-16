@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import Globe, { GlobeInstance } from "globe.gl";
+import * as d3 from "d3-geo";
+import * as topojson from "topojson-client";
 import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, Waves, Snowflake, Sparkles } from "lucide-react";
 import AdBanner from "./AdBanner";
 
@@ -17,165 +18,310 @@ export interface FeatureData {
   desc?: string;
   lat: number;
   lng: number;
-  color: string;
 }
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
-  "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753, color: "#F4D03F" },
-  "United States of America": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129, color: "#42C2CB" },
-  "United Kingdom": { name: "United Kingdom", code: "GB", type: "country", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", lat: 55.3781, lng: -3.4360, color: "#34d399" },
-  "France": { name: "France", code: "FR", type: "country", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", lat: 46.2276, lng: 2.2137, color: "#fb7185" },
-  "Germany": { name: "Germany", code: "DE", type: "country", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", lat: 51.1657, lng: 10.4515, color: "#a78bfa" },
-  "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", lat: 36.2048, lng: 138.2529, color: "#38bdf8" },
-  "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", lat: -14.2350, lng: -51.9253, color: "#facc15" },
-  "Australia": { name: "Australia", code: "AU", type: "country", capital: "Canberra", population: "26,068,792 people", region: "Oceania • Australasia", area: "7,692,024 km²", languages: "English", lat: -25.2744, lng: 133.7751, color: "#fb923c" },
-  "South Africa": { name: "South Africa", code: "ZA", type: "country", capital: "Pretoria / Cape Town", population: "59,392,255 people", region: "Africa • Southern Africa", area: "1,221,037 km²", languages: "Zulu, Xhosa, Afrikaans, English", lat: -30.5595, lng: 22.9375, color: "#e879f9" },
-  "Canada": { name: "Canada", code: "CA", type: "country", capital: "Ottawa", population: "38,250,000 people", region: "Americas • North America", area: "9,984,670 km²", languages: "English, French", lat: 56.1304, lng: -106.3468, color: "#34d399" },
-  "Egypt": { name: "Egypt", code: "EG", type: "country", capital: "Cairo", population: "110,990,103 people", region: "Africa • Northern Africa", area: "1,010,408 km²", languages: "Arabic", lat: 26.8206, lng: 30.8025, color: "#f4d03f" },
-  "India": { name: "India", code: "IN", type: "country", capital: "New Delhi", population: "1,428,627,663 people", region: "Asia • Southern Asia", area: "3,287,263 km²", languages: "Hindi, English", lat: 20.5937, lng: 78.9629, color: "#fb7185" },
-  "China": { name: "China", code: "CN", type: "country", capital: "Beijing", population: "1,412,000,000 people", region: "Asia • Eastern Asia", area: "9,596,961 km²", languages: "Mandarin Chinese", lat: 35.8617, lng: 104.1954, color: "#42C2CB" }
+  "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753 },
+  "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", lat: 17.5707, lng: -3.9962 },
+  "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", lat: 28.0339, lng: 1.6596 },
+  "Niger": { name: "Niger", code: "NE", type: "country", capital: "Niamey", population: "25,250,000 people", region: "Africa • Western Africa", area: "1,267,000 km²", languages: "French, Hausa", lat: 17.6078, lng: 8.0817 },
+  "Chad": { name: "Chad", code: "TD", type: "country", capital: "N'Djamena", population: "17,180,000 people", region: "Africa • Central Africa", area: "1,284,000 km²", languages: "French, Arabic", lat: 15.4542, lng: 18.7322 },
+  "Sudan": { name: "Sudan", code: "SD", type: "country", capital: "Khartoum", population: "45,660,000 people", region: "Africa • Northern Africa", area: "1,886,068 km²", languages: "Arabic, English", lat: 12.8628, lng: 30.2176 },
+  "Senegal": { name: "Senegal", code: "SN", type: "country", capital: "Dakar", population: "16,880,000 people", region: "Africa • Western Africa", area: "196,712 km²", languages: "French, Wolof", lat: 14.4974, lng: -14.4524 },
+  "Ghana": { name: "Ghana", code: "GH", type: "country", capital: "Accra", population: "32,830,000 people", region: "Africa • Western Africa", area: "238,535 km²", languages: "English", lat: 7.9465, lng: -1.0232 },
+  "Morocco": { name: "Morocco", code: "MA", type: "country", capital: "Rabat", population: "37,080,000 people", region: "Africa • Northern Africa", area: "446,550 km²", languages: "Arabic, Berber", lat: 31.7917, lng: -7.0926 },
+  "Ethiopia": { name: "Ethiopia", code: "ET", type: "country", capital: "Addis Ababa", population: "120,300,000 people", region: "Africa • Eastern Africa", area: "1,104,300 km²", languages: "Amharic", lat: 9.145, lng: 40.4897 },
+  "Kenya": { name: "Kenya", code: "KE", type: "country", capital: "Nairobi", population: "53,010,000 people", region: "Africa • Eastern Africa", area: "580,367 km²", languages: "Swahili, English", lat: -0.0236, lng: 37.9062 },
+  "United States of America": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129 },
+  "United Kingdom": { name: "United Kingdom", code: "GB", type: "country", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", lat: 55.3781, lng: -3.4360 },
+  "France": { name: "France", code: "FR", type: "country", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", lat: 46.2276, lng: 2.2137 },
+  "Germany": { name: "Germany", code: "DE", type: "country", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", lat: 51.1657, lng: 10.4515 },
+  "Spain": { name: "Spain", code: "ES", type: "country", capital: "Madrid", population: "47,420,000 people", region: "Europe • Southern Europe", area: "505,990 km²", languages: "Spanish", lat: 40.4637, lng: -3.7492 },
+  "Italy": { name: "Italy", code: "IT", type: "country", capital: "Rome", population: "59,110,000 people", region: "Europe • Southern Europe", area: "301,340 km²", languages: "Italian", lat: 41.8719, lng: 12.5674 },
+  "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", lat: 36.2048, lng: 138.2529 },
+  "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", lat: -14.2350, lng: -51.9253 },
+  "Australia": { name: "Australia", code: "AU", type: "country", capital: "Canberra", population: "26,068,792 people", region: "Oceania • Australasia", area: "7,692,024 km²", languages: "English", lat: -25.2744, lng: 133.7751 },
+  "South Africa": { name: "South Africa", code: "ZA", type: "country", capital: "Pretoria / Cape Town", population: "59,392,255 people", region: "Africa • Southern Africa", area: "1,221,037 km²", languages: "Zulu, Xhosa, Afrikaans, English", lat: -30.5595, lng: 22.9375 },
+  "Canada": { name: "Canada", code: "CA", type: "country", capital: "Ottawa", population: "38,250,000 people", region: "Americas • North America", area: "9,984,670 km²", languages: "English, French", lat: 56.1304, lng: -106.3468 },
+  "Egypt": { name: "Egypt", code: "EG", type: "country", capital: "Cairo", population: "110,990,103 people", region: "Africa • Northern Africa", area: "1,010,408 km²", languages: "Arabic", lat: 26.8206, lng: 30.8025 },
+  "India": { name: "India", code: "IN", type: "country", capital: "New Delhi", population: "1,428,627,663 people", region: "Asia • Southern Asia", area: "3,287,263 km²", languages: "Hindi, English", lat: 20.5937, lng: 78.9629 },
+  "China": { name: "China", code: "CN", type: "country", capital: "Beijing", population: "1,412,000,000 people", region: "Asia • Eastern Asia", area: "9,596,961 km²", languages: "Mandarin Chinese", lat: 35.8617, lng: 104.1954 },
+  "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin.", lat: 14.59, lng: -28.67 },
+  "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin.", lat: 0, lng: -160 },
+  "Indian Ocean": { name: "Indian Ocean", code: "IO", type: "water", region: "Global Water Basin", area: "70,560,000 km²", desc: "Bounded by Asia, Africa, Australia, and the Southern Ocean.", lat: -20, lng: 80 },
+  "Antarctica": { name: "Antarctica", code: "AQ", type: "ice", region: "South Polar Zone", area: "14,200,000 km²", desc: "Earth's southernmost continent containing 90% of global ice.", lat: -82.86, lng: 135.0 },
+  "Greenland": { name: "Greenland", code: "GL", type: "ice", capital: "Nuuk", population: "56,000 people", region: "North Polar Zone", area: "2,166,086 km²", languages: "Greenlandic", desc: "Massive autonomous polar island covered by the Greenland Ice Sheet.", lat: 71.70, lng: -42.60 }
 };
 
-const COUNTRY_COLORS = ["#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51", "#457b9d", "#1d3557", "#6a040f", "#38bdf8", "#a78bfa"];
+const COUNTRY_COLORS = ["#388e3c", "#fbc02d", "#d32f2f", "#1976d2", "#7b1fa2", "#e65100", "#00796b", "#0288d1", "#c2185b", "#512da8"];
 
 function getCountryColor(name: string): string {
-  if (!name) return "#2a9d8f";
+  if (!name) return "#388e3c";
   const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return COUNTRY_COLORS[hash % COUNTRY_COLORS.length];
 }
 
 export default function GlobeExplorer() {
-  const globeContainerRef = useRef<HTMLDivElement>(null);
-  const globeInstanceRef = useRef<GlobeInstance | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
 
-  const [selectedFeature, setSelectedFeature] = useState<FeatureData | null>(FEATURE_DATABASE["Nigeria"]);
-  const [hoveredPolygon, setHoveredPolygon] = useState<any | null>(null);
-  const [countriesGeoJson, setCountriesGeoJson] = useState<any[]>([]);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureData | null>(null);
+  const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
+  const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
+  const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const rotationRef = useRef<[number, number, number]>([-10, -15, 0]);
+  const scaleRef = useRef<number>(280);
+  const targetScaleRef = useRef<number>(280);
+  const isDraggingRef = useRef<boolean>(false);
+  const hasDraggedRef = useRef<boolean>(false);
+  const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
   useEffect(() => {
-    fetch("https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson")
+    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then(res => res.json())
-      .then(data => {
-        if (data && data.features) {
-          setCountriesGeoJson(data.features);
-        }
+      .then(topology => {
+        const geojson = topojson.feature(topology, topology.objects.countries);
+        setWorldGeoJson(geojson);
       })
-      .catch(err => console.warn("Failed to load country polygons:", err));
+      .catch(err => console.warn("Failed to load world topology:", err));
   }, []);
 
+  // Main Render Loop (Buttery smooth 60 FPS vector orthographic canvas)
   useEffect(() => {
-    if (!globeContainerRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const globe = Globe()(globeContainerRef.current)
-      .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
-      .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
-      .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
-      .showAtmosphere(true)
-      .atmosphereColor("#42C2CB")
-      .atmosphereAltitude(0.18)
-      .polygonsData(countriesGeoJson)
-      .polygonAltitude(d => d === hoveredPolygon ? 0.04 : (selectedFeature && (d as any).properties?.NAME === selectedFeature.name ? 0.03 : 0.01))
-      .polygonCapColor(d => {
-        const name = (d as any).properties?.NAME;
-        if (selectedFeature && name === selectedFeature.name) return "#F4D03F"; // Gold fill on tap
-        if (d === hoveredPolygon) return "rgba(66, 194, 203, 0.8)"; // Bright cyan on hover
-        return getCountryColor(name);
-      })
-      .polygonSideColor(() => "rgba(15, 23, 42, 0.8)")
-      .polygonStrokeColor(d => {
-        const name = (d as any).properties?.NAME;
-        if (selectedFeature && name === selectedFeature.name) return "#ffffff";
-        if (d === hoveredPolygon) return "#F4D03F";
-        return "rgba(66, 194, 203, 0.35)";
-      })
-      .onPolygonHover(polygon => {
-        setHoveredPolygon(polygon);
-      })
-      .onPolygonClick(polygon => {
-        const props = (polygon as any).properties;
-        const name = props?.NAME || "Selected Country";
-        const item: FeatureData = FEATURE_DATABASE[name] || {
-          name,
-          code: props?.ISO_A2 || "UN",
-          type: "country",
-          capital: "Capital Region",
-          population: "Estimated 10M+ people",
-          region: "Global Frontier",
-          area: "50,000+ km²",
-          languages: "Official / Regional",
-          lat: 10,
-          lng: 10,
-          color: "#42C2CB"
-        };
-        setSelectedFeature(item);
-        if (globeInstanceRef.current) {
-          globeInstanceRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.4 }, 1200);
-        }
-      });
-
-    const controls = globe.controls();
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.6;
-    controls.enableZoom = true;
-
-    // Stop auto-spinning instantly when user starts dragging or clicking the globe
-    const stopAutoRotate = () => {
-      if (controls.autoRotate) {
-        controls.autoRotate = false;
+    const updateSize = () => {
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth || 1000;
+        canvas.height = parent.clientHeight || 750;
       }
     };
-    controls.addEventListener("start", stopAutoRotate);
-    globeContainerRef.current.addEventListener("pointerdown", stopAutoRotate);
+    updateSize();
+    window.addEventListener("resize", updateSize);
 
-    globeInstanceRef.current = globe;
+    let animationFrameId: number;
 
-    const handleResize = () => {
-      if (globeContainerRef.current) {
-        globe.width(globeContainerRef.current.clientWidth);
-        globe.height(globeContainerRef.current.clientHeight);
+    const render = () => {
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.1;
+
+      const projection = d3.geoOrthographic()
+        .scale(scaleRef.current)
+        .translate([width / 2, height / 2])
+        .rotate(rotationRef.current)
+        .clipAngle(90);
+
+      const path = d3.geoPath().projection(projection).context(ctx);
+      const graticule = d3.geoGraticule10();
+
+      // 1. Ocean Base Sphere (#081420)
+      ctx.beginPath();
+      path({ type: "Sphere" });
+      ctx.fillStyle = selectedFeature?.type === "water" ? "#0a2540" : "#081420";
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(66, 194, 203, 0.4)";
+      ctx.stroke();
+
+      // 2. Graticule Lines
+      ctx.beginPath();
+      path(graticule);
+      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.stroke();
+
+      // 3. Country Polygons (Stable without blinking)
+      if (worldGeoJson && worldGeoJson.features) {
+        worldGeoJson.features.forEach((feature: any) => {
+          const countryName = feature.properties?.name || "Country";
+          const isSelected = selectedFeature && selectedFeature.type === "country" && (selectedFeature.name === countryName || countryName.includes(selectedFeature.name));
+          const isHovered = hoveredCountryName && countryName === hoveredCountryName;
+
+          ctx.beginPath();
+          path(feature);
+
+          if (isSelected) {
+            ctx.fillStyle = "#F4D03F"; // Solid Gold Fill on tap
+          } else if (isHovered) {
+            ctx.fillStyle = "rgba(66, 194, 203, 0.8)"; // Bright Cyan Fill on hover
+          } else {
+            ctx.fillStyle = getCountryColor(countryName);
+          }
+
+          ctx.fill();
+          ctx.lineWidth = isSelected || isHovered ? 1.8 : 0.4;
+          ctx.strokeStyle = isSelected || isHovered ? "#ffffff" : "rgba(10, 20, 30, 0.6)";
+          ctx.stroke();
+        });
       }
+
+      if (isAutoSpinning && !isDraggingRef.current) {
+        rotationRef.current[0] += 0.2;
+      }
+
+      animationFrameId = requestAnimationFrame(render);
     };
-    window.addEventListener("resize", handleResize);
+
+    render();
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      try {
-        if (globeContainerRef.current) {
-          globeContainerRef.current.innerHTML = "";
-        }
-      } catch (e) {
-        // cleanup
-      }
+      window.removeEventListener("resize", updateSize);
+      cancelAnimationFrame(animationFrameId);
     };
-  }, [countriesGeoJson, selectedFeature, hoveredPolygon]);
+  }, [worldGeoJson, selectedFeature, hoveredCountryName, isAutoSpinning]);
+
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsAutoSpinning(false); // Stop auto-spinning instantly on drag/move!
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    lastMouseRef.current = { x: clientX, y: clientY };
+    startMouseRef.current = { x: clientX, y: clientY };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDraggingRef.current) return;
+    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+
+    const dx = clientX - lastMouseRef.current.x;
+    const dy = clientY - lastMouseRef.current.y;
+
+    if (Math.abs(clientX - startMouseRef.current.x) > 5 || Math.abs(clientY - startMouseRef.current.y) > 5) {
+      hasDraggedRef.current = true;
+    }
+
+    rotationRef.current[0] += dx * 0.4;
+    rotationRef.current[1] -= dy * 0.4;
+
+    lastMouseRef.current = { x: clientX, y: clientY };
+
+    // Hover detection without blinking
+    if (canvasRef.current && worldGeoJson) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      const projection = d3.geoOrthographic()
+        .scale(scaleRef.current)
+        .translate([canvasRef.current.width / 2, canvasRef.current.height / 2])
+        .rotate(rotationRef.current);
+      const coords = projection.invert?.([x, y]);
+      if (coords) {
+        const hovered = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
+        setHoveredCountryName(hovered ? hovered.properties?.name : null);
+      }
+    }
+  };
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsAutoSpinning(false);
+    if (e.deltaY < 0) {
+      targetScaleRef.current = Math.min(550, targetScaleRef.current + 40);
+    } else {
+      targetScaleRef.current = Math.max(140, targetScaleRef.current - 40);
+    }
+  };
+
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    setIsAutoSpinning(false); // Stop auto-spin on click
+
+    if (hasDraggedRef.current) {
+      hasDraggedRef.current = false;
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas || !worldGeoJson) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const projection = d3.geoOrthographic()
+      .scale(scaleRef.current)
+      .translate([canvas.width / 2, canvas.height / 2])
+      .rotate(rotationRef.current);
+
+    const coords = projection.invert?.([x, y]);
+    if (!coords) return;
+
+    const clickedFeature = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
+
+    if (clickedFeature) {
+      const rawName = clickedFeature.properties?.name || "";
+      const country: FeatureData = FEATURE_DATABASE[rawName] || {
+        name: rawName || "Selected Territory",
+        code: rawName.substring(0, 2).toUpperCase() || "UN",
+        type: rawName === "Antarctica" || rawName === "Greenland" ? "ice" : "country",
+        capital: "Capital Region",
+        population: "Estimated 10M+ people",
+        region: "Global Frontier",
+        area: "50,000+ km²",
+        languages: "Official / Regional",
+        lat: coords[1],
+        lng: coords[0]
+      };
+      setSelectedFeature(country);
+      targetScaleRef.current = 450;
+      rotationRef.current = [-country.lng, -country.lat, 0];
+    } else {
+      let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
+      if (coords[0] < -100 || coords[0] > 120) {
+        waterFeature = FEATURE_DATABASE["Pacific Ocean"];
+      } else if (coords[0] > 40 && coords[0] < 110 && coords[1] < 15) {
+        waterFeature = FEATURE_DATABASE["Indian Ocean"];
+      } else if (coords[1] < -60) {
+        waterFeature = FEATURE_DATABASE["Southern Ocean"];
+      } else if (coords[1] > 70) {
+        waterFeature = FEATURE_DATABASE["Arctic Ocean"];
+      }
+
+      setSelectedFeature(waterFeature);
+      targetScaleRef.current = 380;
+      rotationRef.current = [-coords[0], -coords[1], 0];
+    }
+  };
 
   const handleZoomIn = () => {
-    if (!globeInstanceRef.current) return;
-    const pov = globeInstanceRef.current.pointOfView();
-    const nextAlt = Math.max(0.8, pov.altitude - 0.4);
-    globeInstanceRef.current.pointOfView({ ...pov, altitude: nextAlt }, 600);
+    setIsAutoSpinning(false);
+    targetScaleRef.current = Math.min(550, targetScaleRef.current + 60);
   };
 
   const handleZoomOut = () => {
-    if (!globeInstanceRef.current) return;
-    const pov = globeInstanceRef.current.pointOfView();
-    const nextAlt = Math.min(3.5, pov.altitude + 0.4);
-    globeInstanceRef.current.pointOfView({ ...pov, altitude: nextAlt }, 600);
+    setIsAutoSpinning(false);
+    targetScaleRef.current = Math.max(140, targetScaleRef.current - 60);
   };
 
   const handleResetView = () => {
-    if (!globeInstanceRef.current) return;
-    globeInstanceRef.current.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1000);
+    rotationRef.current = [-10, -15, 0];
+    targetScaleRef.current = 280;
     setSelectedFeature(null);
+    setIsAutoSpinning(true);
   };
 
   const handleSearchSelect = (countryName: string) => {
-    const item = FEATURE_DATABASE[countryName];
-    if (item && globeInstanceRef.current) {
-      setSelectedFeature(item);
-      globeInstanceRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.4 }, 1200);
+    setIsAutoSpinning(false);
+    const country = FEATURE_DATABASE[countryName];
+    if (country) {
+      setSelectedFeature(country);
+      targetScaleRef.current = 450;
+      rotationRef.current = [-country.lng, -country.lat, 0];
     }
   };
 
@@ -205,10 +351,10 @@ export default function GlobeExplorer() {
             Cartographic Atlas
           </div>
           <h1 className="text-3xl md:text-5xl text-white font-extrabold tracking-tight mb-2">
-            3D Globe Explorer
+            3D Vector Globe Explorer
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Hover to inspect country borders, click any country to fill with color and zoom in.
+            Hover to highlight country borders, click to fill with color and zoom in.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -247,8 +393,21 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 3D Globe Container */}
-        <div ref={globeContainerRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
+        {/* 2D/3D Vector Globe Canvas */}
+        <canvas
+          ref={canvasRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleMouseDown}
+          onTouchMove={handleMouseMove}
+          onTouchEnd={handleMouseUp}
+          onWheel={handleWheel}
+          onClick={handleCanvasClick}
+          style={{ width: "100%", height: "100%", display: "block" }}
+          className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
+        />
 
         {/* Control Overlay Instructions */}
         <div className="absolute bottom-5 left-5 z-30 flex items-center gap-2 text-[11px] font-mono text-gray-400 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md pointer-events-none">
