@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import MapSkeleton from "./skeletons/MapSkeleton";
 import VideoPreviewModal from "./VideoPreviewModal";
+import AdBanner from "./AdBanner";
 
 // Public ArcGIS World Street Map & Satellite World Imagery tiles without a client API key.
 const STREET_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
@@ -628,17 +629,22 @@ export default function InteractiveMap() {
       </div>
 
       {/* Minimalist Page Header */}
-      <header className="mb-6">
-        <div className="flex items-center gap-2 text-geoCyan font-semibold uppercase tracking-wider text-xs mb-2">
-          <MapIcon className="w-3.5 h-3.5" />
-          Cartographic Atlas
+      <header className="mb-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div className="lg:col-span-7 text-center lg:text-left">
+          <div className="inline-flex items-center gap-2 text-geoCyan font-semibold uppercase tracking-wider text-xs mb-2 bg-geoCyan/10 px-3 py-1 rounded-full border border-geoCyan/20">
+            <MapIcon className="w-3.5 h-3.5" />
+            Cartographic Atlas
+          </div>
+          <h1 className="text-3xl md:text-5xl text-white font-extrabold tracking-tight mb-2">
+            Interactive Map
+          </h1>
+          <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+            Explore border anomalies, enclaves, and geopolitical frontiers with high-precision cartography.
+          </p>
         </div>
-        <h1 className="text-3xl md:text-4xl text-white font-extrabold tracking-tight">
-          Interactive Map
-        </h1>
-        <p className="text-gray-400 text-sm mt-1 max-w-xl leading-relaxed">
-          Explore border anomalies, enclaves, and geopolitical frontiers with high-precision cartography.
-        </p>
+        <div className="lg:col-span-5">
+          <AdBanner slotId="interactive-map-header-slot" className="my-0" />
+        </div>
       </header>
 
       {/* Map Search and Status */}
