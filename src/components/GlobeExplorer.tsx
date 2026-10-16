@@ -22,7 +22,7 @@ export interface FeatureData {
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753, color: "#F4D03F" },
-  "United States": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129, color: "#42C2CB" },
+  "United States of America": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129, color: "#42C2CB" },
   "United Kingdom": { name: "United Kingdom", code: "GB", type: "country", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", lat: 55.3781, lng: -3.4360, color: "#34d399" },
   "France": { name: "France", code: "FR", type: "country", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", lat: 46.2276, lng: 2.2137, color: "#fb7185" },
   "Germany": { name: "Germany", code: "DE", type: "country", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", lat: 51.1657, lng: 10.4515, color: "#a78bfa" },
@@ -36,43 +36,98 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "China": { name: "China", code: "CN", type: "country", capital: "Beijing", population: "1,412,000,000 people", region: "Asia • Eastern Asia", area: "9,596,961 km²", languages: "Mandarin Chinese", lat: 35.8617, lng: 104.1954, color: "#42C2CB" }
 };
 
+const COUNTRY_COLORS = ["#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51", "#457b9d", "#1d3557", "#6a040f", "#38bdf8", "#a78bfa"];
+
+function getCountryColor(name: string): string {
+  if (!name) return "#2a9d8f";
+  const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return COUNTRY_COLORS[hash % COUNTRY_COLORS.length];
+}
+
 export default function GlobeExplorer() {
   const globeContainerRef = useRef<HTMLDivElement>(null);
   const globeInstanceRef = useRef<GlobeInstance | null>(null);
   const navigate = useNavigate();
 
   const [selectedFeature, setSelectedFeature] = useState<FeatureData | null>(FEATURE_DATABASE["Nigeria"]);
+  const [hoveredPolygon, setHoveredPolygon] = useState<any | null>(null);
+  const [countriesGeoJson, setCountriesGeoJson] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetch("https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.features) {
+          setCountriesGeoJson(data.features);
+        }
+      })
+      .catch(err => console.warn("Failed to load country polygons:", err));
+  }, []);
 
   useEffect(() => {
     if (!globeContainerRef.current) return;
 
-    // Initialize globe.gl 3D globe with Night Earth texture and atmosphere
     const globe = Globe()(globeContainerRef.current)
       .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
       .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
       .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
       .showAtmosphere(true)
       .atmosphereColor("#42C2CB")
-      .atmosphereAltitude(0.2)
-      .labelsData(Object.values(FEATURE_DATABASE))
-      .labelLat(d => (d as FeatureData).lat)
-      .labelLng(d => (d as FeatureData).lng)
-      .labelText(d => (d as FeatureData).name)
-      .labelSize(1.6)
-      .labelDotRadius(0.7)
-      .labelColor(d => (d as FeatureData).color)
-      .labelResolution(3)
-      .onLabelClick(d => {
-        const item = d as FeatureData;
+      .atmosphereAltitude(0.18)
+      .polygonsData(countriesGeoJson)
+      .polygonAltitude(d => d === hoveredPolygon ? 0.04 : (selectedFeature && (d as any).properties?.NAME === selectedFeature.name ? 0.03 : 0.01))
+      .polygonCapColor(d => {
+        const name = (d as any).properties?.NAME;
+        if (selectedFeature && name === selectedFeature.name) return "#F4D03F"; // Gold fill on tap
+        if (d === hoveredPolygon) return "rgba(66, 194, 203, 0.8)"; // Bright cyan on hover
+        return getCountryColor(name);
+      })
+      .polygonSideColor(() => "rgba(15, 23, 42, 0.8)")
+      .polygonStrokeColor(d => {
+        const name = (d as any).properties?.NAME;
+        if (selectedFeature && name === selectedFeature.name) return "#ffffff";
+        if (d === hoveredPolygon) return "#F4D03F";
+        return "rgba(66, 194, 203, 0.35)";
+      })
+      .onPolygonHover(polygon => {
+        setHoveredPolygon(polygon);
+      })
+      .onPolygonClick(polygon => {
+        const props = (polygon as any).properties;
+        const name = props?.NAME || "Selected Country";
+        const item: FeatureData = FEATURE_DATABASE[name] || {
+          name,
+          code: props?.ISO_A2 || "UN",
+          type: "country",
+          capital: "Capital Region",
+          population: "Estimated 10M+ people",
+          region: "Global Frontier",
+          area: "50,000+ km²",
+          languages: "Official / Regional",
+          lat: 10,
+          lng: 10,
+          color: "#42C2CB"
+        };
         setSelectedFeature(item);
-        globe.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.5 }, 1200);
+        if (globeInstanceRef.current) {
+          globeInstanceRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.4 }, 1200);
+        }
       });
 
     const controls = globe.controls();
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.8;
+    controls.autoRotateSpeed = 0.6;
     controls.enableZoom = true;
+
+    // Stop auto-spinning instantly when user starts dragging or clicking the globe
+    const stopAutoRotate = () => {
+      if (controls.autoRotate) {
+        controls.autoRotate = false;
+      }
+    };
+    controls.addEventListener("start", stopAutoRotate);
+    globeContainerRef.current.addEventListener("pointerdown", stopAutoRotate);
 
     globeInstanceRef.current = globe;
 
@@ -94,7 +149,7 @@ export default function GlobeExplorer() {
         // cleanup
       }
     };
-  }, []);
+  }, [countriesGeoJson, selectedFeature, hoveredPolygon]);
 
   const handleZoomIn = () => {
     if (!globeInstanceRef.current) return;
@@ -120,7 +175,7 @@ export default function GlobeExplorer() {
     const item = FEATURE_DATABASE[countryName];
     if (item && globeInstanceRef.current) {
       setSelectedFeature(item);
-      globeInstanceRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.5 }, 1200);
+      globeInstanceRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.4 }, 1200);
     }
   };
 
@@ -153,7 +208,7 @@ export default function GlobeExplorer() {
             3D Globe Explorer
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Drag to rotate the planet, click any country pin to inspect population, capital, and geography data.
+            Hover to inspect country borders, click any country to fill with color and zoom in.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -172,7 +227,7 @@ export default function GlobeExplorer() {
               value={selectedFeature?.name || ""}
               className="bg-transparent text-white text-xs outline-none cursor-pointer"
             >
-              <option value="" disabled className="bg-gray-900 text-gray-400">Select location to explore...</option>
+              <option value="" disabled className="bg-gray-900 text-gray-400">Select country to explore...</option>
               {Object.keys(FEATURE_DATABASE).map(name => (
                 <option key={name} value={name} className="bg-gray-900 text-white">
                   {name}
@@ -192,12 +247,12 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 3D Globe Canvas Container */}
+        {/* 3D Globe Container */}
         <div ref={globeContainerRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
 
         {/* Control Overlay Instructions */}
         <div className="absolute bottom-5 left-5 z-30 flex items-center gap-2 text-[11px] font-mono text-gray-400 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md pointer-events-none">
-          <span className="text-geoCyan font-bold">click</span> pin • <span className="text-geoCyan font-bold">drag</span> rotate • <span className="text-geoCyan font-bold">scroll</span> zoom
+          <span className="text-geoCyan font-bold">hover</span> highlight • <span className="text-geoCyan font-bold">click</span> select & fill • <span className="text-geoCyan font-bold">drag</span> rotate
         </div>
 
         {/* Bottom Left Floating Zoom Buttons */}
@@ -225,7 +280,7 @@ export default function GlobeExplorer() {
           </button>
         </div>
 
-        {/* Compact Popup Card Above Map (Just like InteractiveMap!) */}
+        {/* Compact Popup Card Above Map */}
         {selectedFeature && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
