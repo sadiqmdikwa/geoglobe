@@ -72,6 +72,7 @@ export default function GlobeExplorer() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const rotationRef = useRef<[number, number, number]>([-10, -15, 0]);
+  const targetRotationRef = useRef<[number, number, number]>([-10, -15, 0]);
   const scaleRef = useRef<number>(280);
   const targetScaleRef = useRef<number>(280);
   const isDraggingRef = useRef<boolean>(false);
@@ -89,7 +90,7 @@ export default function GlobeExplorer() {
       .catch(err => console.warn("Failed to load world topology:", err));
   }, []);
 
-  // Main Render Loop (Buttery smooth 60 FPS vector orthographic canvas)
+  // Main Render Loop with Smooth Cinematic Interpolation (Slerp/Lerp)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -114,7 +115,10 @@ export default function GlobeExplorer() {
 
       ctx.clearRect(0, 0, width, height);
 
-      scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.1;
+      // Smooth cinematic zoom and rotation interpolation
+      scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.08;
+      rotationRef.current[0] += (targetRotationRef.current[0] - rotationRef.current[0]) * 0.08;
+      rotationRef.current[1] += (targetRotationRef.current[1] - rotationRef.current[1]) * 0.08;
 
       const projection = d3.geoOrthographic()
         .scale(scaleRef.current)
@@ -125,7 +129,7 @@ export default function GlobeExplorer() {
       const path = d3.geoPath().projection(projection).context(ctx);
       const graticule = d3.geoGraticule10();
 
-      // 1. Ocean Base Sphere (#081420)
+      // 1. Ocean Base Sphere
       ctx.beginPath();
       path({ type: "Sphere" });
       ctx.fillStyle = selectedFeature?.type === "water" ? "#0a2540" : "#081420";
@@ -141,7 +145,7 @@ export default function GlobeExplorer() {
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
-      // 3. Country Polygons (Stable without blinking)
+      // 3. Country Polygons
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
@@ -152,9 +156,9 @@ export default function GlobeExplorer() {
           path(feature);
 
           if (isSelected) {
-            ctx.fillStyle = "#F4D03F"; // Solid Gold Fill on tap
+            ctx.fillStyle = "#F4D03F";
           } else if (isHovered) {
-            ctx.fillStyle = "rgba(66, 194, 203, 0.8)"; // Bright Cyan Fill on hover
+            ctx.fillStyle = "rgba(66, 194, 203, 0.8)";
           } else {
             ctx.fillStyle = getCountryColor(countryName);
           }
@@ -167,7 +171,8 @@ export default function GlobeExplorer() {
       }
 
       if (isAutoSpinning && !isDraggingRef.current) {
-        rotationRef.current[0] += 0.2;
+        targetRotationRef.current[0] += 0.2;
+        rotationRef.current[0] = targetRotationRef.current[0];
       }
 
       animationFrameId = requestAnimationFrame(render);
@@ -182,7 +187,7 @@ export default function GlobeExplorer() {
   }, [worldGeoJson, selectedFeature, hoveredCountryName, isAutoSpinning]);
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsAutoSpinning(false); // Stop auto-spinning instantly on drag/move!
+    setIsAutoSpinning(false);
     isDraggingRef.current = true;
     hasDraggedRef.current = false;
     const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
@@ -203,26 +208,12 @@ export default function GlobeExplorer() {
       hasDraggedRef.current = true;
     }
 
-    rotationRef.current[0] += dx * 0.4;
-    rotationRef.current[1] -= dy * 0.4;
+    targetRotationRef.current[0] += dx * 0.4;
+    targetRotationRef.current[1] -= dy * 0.4;
+    rotationRef.current[0] = targetRotationRef.current[0];
+    rotationRef.current[1] = targetRotationRef.current[1];
 
     lastMouseRef.current = { x: clientX, y: clientY };
-
-    // Hover detection without blinking
-    if (canvasRef.current && worldGeoJson) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      const projection = d3.geoOrthographic()
-        .scale(scaleRef.current)
-        .translate([canvasRef.current.width / 2, canvasRef.current.height / 2])
-        .rotate(rotationRef.current);
-      const coords = projection.invert?.([x, y]);
-      if (coords) {
-        const hovered = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
-        setHoveredCountryName(hovered ? hovered.properties?.name : null);
-      }
-    }
   };
 
   const handleMouseUp = () => {
@@ -240,7 +231,7 @@ export default function GlobeExplorer() {
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
-    setIsAutoSpinning(false); // Stop auto-spin on click
+    setIsAutoSpinning(false);
 
     if (hasDraggedRef.current) {
       hasDraggedRef.current = false;
@@ -279,7 +270,7 @@ export default function GlobeExplorer() {
       };
       setSelectedFeature(country);
       targetScaleRef.current = 450;
-      rotationRef.current = [-country.lng, -country.lat, 0];
+      targetRotationRef.current = [-country.lng, -country.lat, 0]; // Smooth cinematic rotate!
     } else {
       let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
       if (coords[0] < -100 || coords[0] > 120) {
@@ -294,7 +285,7 @@ export default function GlobeExplorer() {
 
       setSelectedFeature(waterFeature);
       targetScaleRef.current = 380;
-      rotationRef.current = [-coords[0], -coords[1], 0];
+      targetRotationRef.current = [-coords[0], -coords[1], 0]; // Smooth cinematic rotate!
     }
   };
 
@@ -309,7 +300,7 @@ export default function GlobeExplorer() {
   };
 
   const handleResetView = () => {
-    rotationRef.current = [-10, -15, 0];
+    targetRotationRef.current = [-10, -15, 0];
     targetScaleRef.current = 280;
     setSelectedFeature(null);
     setIsAutoSpinning(true);
@@ -321,7 +312,7 @@ export default function GlobeExplorer() {
     if (country) {
       setSelectedFeature(country);
       targetScaleRef.current = 450;
-      rotationRef.current = [-country.lng, -country.lat, 0];
+      targetRotationRef.current = [-country.lng, -country.lat, 0];
     }
   };
 
@@ -351,10 +342,10 @@ export default function GlobeExplorer() {
             Cartographic Atlas
           </div>
           <h1 className="text-3xl md:text-5xl text-white font-extrabold tracking-tight mb-2">
-            3D Vector Globe Explorer
+            3D Globe Explorer
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Hover to highlight country borders, click to fill with color and zoom in.
+            Hover to highlight country borders, click to fill with color and smoothly zoom in.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -393,7 +384,7 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 2D/3D Vector Globe Canvas */}
+        {/* 2D/3D Canvas Vector Globe */}
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
