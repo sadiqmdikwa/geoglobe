@@ -169,17 +169,35 @@ const COUNTRY_CODE_MAP: { [key: string]: string } = {
   "mozambique": "mz",
   "madagascar": "mg",
   "mauritius": "mu",
-  "seychelles": "sc"
+  "seychelles": "sc",
+  "sao tome and principe": "st",
+  "sao tome": "st",
+  "cabo verde": "cv",
+  "cape verde": "cv",
+  "cote divoire": "ci",
+  "ivory coast": "ci"
 };
 
 export function getVerifiedCountryCode(countryName: string): string | undefined {
-  const clean = countryName.toLowerCase().replace(/republic of|the|democratic|kingdom of|federal|islamic|state of/g, "").trim();
-  if (COUNTRY_CODE_MAP[clean]) return COUNTRY_CODE_MAP[clean];
+  if (!countryName) return undefined;
+
+  const normalized = countryName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/republic of|the|democratic|democratique|kingdom of|federal|islamic|state of|and|di/g, " ")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+
+  if (COUNTRY_CODE_MAP[normalized]) return COUNTRY_CODE_MAP[normalized];
+
   for (const [key, code] of Object.entries(COUNTRY_CODE_MAP)) {
-    if (clean.includes(key) || key.includes(clean)) {
+    const normKey = key.replace(/[^a-z0-9]/g, "");
+    if (normalized.includes(normKey) || normKey.includes(normalized)) {
       return code;
     }
   }
+
   return undefined;
 }
 
