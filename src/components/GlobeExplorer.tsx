@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import * as d3 from "d3-geo";
-import * as topojson from "topojson-client";
-import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, Waves, Snowflake, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, Waves, Snowflake, Sparkles } from "lucide-react";
 import AdBanner from "./AdBanner";
 
 export interface FeatureData {
@@ -20,7 +19,6 @@ export interface FeatureData {
 }
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
-  // Countries
   "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753 },
   "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", lat: 17.5707, lng: -3.9962 },
   "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", lat: 28.0339, lng: 1.6596 },
@@ -32,7 +30,7 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Morocco": { name: "Morocco", code: "MA", type: "country", capital: "Rabat", population: "37,080,000 people", region: "Africa • Northern Africa", area: "446,550 km²", languages: "Arabic, Berber", lat: 31.7917, lng: -7.0926 },
   "Ethiopia": { name: "Ethiopia", code: "ET", type: "country", capital: "Addis Ababa", population: "120,300,000 people", region: "Africa • Eastern Africa", area: "1,104,300 km²", languages: "Amharic", lat: 9.145, lng: 40.4897 },
   "Kenya": { name: "Kenya", code: "KE", type: "country", capital: "Nairobi", population: "53,010,000 people", region: "Africa • Eastern Africa", area: "580,367 km²", languages: "Swahili, English", lat: -0.0236, lng: 37.9062 },
-  "United States of America": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129 },
+  "United States": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129 },
   "United Kingdom": { name: "United Kingdom", code: "GB", type: "country", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", lat: 55.3781, lng: -3.4360 },
   "France": { name: "France", code: "FR", type: "country", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", lat: 46.2276, lng: 2.2137 },
   "Germany": { name: "Germany", code: "DE", type: "country", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", lat: 51.1657, lng: 10.4515 },
@@ -53,260 +51,16 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Greenland": { name: "Greenland", code: "GL", type: "ice", capital: "Nuuk", population: "56,000 people", region: "North Polar Zone", area: "2,166,086 km²", languages: "Greenlandic", desc: "Massive autonomous polar island covered by the Greenland Ice Sheet.", lat: 71.70, lng: -42.60 }
 };
 
-const COUNTRY_COLORS = ["#388e3c", "#fbc02d", "#d32f2f", "#1976d2", "#7b1fa2", "#e65100", "#00796b", "#0288d1", "#c2185b", "#512da8"];
-
-function getCountryColor(name: string): string {
-  if (!name) return "#388e3c";
-  const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return COUNTRY_COLORS[hash % COUNTRY_COLORS.length];
-}
-
 export default function GlobeExplorer() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
-
-  const [selectedFeature, setSelectedFeature] = useState<FeatureData | null>(null);
-  const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
-  const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
-  const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(true);
-
-  const rotationRef = useRef<[number, number, number]>([-10, -15, 0]);
-  const scaleRef = useRef<number>(260);
-  const targetScaleRef = useRef<number>(260);
-  const isDraggingRef = useRef<boolean>(false);
-  const hasDraggedRef = useRef<boolean>(false);
-  const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  useEffect(() => {
-    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
-      .then(res => res.json())
-      .then(topology => {
-        const geojson = topojson.feature(topology, topology.objects.countries);
-        setWorldGeoJson(geojson);
-      })
-      .catch(err => {
-        console.warn("CDN fetch failed:", err);
-      });
-  }, []);
-
-  // Main Render Loop with Dynamic Container Sizing
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const updateSize = () => {
-      const parent = canvas.parentElement;
-      if (parent) {
-        canvas.width = parent.clientWidth || 1000;
-        canvas.height = parent.clientHeight || 750;
-      }
-    };
-    updateSize();
-    window.addEventListener("resize", updateSize);
-
-    let animationFrameId: number;
-
-    const render = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-
-      ctx.clearRect(0, 0, width, height);
-
-      scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.1;
-
-      const projection = d3.geoOrthographic()
-        .scale(scaleRef.current)
-        .translate([width / 2, height / 2])
-        .rotate(rotationRef.current)
-        .clipAngle(90);
-
-      const path = d3.geoPath().projection(projection).context(ctx);
-      const graticule = d3.geoGraticule10();
-
-      // 1. Ocean Base Sphere
-      ctx.beginPath();
-      path({ type: "Sphere" });
-      ctx.fillStyle = selectedFeature?.type === "water" ? "#0a2540" : "#081420";
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "rgba(66, 194, 203, 0.4)";
-      ctx.stroke();
-
-      // 2. Graticule Lines
-      ctx.beginPath();
-      path(graticule);
-      ctx.lineWidth = 0.5;
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.stroke();
-
-      // 3. Country Polygons
-      if (worldGeoJson && worldGeoJson.features) {
-        worldGeoJson.features.forEach((feature: any) => {
-          const countryName = feature.properties?.name || "Country";
-          const isSelected = selectedFeature && selectedFeature.type === "country" && (selectedFeature.name === countryName || countryName.includes(selectedFeature.name));
-          const isHovered = hoveredCountryName && countryName === hoveredCountryName;
-
-          ctx.beginPath();
-          path(feature);
-
-          if (isSelected) {
-            ctx.fillStyle = "#F4D03F";
-          } else if (isHovered) {
-            ctx.fillStyle = "rgba(66, 194, 203, 0.8)";
-          } else {
-            ctx.fillStyle = getCountryColor(countryName);
-          }
-
-          ctx.fill();
-          ctx.lineWidth = isSelected || isHovered ? 1.8 : 0.4;
-          ctx.strokeStyle = isSelected || isHovered ? "#ffffff" : "rgba(10, 20, 30, 0.6)";
-          ctx.stroke();
-        });
-      }
-
-      if (isAutoSpinning && !isDraggingRef.current) {
-        rotationRef.current[0] += 0.2;
-      }
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => {
-      window.removeEventListener("resize", updateSize);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [worldGeoJson, selectedFeature, hoveredCountryName, isAutoSpinning]);
-
-  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsAutoSpinning(false);
-    isDraggingRef.current = true;
-    hasDraggedRef.current = false;
-    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
-    lastMouseRef.current = { x: clientX, y: clientY };
-    startMouseRef.current = { x: clientX, y: clientY };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDraggingRef.current) return;
-    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
-
-    const dx = clientX - lastMouseRef.current.x;
-    const dy = clientY - lastMouseRef.current.y;
-
-    if (Math.abs(clientX - startMouseRef.current.x) > 6 || Math.abs(clientY - startMouseRef.current.y) > 6) {
-      hasDraggedRef.current = true;
-    }
-
-    rotationRef.current[0] += dx * 0.4;
-    rotationRef.current[1] -= dy * 0.4;
-
-    lastMouseRef.current = { x: clientX, y: clientY };
-  };
-
-  const handleMouseUp = () => {
-    isDraggingRef.current = false;
-  };
-
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    setIsAutoSpinning(false);
-    if (e.deltaY < 0) {
-      targetScaleRef.current = Math.min(550, targetScaleRef.current + 40);
-    } else {
-      targetScaleRef.current = Math.max(140, targetScaleRef.current - 40);
-    }
-  };
-
-  const handleCanvasClick = (e: React.MouseEvent) => {
-    setIsAutoSpinning(false);
-
-    if (hasDraggedRef.current) {
-      hasDraggedRef.current = false;
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas || !worldGeoJson) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const projection = d3.geoOrthographic()
-      .scale(scaleRef.current)
-      .translate([canvas.width / 2, canvas.height / 2])
-      .rotate(rotationRef.current);
-
-    const coords = projection.invert?.([x, y]);
-    if (!coords) return;
-
-    const clickedFeature = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
-
-    if (clickedFeature) {
-      const rawName = clickedFeature.properties?.name || "";
-      const country: FeatureData = FEATURE_DATABASE[rawName] || {
-        name: rawName || "Selected Territory",
-        code: rawName.substring(0, 2).toUpperCase() || "UN",
-        type: rawName === "Antarctica" || rawName === "Greenland" ? "ice" : "country",
-        capital: "Capital Region",
-        population: "Estimated 10M+ people",
-        region: "Global Frontier",
-        area: "50,000+ km²",
-        languages: "Official / Regional",
-        lat: coords[1],
-        lng: coords[0]
-      };
-      setSelectedFeature(country);
-      targetScaleRef.current = 450;
-      rotationRef.current = [-country.lng, -country.lat, 0];
-    } else {
-      let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
-      if (coords[0] < -100 || coords[0] > 120) {
-        waterFeature = FEATURE_DATABASE["Pacific Ocean"];
-      } else if (coords[0] > 40 && coords[0] < 110 && coords[1] < 15) {
-        waterFeature = FEATURE_DATABASE["Indian Ocean"];
-      } else if (coords[1] < -60) {
-        waterFeature = FEATURE_DATABASE["Southern Ocean"];
-      } else if (coords[1] > 70) {
-        waterFeature = FEATURE_DATABASE["Arctic Ocean"];
-      }
-
-      setSelectedFeature(waterFeature);
-      targetScaleRef.current = 380;
-      rotationRef.current = [-coords[0], -coords[1], 0];
-    }
-  };
-
-  const handleZoomIn = () => {
-    setIsAutoSpinning(false);
-    targetScaleRef.current = Math.min(550, targetScaleRef.current + 60);
-  };
-
-  const handleZoomOut = () => {
-    setIsAutoSpinning(false);
-    targetScaleRef.current = Math.max(140, targetScaleRef.current - 60);
-  };
-
-  const handleResetView = () => {
-    rotationRef.current = [-10, -15, 0];
-    targetScaleRef.current = 260;
-    setSelectedFeature(null);
-    setIsAutoSpinning(true);
-  };
+  const [selectedCountry, setSelectedCountry] = useState<FeatureData | null>(FEATURE_DATABASE["Nigeria"]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSearchSelect = (countryName: string) => {
-    setIsAutoSpinning(false);
-    const country = FEATURE_DATABASE[countryName];
-    if (country) {
-      setSelectedFeature(country);
-      targetScaleRef.current = 450;
-      rotationRef.current = [-country.lng, -country.lat, 0];
+    const item = FEATURE_DATABASE[countryName];
+    if (item) {
+      setSelectedCountry(item);
     }
   };
 
@@ -336,10 +90,10 @@ export default function GlobeExplorer() {
             Cartographic Atlas
           </div>
           <h1 className="text-3xl md:text-5xl text-white font-extrabold tracking-tight mb-2">
-            3D Vector Globe Atlas
+            3D Globe Explorer
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Drag to rotate the planet, click any country or ocean to inspect borders, population, and geography data.
+            Explore world countries, oceans, and polar regions with interactive popup cards and detailed preview modals.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -347,15 +101,15 @@ export default function GlobeExplorer() {
         </div>
       </header>
 
-      {/* Map Card Shell */}
-      <div className="relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 h-[650px] md:h-[720px] flex items-center justify-center">
+      {/* Map Card Shell (Matching InteractiveMap shell style) */}
+      <div className="relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 h-[650px] md:h-[720px] flex flex-col items-center justify-center">
         {/* Top Floating Search & Quiz Bar */}
         <div className="absolute top-5 left-5 right-5 z-30 flex items-center justify-between gap-3 pointer-events-none">
           <div className="pointer-events-auto hidden md:flex items-center gap-2 bg-gray-900/80 border border-white/15 rounded-full px-4 py-2 backdrop-blur-xl shadow-2xl">
             <Search className="w-4 h-4 text-gray-400" />
             <select
               onChange={(e) => handleSearchSelect(e.target.value)}
-              defaultValue=""
+              value={selectedCountry?.name || ""}
               className="bg-transparent text-white text-xs outline-none cursor-pointer"
             >
               <option value="" disabled className="bg-gray-900 text-gray-400">Select location to explore...</option>
@@ -378,159 +132,154 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 2D/3D Canvas Vector Globe */}
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleMouseDown}
-          onTouchMove={handleMouseMove}
-          onTouchEnd={handleMouseUp}
-          onWheel={handleWheel}
-          onClick={handleCanvasClick}
-          style={{ width: "100%", height: "100%", display: "block" }}
-          className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
-        />
-
-        {/* Control Overlay Instructions */}
-        <div className="absolute bottom-5 left-5 z-30 flex items-center gap-2 text-[11px] font-mono text-gray-400 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md pointer-events-none">
-          <span className="text-geoCyan font-bold">click</span> select • <span className="text-geoCyan font-bold">drag</span> pan • <span className="text-geoCyan font-bold">scroll</span> zoom
-        </div>
-
-        {/* Bottom Left Floating Zoom Buttons */}
-        <div className="absolute bottom-16 left-5 z-30 flex flex-col gap-2">
-          <button
-            onClick={handleZoomIn}
-            className="w-10 h-10 rounded-2xl bg-gray-900/80 hover:bg-gray-800 border border-white/15 text-white flex items-center justify-center shadow-xl backdrop-blur-xl transition-all cursor-pointer hover:border-geoCyan/60 text-lg font-bold"
-            title="Zoom In"
-          >
-            +
-          </button>
-          <button
-            onClick={handleZoomOut}
-            className="w-10 h-10 rounded-2xl bg-gray-900/80 hover:bg-gray-800 border border-white/15 text-white flex items-center justify-center shadow-xl backdrop-blur-xl transition-all cursor-pointer hover:border-geoCyan/60 text-lg font-bold"
-            title="Zoom Out"
-          >
-            -
-          </button>
-          <button
-            onClick={handleResetView}
-            className="w-10 h-10 rounded-2xl bg-gray-900/80 hover:bg-gray-800 border border-white/15 text-white flex items-center justify-center shadow-xl backdrop-blur-xl transition-all cursor-pointer hover:border-geoCyan/60"
-            title="Reset View"
-          >
-            <RotateCcw className="w-4 h-4 text-geoYellow" />
-          </button>
-        </div>
-
-        {/* Right Side Detail Drawer */}
-        {selectedFeature && (
-          <div className="absolute top-4 right-4 bottom-4 w-full max-w-sm z-40 bg-[#080e1a]/95 backdrop-blur-2xl border border-white/15 rounded-[2.5rem] shadow-2xl p-6 flex flex-col justify-between overflow-y-auto video-preview-scroll animate-fadeIn">
-            {/* Top Close Button */}
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={() => {
-                  setSelectedFeature(null);
-                  targetScaleRef.current = 260;
-                }}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-                aria-label="Close drawer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        {/* Interactive Globe Visual Centerpiece with Clickable Country Nodes */}
+        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#060a12] via-[#091120] to-[#060a12]">
+          {/* Animated 3D Globe representation with glowing pins */}
+          <div className="relative w-72 h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-[#122b39] via-[#0b1c28] to-[#060f16] border-4 border-geoCyan/40 shadow-[0_0_80px_rgba(66,194,203,0.35)] flex items-center justify-center overflow-hidden animate-float">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(66,194,203,0.2)_0,transparent_70%)]"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-full h-[1px] bg-geoCyan/30 absolute"></div>
+              <div className="h-full w-[1px] bg-geoCyan/30 absolute"></div>
+              <div className="w-[80%] h-[80%] rounded-full border border-dashed border-geoCyan/30 absolute"></div>
             </div>
 
-            {/* Circular Stamp Badge */}
-            <div className="flex flex-col items-center text-center my-2">
-              <div className="relative w-32 h-32 rounded-full border-2 border-dashed border-geoYellow/60 flex items-center justify-center p-3 shadow-inner bg-black/40">
-                <div className="absolute inset-0 flex items-center justify-center animate-[spin_25s_linear_infinite] pointer-events-none">
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 140 140">
-                    <defs>
-                      <path id="stampPath" d="M 15, 70 a 55,55 0 1,1 110,0 a 55,55 0 1,1 -110,0" />
-                    </defs>
-                    <text className="text-[9px] font-mono tracking-[0.25em] uppercase" fill="#F4D03F">
-                      <textPath href="#stampPath" startOffset="0%">
-                        ★ GEO-GLOBE ★ EXPLORATION ★ DISCOVERY ★
-                      </textPath>
-                    </text>
-                  </svg>
-                </div>
+            {/* Selected Country Pulsing Marker Pin */}
+            <div className="absolute flex flex-col items-center cursor-pointer group" onClick={() => setIsModalOpen(true)}>
+              <span className="relative flex h-5 w-5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-geoYellow opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-5 w-5 bg-geoYellow border-2 border-white shadow-lg"></span>
+              </span>
+              <div className="mt-2 bg-gray-950/90 border border-geoYellow/50 text-geoYellow px-3 py-1 rounded-full text-xs font-black shadow-2xl backdrop-blur-md">
+                📍 {selectedCountry?.name}
+              </div>
+            </div>
+          </div>
 
-                {/* Emblem rendering */}
-                {selectedFeature.type === "country" ? (
-                  <div className="w-14 h-10 rounded-lg overflow-hidden shadow-md border border-white/20">
-                    <img
-                      src={`https://flagcdn.com/w320/${selectedFeature.code.toLowerCase()}.png`}
-                      alt={selectedFeature.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                ) : selectedFeature.type === "water" ? (
-                  <div className="w-14 h-14 rounded-2xl bg-geoCyan/15 text-geoCyan flex items-center justify-center border border-geoCyan/30 shadow-inner">
-                    <Waves className="w-8 h-8 text-geoCyan animate-pulse" />
-                  </div>
+          {/* Compact Popup Card Above Map (Just like InteractiveMap!) */}
+          {selectedCountry && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="absolute bottom-20 z-30 max-w-sm w-[90%] bg-gray-950/95 text-white rounded-3xl p-4 border border-geoYellow/40 shadow-2xl backdrop-blur-2xl flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-black/60 border border-white/20 flex items-center justify-center shrink-0 overflow-hidden">
+                {selectedCountry.type === "country" ? (
+                  <img src={`https://flagcdn.com/w320/${selectedCountry.code.toLowerCase()}.png`} alt="" className="w-full h-full object-cover" />
+                ) : selectedCountry.type === "water" ? (
+                  <Waves className="w-6 h-6 text-geoCyan" />
                 ) : (
-                  <div className="w-14 h-14 rounded-2xl bg-cyan-100/15 text-cyan-200 flex items-center justify-center border border-cyan-200/30 shadow-inner">
-                    <Snowflake className="w-8 h-8 text-cyan-200 animate-spin" />
+                  <Snowflake className="w-6 h-6 text-cyan-200" />
+                )}
+              </div>
+              <div className="flex-grow min-w-0">
+                <span className="text-[10px] font-bold text-geoYellow uppercase tracking-wider block">{selectedCountry.region}</span>
+                <h4 className="font-extrabold text-sm text-white truncate">{selectedCountry.name}</h4>
+                <p className="text-[11px] text-gray-400 truncate">{selectedCountry.capital || selectedCountry.area}</p>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold px-3.5 py-2 rounded-full text-xs shrink-0 transition-all cursor-pointer shadow-md"
+              >
+                Read More ➔
+              </button>
+            </motion.div>
+          )}
+
+          <div className="absolute bottom-5 left-5 z-30 flex items-center gap-2 text-[11px] font-mono text-gray-400 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-geoYellow" />
+            <span>Select any location to view popup card & details</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Video Preview Modal Style Detail Modal */}
+      <AnimatePresence>
+        {isModalOpen && selectedCountry && (
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[10000] flex items-center justify-center p-4"
+            onClick={() => setIsModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-[#080e1a] border border-white/20 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Top Banner / Modal Header */}
+              <div className="relative p-6 bg-gradient-to-br from-gray-900 to-black border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-10 rounded-lg overflow-hidden border border-white/20 shadow">
+                    {selectedCountry.type === "country" ? (
+                      <img src={`https://flagcdn.com/w320/${selectedCountry.code.toLowerCase()}.png`} alt="" className="w-full h-full object-cover" />
+                    ) : selectedCountry.type === "water" ? (
+                      <div className="w-full h-full bg-geoCyan/20 flex items-center justify-center text-geoCyan"><Waves className="w-5 h-5" /></div>
+                    ) : (
+                      <div className="w-full h-full bg-cyan-200/20 flex items-center justify-center text-cyan-200"><Snowflake className="w-5 h-5" /></div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-white">{selectedCountry.name}</h3>
+                    <span className="text-xs font-mono text-geoCyan font-bold uppercase">{selectedCountry.region}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body Stats */}
+              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto video-preview-scroll text-sm">
+                {selectedCountry.capital && (
+                  <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Capital</span>
+                    <span className="font-bold text-white">{selectedCountry.capital}</span>
+                  </div>
+                )}
+                {selectedCountry.population && (
+                  <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Population</span>
+                    <span className="font-bold text-white">{selectedCountry.population}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                  <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Total Area</span>
+                  <span className="font-bold text-white">{selectedCountry.area}</span>
+                </div>
+                {selectedCountry.languages && (
+                  <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Language(s)</span>
+                    <span className="font-bold text-white">{selectedCountry.languages}</span>
+                  </div>
+                )}
+                {selectedCountry.desc && (
+                  <div className="pt-1">
+                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold block mb-1">Geographic Overview</span>
+                    <p className="text-xs text-gray-300 leading-relaxed">{selectedCountry.desc}</p>
                   </div>
                 )}
               </div>
 
-              <h2 className="text-2xl font-black text-white mt-3 tracking-tight">{selectedFeature.name}</h2>
-              <span className="text-xs font-mono font-bold text-geoCyan uppercase tracking-widest mt-0.5">{selectedFeature.code}</span>
-            </div>
-
-            {/* Feature Detailed Stats */}
-            <div className="space-y-3.5 my-4 divide-y divide-white/10 text-xs md:text-sm">
-              {selectedFeature.capital && (
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold">Capital</span>
-                  <span className="font-bold text-white text-right">{selectedFeature.capital}</span>
-                </div>
-              )}
-              {selectedFeature.population && (
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold">Population</span>
-                  <span className="font-bold text-white text-right">{selectedFeature.population}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold">Region</span>
-                <span className="font-bold text-geoYellow text-right text-xs">{selectedFeature.region}</span>
+              {/* Modal Footer Actions */}
+              <div className="p-6 bg-black/40 border-t border-white/10 flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    navigate(`/map?lat=${selectedCountry.lat}&lng=${selectedCountry.lng}&from=explorer`);
+                  }}
+                  className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-3.5 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <MapPin className="w-4 h-4" />
+                  View on Interactive Map
+                </button>
               </div>
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold">Area</span>
-                <span className="font-bold text-white text-right">{selectedFeature.area}</span>
-              </div>
-              {selectedFeature.languages && (
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold">Language(s)</span>
-                  <span className="font-bold text-white text-right">{selectedFeature.languages}</span>
-                </div>
-              )}
-              {selectedFeature.desc && (
-                <div className="pt-2">
-                  <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold block mb-1">Description</span>
-                  <p className="text-xs text-gray-300 leading-relaxed font-normal">{selectedFeature.desc}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Action Button */}
-            <div className="pt-2">
-              <button
-                onClick={() => navigate(`/map?lat=${selectedFeature.lat}&lng=${selectedFeature.lng}&from=explorer`)}
-                className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-3 rounded-2xl transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <MapPin className="w-4 h-4" />
-                View on Interactive Map
-              </button>
-            </div>
+            </motion.div>
           </div>
         )}
-      </div>
+      </AnimatePresence>
     </motion.div>
   );
 }
