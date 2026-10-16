@@ -90,11 +90,22 @@ export default function GlobeExplorer() {
       });
   }, []);
 
+  // Main Render Loop with Dynamic Container Sizing
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    const updateSize = () => {
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth || 1000;
+        canvas.height = parent.clientHeight || 750;
+      }
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
 
     let animationFrameId: number;
 
@@ -115,6 +126,7 @@ export default function GlobeExplorer() {
       const path = d3.geoPath().projection(projection).context(ctx);
       const graticule = d3.geoGraticule10();
 
+      // 1. Ocean Base Sphere
       ctx.beginPath();
       path({ type: "Sphere" });
       ctx.fillStyle = selectedFeature?.type === "water" ? "#0a2540" : "#081420";
@@ -123,12 +135,14 @@ export default function GlobeExplorer() {
       ctx.strokeStyle = "rgba(66, 194, 203, 0.4)";
       ctx.stroke();
 
+      // 2. Graticule Lines
       ctx.beginPath();
       path(graticule);
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
+      // 3. Country Polygons
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
@@ -163,6 +177,7 @@ export default function GlobeExplorer() {
     render();
 
     return () => {
+      window.removeEventListener("resize", updateSize);
       cancelAnimationFrame(animationFrameId);
     };
   }, [worldGeoJson, selectedFeature, hoveredCountryName, isAutoSpinning]);
@@ -199,7 +214,6 @@ export default function GlobeExplorer() {
     isDraggingRef.current = false;
   };
 
-  // Mouse wheel zoom support
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     setIsAutoSpinning(false);
@@ -218,14 +232,15 @@ export default function GlobeExplorer() {
       return;
     }
 
-    if (!canvasRef.current || !worldGeoJson) return;
-    const rect = canvasRef.current.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    if (!canvas || !worldGeoJson) return;
+    const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     const projection = d3.geoOrthographic()
       .scale(scaleRef.current)
-      .translate([canvasRef.current.width / 2, canvasRef.current.height / 2])
+      .translate([canvas.width / 2, canvas.height / 2])
       .rotate(rotationRef.current);
 
     const coords = projection.invert?.([x, y]);
@@ -363,20 +378,9 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {!worldGeoJson && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#070b14]/80 backdrop-blur-sm z-20 pointer-events-none">
-            <div className="flex items-center gap-3 text-geoCyan text-sm font-bold">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Loading 3D Vector Globe Atlas...</span>
-            </div>
-          </div>
-        )}
-
-        {/* 2D/3D Canvas Vector Globe with Mouse Wheel Support */}
+        {/* 2D/3D Canvas Vector Globe */}
         <canvas
           ref={canvasRef}
-          width={1100}
-          height={850}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -386,6 +390,7 @@ export default function GlobeExplorer() {
           onTouchEnd={handleMouseUp}
           onWheel={handleWheel}
           onClick={handleCanvasClick}
+          style={{ width: "100%", height: "100%", display: "block" }}
           className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
         />
 
