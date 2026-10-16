@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as d3 from "d3-geo";
 import * as topojson from "topojson-client";
-import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, Waves, Snowflake, Sparkles } from "lucide-react";
+import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, Waves, Snowflake, Loader2 } from "lucide-react";
 import AdBanner from "./AdBanner";
 
 export interface FeatureData {
@@ -92,9 +92,9 @@ export default function GlobeExplorer() {
       .catch(err => console.warn("Failed to load world topology:", err));
   }, []);
 
-  // Main Render Loop
+  // Main Render Loop (Renders immediately even before TopoJSON loads)
   useEffect(() => {
-    if (!canvasRef.current || !worldGeoJson) return;
+    if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -108,10 +108,8 @@ export default function GlobeExplorer() {
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Smooth zoom interpolation
       scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.1;
 
-      // Keep projection centered at width/2 so globe is never clipped
       const projection = d3.geoOrthographic()
         .scale(scaleRef.current)
         .translate([width / 2, height / 2])
@@ -121,23 +119,23 @@ export default function GlobeExplorer() {
       const path = d3.geoPath().projection(projection).context(ctx);
       const graticule = d3.geoGraticule10();
 
-      // 1. Render Globe Sphere Atmosphere / Ocean Base (#081420)
+      // 1. Render Globe Sphere Ocean Base
       ctx.beginPath();
       path({ type: "Sphere" });
       ctx.fillStyle = selectedFeature?.type === "water" ? "#0a2540" : "#081420";
       ctx.fill();
-      ctx.lineWidth = selectedFeature?.type === "water" ? 2.5 : 1.5;
-      ctx.strokeStyle = selectedFeature?.type === "water" ? "#F4D03F" : "rgba(66, 194, 203, 0.4)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(66, 194, 203, 0.4)";
       ctx.stroke();
 
-      // 2. Render Latitude & Longitude Graticule Lines
+      // 2. Graticule Lines
       ctx.beginPath();
       path(graticule);
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
-      // 3. Render Country & Landmass Polygons
+      // 3. Country Polygons (if loaded)
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
@@ -148,23 +146,21 @@ export default function GlobeExplorer() {
           path(feature);
 
           if (isSelected) {
-            ctx.fillStyle = "#F4D03F"; // Solid Gold Fill on Tap
+            ctx.fillStyle = "#F4D03F";
           } else if (isHovered) {
-            ctx.fillStyle = "rgba(66, 194, 203, 0.8)"; // Bright Cyan Fill on Hover
+            ctx.fillStyle = "rgba(66, 194, 203, 0.8)";
           } else {
             ctx.fillStyle = getCountryColor(countryName);
           }
 
           ctx.fill();
 
-          // Draw Border Lines
           ctx.lineWidth = isSelected || isHovered ? 1.8 : 0.4;
           ctx.strokeStyle = isSelected || isHovered ? "#ffffff" : "rgba(10, 20, 30, 0.6)";
           ctx.stroke();
         });
       }
 
-      // Auto rotation only if auto-spin is enabled and user is not dragging
       if (isAutoSpinning && !isDraggingRef.current) {
         rotationRef.current[0] += 0.2;
       }
@@ -251,8 +247,8 @@ export default function GlobeExplorer() {
         lng: coords[0]
       };
       setSelectedFeature(country);
-      targetScaleRef.current = 450; // Smooth Zoom In
-      rotationRef.current = [-country.lng, -country.lat, 0]; // Center on country
+      targetScaleRef.current = 450;
+      rotationRef.current = [-country.lng, -country.lat, 0];
     } else {
       let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
       if (coords[0] < -100 || coords[0] > 120) {
@@ -316,7 +312,7 @@ export default function GlobeExplorer() {
         </button>
       </div>
 
-      {/* Minimalist Page Header matching InteractiveMap & VideoLibrary */}
+      {/* Minimalist Page Header */}
       <header className="mb-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         <div className="lg:col-span-7 text-center lg:text-left">
           <div className="inline-flex items-center gap-2 text-geoCyan font-semibold uppercase tracking-wider text-xs mb-2 bg-geoCyan/10 px-3 py-1 rounded-full border border-geoCyan/20">
@@ -335,7 +331,7 @@ export default function GlobeExplorer() {
         </div>
       </header>
 
-      {/* Map Card Shell (Matching InteractiveMap shell) */}
+      {/* Map Card Shell */}
       <div className="relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 h-[650px] md:h-[720px] flex items-center justify-center">
         {/* Top Floating Search & Quiz Bar */}
         <div className="absolute top-5 left-5 right-5 z-30 flex items-center justify-between gap-3 pointer-events-none">
@@ -365,6 +361,16 @@ export default function GlobeExplorer() {
             </button>
           </div>
         </div>
+
+        {/* Loading Overlay while TopoJSON loads */}
+        {!worldGeoJson && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#070b14]/80 backdrop-blur-sm z-20 pointer-events-none">
+            <div className="flex items-center gap-3 text-geoCyan text-sm font-bold">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading 3D Vector Globe Atlas...</span>
+            </div>
+          </div>
+        )}
 
         {/* 2D/3D Canvas Vector Globe */}
         <canvas
@@ -412,7 +418,7 @@ export default function GlobeExplorer() {
           </button>
         </div>
 
-        {/* Right Side Detail Drawer (Floating over map without hiding/clipping) */}
+        {/* Right Side Detail Drawer */}
         {selectedFeature && (
           <div className="absolute top-4 right-4 bottom-4 w-full max-w-sm z-40 bg-[#080e1a]/95 backdrop-blur-2xl border border-white/15 rounded-[2.5rem] shadow-2xl p-6 flex flex-col justify-between overflow-y-auto video-preview-scroll animate-fadeIn">
             {/* Top Close Button */}
@@ -489,7 +495,7 @@ export default function GlobeExplorer() {
                 <span className="font-bold text-geoYellow text-right text-xs">{selectedFeature.region}</span>
               </div>
               <div className="flex justify-between items-center pt-2">
-                <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold">Strength</span>
+                <span className="text-gray-400 uppercase tracking-wider text-[10px] font-semibold">Area</span>
                 <span className="font-bold text-white text-right">{selectedFeature.area}</span>
               </div>
               {selectedFeature.languages && (
