@@ -1,45 +1,104 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Globe, { GlobeInstance } from "globe.gl";
+import * as d3 from "d3-geo";
+import * as topojson from "topojson-client";
 import { Sparkles } from "lucide-react";
+
+const COUNTRY_COLORS = ["#388e3c", "#fbc02d", "#d32f2f", "#1976d2", "#7b1fa2", "#e65100", "#00796b", "#0288d1", "#c2185b", "#512da8"];
+
+function getCountryColor(name: string): string {
+  if (!name) return "#388e3c";
+  const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return COUNTRY_COLORS[hash % COUNTRY_COLORS.length];
+}
 
 export default function SpinningGlobe() {
   const navigate = useNavigate();
-  const globeRef = useRef<HTMLDivElement>(null);
-  const globeInstance = useRef<GlobeInstance | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
+  const rotationRef = useRef<[number, number, number]>([0, -15, 0]);
 
   useEffect(() => {
-    if (!globeRef.current) return;
+    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+      .then(res => res.json())
+      .then(topology => {
+        const geojson = topojson.feature(topology, topology.objects.countries);
+        setWorldGeoJson(geojson);
+      })
+      .catch(err => console.warn("Failed to load world topology:", err));
+  }, []);
 
-    const globe = Globe()(globeRef.current)
-      .globeImageUrl("//unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
-      .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
-      .showAtmosphere(true)
-      .atmosphereColor("#42C2CB")
-      .atmosphereAltitude(0.2)
-      .width(320)
-      .height(320);
+  useEffect(() => {
+    if (!canvasRef.current || !worldGeoJson) return;
 
-    const controls = globe.controls();
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.2;
-    controls.enableZoom = false;
-    controls.enableRotate = false;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    globeInstance.current = globe;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const projection = d3.geoOrthographic()
+      .scale(150)
+      .translate([width / 2, height / 2])
+      .rotate(rotationRef.current)
+      .clipAngle(90);
+
+    const path = d3.geoPath().projection(projection).context(ctx);
+    const graticule = d3.geoGraticule10();
+
+    let animationFrameId: number;
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // Ocean Base
+      ctx.beginPath();
+      path({ type: "Sphere" });
+      ctx.fillStyle = "#081420";
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(66, 194, 203, 0.5)";
+      ctx.stroke();
+
+      // Graticule Lines
+      ctx.beginPath();
+      path(graticule);
+      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.stroke();
+
+      // Country Polygons
+      if (worldGeoJson && worldGeoJson.features) {
+        worldGeoJson.features.forEach((feature: any) => {
+          const countryName = feature.properties?.name || "Country";
+          ctx.beginPath();
+          path(feature);
+          ctx.fillStyle = getCountryColor(countryName);
+          ctx.fill();
+          ctx.lineWidth = 0.4;
+          ctx.strokeStyle = "rgba(10, 20, 30, 0.6)";
+          ctx.stroke();
+        });
+      }
+
+      // Smooth Auto Rotation
+      rotationRef.current[0] += 0.4;
+      projection.rotate(rotationRef.current);
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
 
     return () => {
-      try {
-        if (globeRef.current) globeRef.current.innerHTML = "";
-      } catch (e) {
-        // cleanup
-      }
+      cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [worldGeoJson]);
 
   return (
     <div
-      className="relative w-full aspect-square max-w-[360px] mx-auto flex items-center justify-center cursor-pointer group"
+      className="relative w-full aspect-square max-w-[360px] mx-auto flex items-center justify-center cursor-pointer group select-none"
       onClick={() => navigate("/explorer")}
       title="Click to open 3D Globe Explorer"
     >
@@ -57,9 +116,9 @@ export default function SpinningGlobe() {
         </svg>
       </div>
 
-      {/* 3D Globe Container */}
+      {/* 2D Vector Globe Canvas */}
       <div className="relative rounded-full overflow-hidden shadow-[0_0_50px_rgba(66,194,203,0.3)] border-2 border-geoCyan/40 group-hover:scale-105 transition-transform duration-300">
-        <div ref={globeRef} className="w-[280px] h-[280px] md:w-[320px] md:h-[320px]" />
+        <canvas ref={canvasRef} width={320} height={320} className="w-[280px] h-[280px] md:w-[320px] md:h-[320px]" />
       </div>
 
       {/* Explore Hint Badge */}
