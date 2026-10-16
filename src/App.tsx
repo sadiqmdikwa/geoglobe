@@ -12,6 +12,7 @@ import SuggestionForm from "./components/SuggestionForm";
 import Portfolio from "./components/Portfolio";
 import BackToTop from "./components/BackToTop";
 import ScrollProgress from "./components/ScrollProgress";
+import SpinningGlobe from "./components/SpinningGlobe";
 
 function RouteScrollRestoration() {
   const location = useLocation();
@@ -78,55 +79,61 @@ function Home() {
       exit={{ opacity: 0 }}
       className="space-y-12"
     >
-      {/* Ultra-Minimalist Hero Section */}
+      {/* 3D Spinning Globe Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full h-[500px] md:h-[580px] rounded-3xl overflow-hidden flex items-center justify-center text-center px-6 shadow-2xl border border-white/10"
+        className="relative w-full rounded-[2.5rem] overflow-hidden bg-gray-900/60 backdrop-blur-xl border border-white/10 shadow-2xl p-6 sm:p-10 md:p-14 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-16"
       >
-        {/* Background Map Image & Refined Dark Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2000"
-            alt="World Map Background"
-            className="w-full h-full object-cover opacity-35"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#090d16]/90 via-[#090d16]/75 to-[#090d16]"></div>
-        </div>
-
-        {/* Hero Content */}
-        <div className="relative z-10 max-w-3xl flex flex-col items-center">
-          {/* Minimalist Atlas Tag */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-gray-300 mb-6 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-geoCyan animate-pulse"></span>
-            <span>Interactive Cartography & Frontier Atlas</span>
+        {/* Left Column: Text & CTA Buttons */}
+        <div className="flex-1 text-center lg:text-left max-w-xl">
+          {/* Top Gold Badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-geoYellow/10 border border-geoYellow/30 text-xs font-bold text-geoYellow uppercase tracking-wider mb-6">
+            <span>★ EXPLORATION</span>
+            <span>★ DISCOVERY</span>
           </div>
 
-          {/* Clean Logo Emblem */}
-          <motion.img
-            src="https://lh3.googleusercontent.com/d/1PYQ705DpgwDPAV7kERrpa8a0m8hFdq5w"
-            alt="GeoGlobe Emblem"
-            className="h-20 w-20 md:h-24 md:w-24 object-contain mb-5 filter drop-shadow-[0_4px_15px_rgba(66,194,203,0.25)]"
-          />
-
-          <h1 className="text-3xl sm:text-5xl md:text-6xl text-white font-extrabold tracking-tight mb-5 leading-tight">
-            Explore the <span className="text-geoCyan">World's</span> Mysteries
+          <h1 className="text-3xl sm:text-5xl md:text-6xl text-white font-black tracking-tight mb-4 leading-[1.15]">
+            Grab the globe. <br />
+            <span className="text-geoYellow">Spin it around.</span>
           </h1>
 
-          <p className="text-sm md:text-base text-gray-300 max-w-xl mx-auto leading-relaxed mb-8">
-            Documentaries, coordinate-pinned border anomalies, enclaves, and gamified trivia powered by free open-source cartography.
+          <p className="text-sm md:text-base text-gray-300 leading-relaxed mb-8 font-normal">
+            GeoGlobe is an interactive 3D world atlas. Drag to rotate the planet like a real object, explore countries in detail, and put your geography knowledge to the test with quiz mode.
           </p>
 
-          {/* Primary CTA Button */}
-          <button
-            onClick={() => navigate("/map")}
-            className="bg-geoCyan hover:bg-geoYellow text-gray-950 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-geoCyan/20 active:scale-98"
-          >
-            <span>Start Exploring</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
+            <button
+              onClick={() => navigate("/map")}
+              className="w-full sm:w-auto bg-geoYellow hover:bg-geoCyan text-gray-950 px-7 py-3.5 rounded-full font-extrabold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-geoYellow/20 cursor-pointer active:scale-98"
+            >
+              <span>Explore the map</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => navigate("/game")}
+              className="w-full sm:w-auto bg-transparent hover:bg-geoCyan/10 text-geoCyan px-7 py-3.5 rounded-full font-extrabold text-sm transition-all border border-geoCyan/40 flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-sm"
+            >
+              <span>🎮 Start the quiz</span>
+            </button>
+          </div>
+
+          {/* Footer Metadata */}
+          <div className="mt-6 text-[11px] font-mono text-gray-400 flex items-center justify-center lg:justify-start gap-3">
+            <span>Free</span>
+            <span>•</span>
+            <span>No sign-up</span>
+            <span>•</span>
+            <span>Works on mobile and desktop</span>
+          </div>
+        </div>
+
+        {/* Right Column: Interactive 3D Spinning Globe */}
+        <div className="flex-1 w-full flex items-center justify-center">
+          <SpinningGlobe />
         </div>
       </motion.section>
 
