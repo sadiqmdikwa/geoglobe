@@ -7,6 +7,7 @@ import {
   XCircle, MapPin, Compass, Flag, Globe, Layers, AlertCircle, X,
   Volume2, VolumeX 
 } from "lucide-react";
+import AdBanner from "./AdBanner";
 
 // Built-in verified question master bank covering all categories & regions
 const DEFAULT_QUESTIONS: GameQuestion[] = [
@@ -1087,7 +1088,7 @@ export default function GeoGame() {
               ) : (
                 <button
                   onClick={handleNextQuestion}
-                  className="sm:col-span-2 bg-geoYellow hover:bg-geoCyan text-gray-900 font-bold py-3.5 rounded-2xl transition-all shadow-lg text-sm md:text-base flex items-center justify-center gap-2"
+                  className="sm:col-span-2 bg-geoYellow hover:bg-geoCyan text-gray-900 font-bold py-3.5 rounded-2xl transition-all shadow-lg text-sm md:text-base flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {currentIndex < questions.length - 1 ? "Next Question" : "View Results"}
                   <ArrowRight className="w-4 h-4" />
@@ -1095,6 +1096,9 @@ export default function GeoGame() {
               )}
             </div>
           </div>
+
+          {/* Ad Placement below active trivia card */}
+          <AdBanner slotId="game-playing-slot" />
         </div>
       )}
 

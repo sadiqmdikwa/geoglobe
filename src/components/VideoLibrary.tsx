@@ -18,6 +18,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { initialVideos, loadLiveVideos, VideoItem } from "../data/videos";
 import { VideoLibrarySkeleton } from "./skeletons/VideoCardSkeleton";
+import AdBanner from "./AdBanner";
 import VideoPreviewModal from "./VideoPreviewModal";
 
 interface VideoLibraryProps {
@@ -379,6 +380,9 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
           </div>
         </div>
       </div>
+
+      {/* Ad Placement Banner */}
+      <AdBanner slotId="video-library-slot" />
 
       <div ref={catalogTopRef} className="scroll-mt-24" />
 
