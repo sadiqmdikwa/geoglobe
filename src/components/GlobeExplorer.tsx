@@ -20,6 +20,7 @@ export interface FeatureData {
 }
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
+  // Countries
   "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753 },
   "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", lat: 17.5707, lng: -3.9962 },
   "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", lat: 28.0339, lng: 1.6596 },
@@ -77,7 +78,6 @@ export default function GlobeExplorer() {
   const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Fetch world atlas with robust fallback
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then(res => res.json())
@@ -86,11 +86,10 @@ export default function GlobeExplorer() {
         setWorldGeoJson(geojson);
       })
       .catch(err => {
-        console.warn("CDN fetch failed, using fallback:", err);
+        console.warn("CDN fetch failed:", err);
       });
   }, []);
 
-  // Main Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -116,7 +115,6 @@ export default function GlobeExplorer() {
       const path = d3.geoPath().projection(projection).context(ctx);
       const graticule = d3.geoGraticule10();
 
-      // 1. Ocean Base Sphere
       ctx.beginPath();
       path({ type: "Sphere" });
       ctx.fillStyle = selectedFeature?.type === "water" ? "#0a2540" : "#081420";
@@ -125,14 +123,12 @@ export default function GlobeExplorer() {
       ctx.strokeStyle = "rgba(66, 194, 203, 0.4)";
       ctx.stroke();
 
-      // 2. Graticule Lines
       ctx.beginPath();
       path(graticule);
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
-      // 3. Country Polygons
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
@@ -201,6 +197,17 @@ export default function GlobeExplorer() {
 
   const handleMouseUp = () => {
     isDraggingRef.current = false;
+  };
+
+  // Mouse wheel zoom support
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsAutoSpinning(false);
+    if (e.deltaY < 0) {
+      targetScaleRef.current = Math.min(550, targetScaleRef.current + 40);
+    } else {
+      targetScaleRef.current = Math.max(140, targetScaleRef.current - 40);
+    }
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -289,7 +296,12 @@ export default function GlobeExplorer() {
   };
 
   return (
-    <div className="w-full pb-20 font-sans text-white">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      className="w-full pb-20"
+    >
       {/* Top Navigation Row */}
       <div className="flex items-center gap-3 mb-4">
         <button
@@ -351,7 +363,6 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* Loading Overlay while TopoJSON loads */}
         {!worldGeoJson && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#070b14]/80 backdrop-blur-sm z-20 pointer-events-none">
             <div className="flex items-center gap-3 text-geoCyan text-sm font-bold">
@@ -361,7 +372,7 @@ export default function GlobeExplorer() {
           </div>
         )}
 
-        {/* 2D/3D Canvas Vector Globe */}
+        {/* 2D/3D Canvas Vector Globe with Mouse Wheel Support */}
         <canvas
           ref={canvasRef}
           width={1100}
@@ -373,6 +384,7 @@ export default function GlobeExplorer() {
           onTouchStart={handleMouseDown}
           onTouchMove={handleMouseMove}
           onTouchEnd={handleMouseUp}
+          onWheel={handleWheel}
           onClick={handleCanvasClick}
           className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
         />
@@ -514,6 +526,6 @@ export default function GlobeExplorer() {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
