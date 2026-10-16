@@ -13,6 +13,7 @@ import Portfolio from "./components/Portfolio";
 import BackToTop from "./components/BackToTop";
 import ScrollProgress from "./components/ScrollProgress";
 import SpinningGlobe from "./components/SpinningGlobe";
+import GlobeExplorer from "./components/GlobeExplorer";
 
 function RouteScrollRestoration() {
   const location = useLocation();
@@ -106,7 +107,7 @@ function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
             <button
-              onClick={() => navigate("/map")}
+              onClick={() => navigate("/explorer")}
               className="w-full sm:w-auto bg-geoYellow hover:bg-geoCyan text-gray-950 px-7 py-3.5 rounded-full font-extrabold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-geoYellow/20 cursor-pointer active:scale-98"
             >
               <span>Explore the map</span>
@@ -201,7 +202,7 @@ function Home() {
         <motion.div
           variants={itemVariants}
           whileHover={{ y: -5 }}
-          onClick={() => navigate("/map")}
+          onClick={() => navigate("/explorer")}
           className="bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-geoCyan/50 transition-all group cursor-pointer shadow-lg flex flex-col"
         >
           <div className="w-12 h-12 rounded-xl bg-geoCyan/10 text-geoCyan flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
@@ -211,10 +212,10 @@ function Home() {
             Interactive Map
           </h3>
           <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-6 flex-grow">
-            Navigate the globe with keyless Dark, Natural & High-Res Satellite maps. Click any anomaly marker to inspect coordinates and launch videos.
+            Navigate the 3D Globe Explorer. Drag to spin the planet, select any country, and view detailed population, capital, and region statistics.
           </p>
           <div className="flex items-center text-geoCyan text-xs font-semibold gap-1.5 mt-auto">
-            <span>Open Interactive Map</span>
+            <span>Open 3D Globe</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>
         </motion.div>
@@ -261,6 +262,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/videos" element={<VideoLibrary onBack={() => navigate("/")} />} />
             <Route path="/map" element={<InteractiveMap />} />
+            <Route path="/explorer" element={<GlobeExplorer />} />
             <Route path="/game" element={<GeoGame />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/contact" element={<AboutContact />} />
