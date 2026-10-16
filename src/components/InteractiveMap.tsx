@@ -23,8 +23,9 @@ import {
 import MapSkeleton from "./skeletons/MapSkeleton";
 import VideoPreviewModal from "./VideoPreviewModal";
 
-// Public ArcGIS World Street Map tiles provide English labels without a client API key.
-const BASE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+// Public ArcGIS World Street Map & Satellite World Imagery tiles without a client API key.
+const STREET_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 const BASE_ATTRIBUTION = 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>; Sources: Esri, HERE, Garmin, and <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export default function InteractiveMap() {
@@ -69,7 +70,7 @@ export default function InteractiveMap() {
   const [isMapReady, setIsMapReady] = useState(false);
   const [activeMapVideo, setActiveMapVideo] = useState<VideoItem | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [mapTheme, setMapTheme] = useState<"dark" | "clean">("dark");
+  const [mapTheme, setMapTheme] = useState<"dark" | "clean" | "satellite">("dark");
   const [currentZoom, setCurrentZoom] = useState<number>(3);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const selectedLocationIdRef = useRef(initialSelectedLocationId);
@@ -178,10 +179,17 @@ export default function InteractiveMap() {
     };
   }, [isExpanded]);
 
-  // Style only the basemap tiles, leaving markers and map controls unchanged.
+  // Switch basemap tiles between Dark, Natural, and Satellite
   useEffect(() => {
-    const tileContainer = baseTileLayerRef.current?.getContainer();
-    tileContainer?.classList.toggle("map-tiles-dark", mapTheme === "dark");
+    if (!baseTileLayerRef.current) return;
+    const tileContainer = baseTileLayerRef.current.getContainer();
+    if (mapTheme === "satellite") {
+      baseTileLayerRef.current.setUrl(SATELLITE_TILES);
+      tileContainer?.classList.remove("map-tiles-dark");
+    } else {
+      baseTileLayerRef.current.setUrl(STREET_TILES);
+      tileContainer?.classList.toggle("map-tiles-dark", mapTheme === "dark");
+    }
   }, [mapTheme]);
 
   // Initialize Leaflet Map
@@ -218,14 +226,18 @@ export default function InteractiveMap() {
 
     mapInstance.current = map;
 
-    const baseLayer = L.tileLayer(BASE_TILES, {
+    const initialTiles = mapTheme === "satellite" ? SATELLITE_TILES : STREET_TILES;
+
+    const baseLayer = L.tileLayer(initialTiles, {
       attribution: BASE_ATTRIBUTION,
       maxZoom: 19,
       minZoom: 2,
     }).addTo(map);
 
     baseTileLayerRef.current = baseLayer;
-    baseLayer.getContainer()?.classList.toggle("map-tiles-dark", mapTheme === "dark");
+    if (mapTheme === "dark") {
+      baseLayer.getContainer()?.classList.add("map-tiles-dark");
+    }
 
     // Responsive ResizeObserver for instant container adaptation
     const resizeObserver = new ResizeObserver(() => {
@@ -837,11 +849,16 @@ export default function InteractiveMap() {
           </button>
 
           <button
-            onClick={() => setMapTheme(mapTheme === "dark" ? "clean" : "dark")}
-            className="flex items-center justify-center p-3 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg"
-            title="Toggle Map Style"
+            onClick={() => setMapTheme(mapTheme === "dark" ? "satellite" : mapTheme === "satellite" ? "clean" : "dark")}
+            className="flex items-center justify-center p-3 sm:px-3.5 sm:py-2 rounded-full text-xs text-gray-300 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-white/10 backdrop-blur-xl transition-all shadow-lg cursor-pointer"
+            title="Toggle Map Style (Dark / Satellite / Natural)"
           >
             {mapTheme === "dark" ? (
+              <>
+                <Compass className="w-5 h-5 sm:w-4 sm:h-4 text-geoCyan shrink-0" />
+                <span className="hidden sm:inline ml-1.5">Satellite</span>
+              </>
+            ) : mapTheme === "satellite" ? (
               <>
                 <Sun className="w-5 h-5 sm:w-4 sm:h-4 text-geoYellow shrink-0" />
                 <span className="hidden sm:inline ml-1.5">Natural</span>

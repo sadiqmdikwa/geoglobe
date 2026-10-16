@@ -1004,9 +1004,28 @@ export default function GeoGame() {
                       : "bg-rose-950/40 border-rose-500/40 text-rose-200"
                   }`}
                 >
-                  <p className="font-bold text-sm md:text-base">
-                    {isCorrect ? `✓ Correct! Answer: ${current.name}` : `✗ Incorrect — Answer: ${current.name}`}
-                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="font-bold text-sm md:text-base">
+                      {isCorrect ? `✓ Correct! Answer: ${current.name}` : `✗ Incorrect — Answer: ${current.name}`}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if ("speechSynthesis" in window) {
+                          window.speechSynthesis.cancel();
+                          const utt = new SpeechSynthesisUtterance(current.name);
+                          utt.lang = "en-US";
+                          utt.rate = 0.9;
+                          window.speechSynthesis.speak(utt);
+                        }
+                      }}
+                      className="p-1.5 rounded-full bg-white/10 hover:bg-geoCyan hover:text-gray-950 text-white transition-all cursor-pointer"
+                      title="Listen to pronunciation"
+                      aria-label="Listen to answer pronunciation"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   
                   {current.fact && (
                     <p className="text-xs text-gray-300 mt-1.5 italic leading-relaxed">
