@@ -21,6 +21,7 @@ export interface FeatureData {
 }
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
+  // Countries
   "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753 },
   "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", lat: 17.5707, lng: -3.9962 },
   "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", lat: 28.0339, lng: 1.6596 },
@@ -90,7 +91,7 @@ export default function GlobeExplorer() {
       .catch(err => console.warn("Failed to load world topology:", err));
   }, []);
 
-  // Main Render Loop with Smooth Cinematic Interpolation (Slerp/Lerp)
+  // Main Render Loop with Smooth Cinematic Interpolation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -115,7 +116,6 @@ export default function GlobeExplorer() {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Smooth cinematic zoom and rotation interpolation
       scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.08;
       rotationRef.current[0] += (targetRotationRef.current[0] - rotationRef.current[0]) * 0.08;
       rotationRef.current[1] += (targetRotationRef.current[1] - rotationRef.current[1]) * 0.08;
@@ -220,8 +220,10 @@ export default function GlobeExplorer() {
     isDraggingRef.current = false;
   };
 
+  // Prevent page scroll when zooming on canvas
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsAutoSpinning(false);
     if (e.deltaY < 0) {
       targetScaleRef.current = Math.min(550, targetScaleRef.current + 40);
@@ -270,7 +272,7 @@ export default function GlobeExplorer() {
       };
       setSelectedFeature(country);
       targetScaleRef.current = 450;
-      targetRotationRef.current = [-country.lng, -country.lat, 0]; // Smooth cinematic rotate!
+      targetRotationRef.current = [-country.lng, -country.lat, 0];
     } else {
       let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
       if (coords[0] < -100 || coords[0] > 120) {
@@ -285,7 +287,7 @@ export default function GlobeExplorer() {
 
       setSelectedFeature(waterFeature);
       targetScaleRef.current = 380;
-      targetRotationRef.current = [-coords[0], -coords[1], 0]; // Smooth cinematic rotate!
+      targetRotationRef.current = [-coords[0], -coords[1], 0];
     }
   };
 
@@ -384,7 +386,7 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 2D/3D Canvas Vector Globe */}
+        {/* 2D/3D Canvas Vector Globe with Wheel Event Prevention */}
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
@@ -396,7 +398,7 @@ export default function GlobeExplorer() {
           onTouchEnd={handleMouseUp}
           onWheel={handleWheel}
           onClick={handleCanvasClick}
-          style={{ width: "100%", height: "100%", display: "block" }}
+          style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }}
           className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
         />
 
