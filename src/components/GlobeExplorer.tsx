@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import * as d3 from "d3-geo";
 import * as topojson from "topojson-client";
-import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, Waves, Snowflake, Sparkles } from "lucide-react";
+import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, Waves, Snowflake, Hand, MousePointer } from "lucide-react";
 import AdBanner from "./AdBanner";
 
 export interface FeatureData {
@@ -22,10 +22,11 @@ export interface FeatureData {
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   // Countries
-  "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", desc: "Most people know Nigeria, but few know about its northern neighbor — Niger. It's one of Africa's largest countries, shaped by the Sahara Desert and the mighty Niger River.", lat: 9.082, lng: 8.6753 },
+  "Colombia": { name: "Colombia", code: "CO", type: "country", capital: "Bogotá", population: "51,520,000 people", region: "Americas • South America", area: "1,141,748 km²", languages: "Spanish", desc: "A tropical South American nation marked by rainforests, Andes mountains, and coffee plantations.", lat: 4.5709, lng: -74.2973 },
+  "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", desc: "Most people know Nigeria, but few know about its northern neighbor — Niger. It's one of Africa's largest countries.", lat: 9.082, lng: 8.6753 },
   "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", desc: "A landlocked West African nation rich in history, ancient trading cities like Timbuktu, and vibrant Saharan cultures.", lat: 17.5707, lng: -3.9962 },
   "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", desc: "The largest country in Africa by land area, dominated by the vast Sahara Desert and Mediterranean coastline.", lat: 28.0339, lng: 1.6596 },
-  "Niger": { name: "Niger", code: "NE", type: "country", capital: "Niamey", population: "25,250,000 people", region: "Africa • Western Africa", area: "1,267,000 km²", languages: "French, Hausa", desc: "Most people know Nigeria, but few know about its northern neighbor — Niger. It's one of Africa's largest countries, shaped by the Sahara Desert and the mighty Niger River.", lat: 17.6078, lng: 8.0817 },
+  "Niger": { name: "Niger", code: "NE", type: "country", capital: "Niamey", population: "25,250,000 people", region: "Africa • Western Africa", area: "1,267,000 km²", languages: "French, Hausa", desc: "Shaped by the Sahara Desert and the mighty Niger River. Rich in uranium, gold, coal, and oil.", lat: 17.6078, lng: 8.0817 },
   "Chad": { name: "Chad", code: "TD", type: "country", capital: "N'Djamena", population: "17,180,000 people", region: "Africa • Central Africa", area: "1,284,000 km²", languages: "French, Arabic", desc: "A landlocked country in north-central Africa known for Lake Chad and the Tibesti Mountains.", lat: 15.4542, lng: 18.7322 },
   "Sudan": { name: "Sudan", code: "SD", type: "country", capital: "Khartoum", population: "45,660,000 people", region: "Africa • Northern Africa", area: "1,886,068 km²", languages: "Arabic, English", desc: "Located where the White and Blue Nile rivers meet, famous for having more pyramids than Egypt.", lat: 12.8628, lng: 30.2176 },
   "Senegal": { name: "Senegal", code: "SN", type: "country", capital: "Dakar", population: "16,880,000 people", region: "Africa • Western Africa", area: "196,712 km²", languages: "French, Wolof", desc: "The westernmost mainland African country, renowned for Dakar, Teranga hospitality, and rich music.", lat: 14.4974, lng: -14.4524 },
@@ -41,6 +42,9 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Italy": { name: "Italy", code: "IT", type: "country", capital: "Rome", population: "59,110,000 people", region: "Europe • Southern Europe", area: "301,340 km²", languages: "Italian", desc: "A boot-shaped peninsula in southern Europe with long Mediterranean coastline and rich historical heritage.", lat: 41.8719, lng: 12.5674 },
   "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", desc: "An island nation in East Asia in the Pacific Ocean with dense cities, imperial palaces, and mountainous national parks.", lat: 36.2048, lng: 138.2529 },
   "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", desc: "The largest country in South America and Latin America, famous for the Amazon Rainforest and Rio de Janeiro.", lat: -14.2350, lng: -51.9253 },
+  "Argentina": { name: "Argentina", code: "AR", type: "country", capital: "Buenos Aires", population: "45,810,000 people", region: "Americas • South America", area: "2,780,400 km²", languages: "Spanish", desc: "A massive South American nation covering Andes mountains, glacial lakes, and Pampas grassland.", lat: -38.4161, lng: -63.6167 },
+  "Peru": { name: "Peru", code: "PE", type: "country", capital: "Lima", population: "33,720,000 people", region: "Americas • South America", area: "1,285,216 km²", languages: "Spanish, Quechua", desc: "Home to a section of Amazon rainforest and Machu Picchu, an ancient Incan city high in the Andes mountains.", lat: -9.19, lng: -75.0152 },
+  "Chile": { name: "Chile", code: "CL", type: "country", capital: "Santiago", population: "19,490,000 people", region: "Americas • South America", area: "756,102 km²", languages: "Spanish", desc: "A long, narrow country extending along South America's western edge, with more than 6,000 km of Pacific coastline.", lat: -35.6751, lng: -71.543 },
   "Australia": { name: "Australia", code: "AU", type: "country", capital: "Canberra", population: "26,068,792 people", region: "Oceania • Australasia", area: "7,692,024 km²", languages: "English", desc: "A continent and country surrounded by the Indian and Pacific oceans, known for the Great Barrier Reef.", lat: -25.2744, lng: 133.7751 },
   "South Africa": { name: "South Africa", code: "ZA", type: "country", capital: "Pretoria / Cape Town", population: "59,392,255 people", region: "Africa • Southern Africa", area: "1,221,037 km²", languages: "Zulu, Xhosa, Afrikaans, English", desc: "A country on the southernmost tip of the African continent, marked by several distinct ecosystems.", lat: -30.5595, lng: 22.9375 },
   "Canada": { name: "Canada", code: "CA", type: "country", capital: "Ottawa", population: "38,250,000 people", region: "Americas • North America", area: "9,984,670 km²", languages: "English, French", desc: "The second-largest country in the world by total area, extending from Atlantic to Pacific and Arctic oceans.", lat: 56.1304, lng: -106.3468 },
@@ -72,6 +76,7 @@ export default function GlobeExplorer() {
   const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
   const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
   const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(true);
+  const [interactionMode, setInteractionMode] = useState<"select" | "spin">("select");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const rotationRef = useRef<[number, number, number]>([-10, -15, 0]);
@@ -103,10 +108,8 @@ export default function GlobeExplorer() {
       e.stopPropagation();
       setIsAutoSpinning(false);
       if (e.deltaY < 0) {
-        // Scroll Up -> Deep Vector Zoom In up to scale 1400!
         targetScaleRef.current = Math.min(1400, targetScaleRef.current + 80);
       } else {
-        // Scroll Down -> Zoom Out to scale 140
         targetScaleRef.current = Math.max(140, targetScaleRef.current - 80);
       }
     };
@@ -117,7 +120,7 @@ export default function GlobeExplorer() {
     };
   }, []);
 
-  // Main Render Loop with Smooth Interpolation
+  // Main Render Loop with Smooth Cinematic Interpolation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -223,23 +226,46 @@ export default function GlobeExplorer() {
   };
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDraggingRef.current) return;
     const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
 
-    const dx = clientX - lastMouseRef.current.x;
-    const dy = clientY - lastMouseRef.current.y;
+    if (isDraggingRef.current) {
+      const dx = clientX - lastMouseRef.current.x;
+      const dy = clientY - lastMouseRef.current.y;
 
-    if (Math.abs(clientX - startMouseRef.current.x) > 5 || Math.abs(clientY - startMouseRef.current.y) > 5) {
-      hasDraggedRef.current = true;
+      if (Math.abs(clientX - startMouseRef.current.x) > 5 || Math.abs(clientY - startMouseRef.current.y) > 5) {
+        hasDraggedRef.current = true;
+      }
+
+      targetRotationRef.current[0] += dx * 0.4;
+      targetRotationRef.current[1] -= dy * 0.4;
+      rotationRef.current[0] = targetRotationRef.current[0];
+      rotationRef.current[1] = targetRotationRef.current[1];
+
+      lastMouseRef.current = { x: clientX, y: clientY };
     }
 
-    targetRotationRef.current[0] += dx * 0.4;
-    targetRotationRef.current[1] -= dy * 0.4;
-    rotationRef.current[0] = targetRotationRef.current[0];
-    rotationRef.current[1] = targetRotationRef.current[1];
+    // Dynamic Hover Detection (Pointing Finger on Land, Drag Hand on Water)
+    if (canvasRef.current && worldGeoJson) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
 
-    lastMouseRef.current = { x: clientX, y: clientY };
+      const projection = d3.geoOrthographic()
+        .scale(scaleRef.current)
+        .translate([canvasRef.current.width / 2, canvasRef.current.height / 2])
+        .rotate(rotationRef.current);
+
+      const coords = projection.invert?.([x, y]);
+      if (coords) {
+        const hovered = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
+        if (hovered) {
+          setHoveredCountryName(hovered.properties?.name || null);
+        } else {
+          setHoveredCountryName(null);
+        }
+      }
+    }
   };
 
   const handleMouseUp = () => {
@@ -400,7 +426,7 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 2D/3D Canvas Vector Globe */}
+        {/* 2D/3D Canvas Vector Globe (Cursor dynamically switches between pointing finger on land and grab hand on water) */}
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
@@ -411,17 +437,36 @@ export default function GlobeExplorer() {
           onTouchMove={handleMouseMove}
           onTouchEnd={handleMouseUp}
           onClick={handleCanvasClick}
-          style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }}
-          className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "block",
+            touchAction: "none",
+            cursor: hoveredCountryName ? "pointer" : "grab"
+          }}
+          className="w-full h-full object-contain active:cursor-grabbing"
         />
 
         {/* Control Overlay Instructions */}
         <div className="absolute bottom-5 left-5 z-30 flex items-center gap-2 text-[11px] font-mono text-gray-400 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md pointer-events-none">
-          <span className="text-geoCyan font-bold">hover</span> highlight • <span className="text-geoCyan font-bold">click</span> select & fill • <span className="text-geoCyan font-bold">scroll</span> zoom
+          <span className="text-geoCyan font-bold">hover</span> highlight • <span className="text-geoCyan font-bold">click</span> select & fill • <span className="text-geoCyan font-bold">drag</span> rotate
         </div>
 
-        {/* Bottom Left Floating Zoom Buttons */}
+        {/* Bottom Left Floating Zoom & Mode Toggle Buttons */}
         <div className="absolute bottom-16 left-5 z-30 flex flex-col gap-2">
+          {/* Navigation Mode Indicator Toggle */}
+          <button
+            onClick={() => setInteractionMode(interactionMode === "select" ? "spin" : "select")}
+            className="w-10 h-10 rounded-2xl bg-gray-900/80 hover:bg-gray-800 border border-white/15 text-white flex items-center justify-center shadow-xl backdrop-blur-xl transition-all cursor-pointer hover:border-geoCyan/60"
+            title={interactionMode === "select" ? "Switch to Free Spin Mode" : "Switch to Country Select Mode"}
+          >
+            {interactionMode === "select" ? (
+              <MousePointer className="w-4 h-4 text-geoCyan" />
+            ) : (
+              <Hand className="w-4 h-4 text-geoYellow" />
+            )}
+          </button>
+
           <button
             onClick={handleZoomIn}
             className="w-10 h-10 rounded-2xl bg-gray-900/80 hover:bg-gray-800 border border-white/15 text-white flex items-center justify-center shadow-xl backdrop-blur-xl transition-all cursor-pointer hover:border-geoCyan/60 text-lg font-bold"
@@ -445,7 +490,7 @@ export default function GlobeExplorer() {
           </button>
         </div>
 
-        {/* Compact Popup Card Above Map (Matching Screenshot Exact Design!) */}
+        {/* Compact Popup Card Above Map (Displays Capital, Population, Region, Area, Languages; Description in Read More) */}
         {selectedFeature && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -478,13 +523,38 @@ export default function GlobeExplorer() {
               {selectedFeature.name}
             </h3>
 
-            {/* Short Overview Box */}
-            <div className="max-h-24 overflow-y-auto video-preview-scroll pr-1 text-xs text-gray-300 leading-relaxed font-normal">
-              {selectedFeature.desc || `${selectedFeature.name} is a sovereign country in ${selectedFeature.region} with capital ${selectedFeature.capital || "N/A"} and a population of ${selectedFeature.population || "N/A"}.`}
+            {/* Stats Summary Table (Capital, Population, Region, Area, Languages) */}
+            <div className="space-y-1.5 text-xs border-y border-white/10 py-2.5">
+              {selectedFeature.capital && (
+                <div className="flex justify-between items-center text-gray-300">
+                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Capital</span>
+                  <span className="font-bold text-white">{selectedFeature.capital}</span>
+                </div>
+              )}
+              {selectedFeature.population && (
+                <div className="flex justify-between items-center text-gray-300">
+                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Population</span>
+                  <span className="font-bold text-white">{selectedFeature.population}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-gray-300">
+                <span className="text-gray-400 font-semibold text-[11px] uppercase">Region</span>
+                <span className="font-bold text-geoYellow">{selectedFeature.region}</span>
+              </div>
+              <div className="flex justify-between items-center text-gray-300">
+                <span className="text-gray-400 font-semibold text-[11px] uppercase">Total Area</span>
+                <span className="font-bold text-white">{selectedFeature.area}</span>
+              </div>
+              {selectedFeature.languages && (
+                <div className="flex justify-between items-center text-gray-300">
+                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Language(s)</span>
+                  <span className="font-bold text-white">{selectedFeature.languages}</span>
+                </div>
+              )}
             </div>
 
             {/* Footer Row: Coordinates + Read More Button */}
-            <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+            <div className="pt-1 flex items-center justify-between text-xs">
               <span className="font-mono text-[11px] text-gray-400">
                 📍 {selectedFeature.lat.toFixed(2)}°, {selectedFeature.lng.toFixed(2)}°
               </span>
