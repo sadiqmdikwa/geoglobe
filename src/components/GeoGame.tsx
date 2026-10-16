@@ -277,6 +277,15 @@ const DEFAULT_QUESTIONS: GameQuestion[] = [
   }
 ];
 
+function fisherYatesShuffle<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // CRITICAL STOP WORDS & MATCHING HELPER FROM SPECIFICATION
 const STOP_WORDS = [
   "desert", "river", "mountain", "mountains", "mount", "mt", "lake", "sea", 
@@ -515,8 +524,8 @@ export default function GeoGame() {
       }
     }
 
-    // Shuffle pool
-    const shuffled = pool.sort(() => Math.random() - 0.5);
+    // True Fisher-Yates Random Shuffle
+    const shuffled = fisherYatesShuffle(pool);
     const finalCount = gameLength === "unlimited" ? shuffled.length : Math.min(gameLength, shuffled.length);
     const selectedQuestions = shuffled.slice(0, finalCount);
 
