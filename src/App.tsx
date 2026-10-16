@@ -1,6 +1,6 @@
 import { motion, AnimatePresence, type Variants } from "motion/react";
-import { useLayoutEffect, useRef } from "react";
-import { PlayCircle, Map as MapIcon, Trophy, ArrowRight, Compass } from "lucide-react";
+import { useLayoutEffect, useRef, useState, useEffect } from "react";
+import { PlayCircle, Map as MapIcon, Trophy, ArrowRight, Compass, Sparkles, ChevronLeft, ChevronRight, MapPin, Globe, Flag } from "lucide-react";
 import { Routes, Route, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import VideoLibrary from "./components/VideoLibrary";
 import Header from "./components/Header";
@@ -44,6 +44,53 @@ function RouteScrollRestoration() {
   return null;
 }
 
+const GEO_FACTS = [
+  "The Diomede Islands are 2.4 miles apart but separated by 21 hours across the International Date Line!",
+  "Bir Tawil between Egypt and Sudan is the only habitable continental territory on Earth unclaimed by any state!",
+  "Pheasant Island in the Bidassoa River is jointly ruled by France and Spain, swapping sovereignty every 6 months!",
+  "Baarle-Hertog is a Belgian municipality made of 22 enclaves inside the Netherlands, cutting through living rooms!",
+  "Point Roberts, WA is an American exclave reachable overland only by traveling through Canada!"
+];
+
+function FactTicker() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % GEO_FACTS.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="w-full bg-black/40 border border-geoCyan/30 rounded-full px-5 py-2.5 flex items-center justify-between gap-3 text-xs md:text-sm backdrop-blur-md shadow-lg mb-8">
+      <div className="flex items-center gap-2.5 truncate">
+        <span className="bg-geoCyan/20 text-geoCyan border border-geoCyan/40 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-geoYellow" />
+          Did You Know?
+        </span>
+        <span className="text-gray-200 truncate font-medium">{GEO_FACTS[index]}</span>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={() => setIndex((prev) => (prev - 1 + GEO_FACTS.length) % GEO_FACTS.length)}
+          className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
+          title="Previous fact"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setIndex((prev) => (prev + 1) % GEO_FACTS.length)}
+          className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
+          title="Next fact"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const navigate = useNavigate();
 
@@ -76,8 +123,11 @@ function Home() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="space-y-16"
+      className="space-y-12"
     >
+      {/* Rotating Geography Fact Ticker */}
+      <FactTicker />
+
       {/* Ultra-Minimalist Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: 15 }}
@@ -119,7 +169,7 @@ function Home() {
             Documentaries, coordinate-pinned border anomalies, enclaves, and gamified trivia powered by free open-source cartography.
           </p>
 
-          {/* Primary CTA Button: MUST navigate to /map */}
+          {/* Primary CTA Button */}
           <button
             onClick={() => navigate("/map")}
             className="bg-geoCyan hover:bg-geoYellow text-gray-950 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-geoCyan/20 active:scale-98"
@@ -127,6 +177,37 @@ function Home() {
             <span>Start Exploring</span>
             <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      </motion.section>
+
+      {/* Live Statistics Counter Cards */}
+      <motion.section
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+      >
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-3xl text-center flex flex-col items-center justify-center shadow-xl">
+          <MapPin className="w-6 h-6 text-geoCyan mb-2" />
+          <span className="text-2xl md:text-3xl font-black text-white tracking-tight">100+</span>
+          <span className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-semibold">Anomalies Mapped</span>
+        </div>
+
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-3xl text-center flex flex-col items-center justify-center shadow-xl">
+          <Globe className="w-6 h-6 text-geoYellow mb-2" />
+          <span className="text-2xl md:text-3xl font-black text-white tracking-tight">6</span>
+          <span className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-semibold">World Regions</span>
+        </div>
+
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-3xl text-center flex flex-col items-center justify-center shadow-xl">
+          <Flag className="w-6 h-6 text-geoCyan mb-2" />
+          <span className="text-2xl md:text-3xl font-black text-white tracking-tight">197</span>
+          <span className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-semibold">Verified Flags</span>
+        </div>
+
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-3xl text-center flex flex-col items-center justify-center shadow-xl">
+          <Trophy className="w-6 h-6 text-geoYellow mb-2" />
+          <span className="text-2xl md:text-3xl font-black text-white tracking-tight">100%</span>
+          <span className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-semibold">Free & Open</span>
         </div>
       </motion.section>
 
@@ -173,7 +254,7 @@ function Home() {
             Interactive Map
           </h3>
           <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-6 flex-grow">
-            Navigate the globe with a keyless basemap and English country and city labels. Click any anomaly marker to inspect coordinates and launch the video.
+            Navigate the globe with keyless Dark, Natural & High-Res Satellite maps. Click any anomaly marker to inspect coordinates and launch videos.
           </p>
           <div className="flex items-center text-geoCyan text-xs font-semibold gap-1.5 mt-auto">
             <span>Open Interactive Map</span>
@@ -195,7 +276,7 @@ function Home() {
             Geo Game
           </h3>
           <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-6 flex-grow">
-            Test your knowledge with smart fuzzy answer tolerance, audio feedback, multi-step categories, and coordinate map previews.
+            Test your knowledge with Fisher-Yates true random trivia, Web Speech audio answer pronunciation, and coordinate map previews.
           </p>
           <div className="flex items-center text-geoCyan text-xs font-semibold gap-1.5 mt-auto">
             <span>Play Trivia</span>
