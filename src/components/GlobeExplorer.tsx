@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Globe, { GlobeInstance } from "globe.gl";
-import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, Sparkles, MapPin } from "lucide-react";
+import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin } from "lucide-react";
 
 export interface CountryData {
   name: string;
@@ -18,7 +18,7 @@ export interface CountryData {
 
 const COUNTRY_DATABASE: { [key: string]: CountryData } = {
   "Nigeria": { name: "Nigeria", code: "NG", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753, color: "#F4D03F" },
-  "United States": { name: "United States", code: "US", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129, color: "#42C2CB" },
+  "United States of America": { name: "United States", code: "US", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129, color: "#42C2CB" },
   "United Kingdom": { name: "United Kingdom", code: "GB", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", lat: 55.3781, lng: -3.4360, color: "#34d399" },
   "France": { name: "France", code: "FR", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", lat: 46.2276, lng: 2.2137, color: "#fb7185" },
   "Germany": { name: "Germany", code: "DE", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", lat: 51.1657, lng: 10.4515, color: "#a78bfa" },
@@ -37,43 +37,82 @@ export default function GlobeExplorer() {
   const globeInstanceRef = useRef<GlobeInstance | null>(null);
   const navigate = useNavigate();
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(COUNTRY_DATABASE["Nigeria"]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [zoomLevel, setZoomLevel] = useState(2.2);
+  const [hoveredPolygon, setHoveredPolygon] = useState<any>(null);
+  const [countriesGeoJson, setCountriesGeoJson] = useState<any[]>([]);
 
   useEffect(() => {
     if (!globeContainerRef.current) return;
 
-    // Initialize globe.gl
+    // Fetch Natural Earth 110m countries GeoJSON
+    fetch("https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.features) {
+          setCountriesGeoJson(data.features);
+        }
+      })
+      .catch(err => console.warn("Failed to load country polygons:", err));
+  }, []);
+
+  useEffect(() => {
+    if (!globeContainerRef.current || countriesGeoJson.length === 0) return;
+
     const globe = Globe()(globeContainerRef.current)
       .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
       .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
       .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
       .showAtmosphere(true)
       .atmosphereColor("#42C2CB")
-      .atmosphereAltitude(0.15)
-      .labelsData(Object.values(COUNTRY_DATABASE))
-      .labelLat(d => (d as CountryData).lat)
-      .labelLng(d => (d as CountryData).lng)
-      .labelText(d => (d as CountryData).name)
-      .labelSize(1.5)
-      .labelDotRadius(0.6)
-      .labelColor(d => (d as CountryData).color)
-      .labelResolution(2)
-      .onLabelClick(d => {
-        const country = d as CountryData;
+      .atmosphereAltitude(0.18)
+      .polygonsData(countriesGeoJson)
+      .polygonAltitude(d => d === hoveredPolygon ? 0.04 : (selectedCountry && (d as any).properties?.NAME === selectedCountry.name ? 0.03 : 0.01))
+      .polygonCapColor(d => {
+        const name = (d as any).properties?.NAME;
+        if (selectedCountry && name === selectedCountry.name) return selectedCountry.color;
+        if (d === hoveredPolygon) return "rgba(244, 208, 63, 0.6)";
+        // Harmonious rich matte colors based on name hash
+        const colors = ["#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51", "#457b9d", "#1d3557", "#6a040f", "#38bdf8", "#a78bfa"];
+        const hash = name ? name.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) : 0;
+        return colors[hash % colors.length];
+      })
+      .polygonSideColor(() => "rgba(15, 23, 42, 0.8)")
+      .polygonStrokeColor(d => {
+        const name = (d as any).properties?.NAME;
+        if (selectedCountry && name === selectedCountry.name) return "#F4D03F";
+        if (d === hoveredPolygon) return "#F4D03F";
+        return "rgba(66, 194, 203, 0.35)";
+      })
+      .onPolygonHover(polygon => {
+        setHoveredPolygon(polygon);
+      })
+      .onPolygonClick(polygon => {
+        const props = (polygon as any).properties;
+        const name = props?.NAME;
+        const country = COUNTRY_DATABASE[name] || {
+          name: name || "Unknown Territory",
+          code: props?.ISO_A2 || "UN",
+          capital: "Capital Region",
+          population: "Estimated 10M+ people",
+          region: "Global Frontier",
+          area: "50,000+ km²",
+          languages: "Official / Regional",
+          lat: 0,
+          lng: 0,
+          color: "#42C2CB"
+        };
         setSelectedCountry(country);
-        globe.pointOfView({ lat: country.lat, lng: country.lng, altitude: 1.5 }, 1200);
+        if (globeInstanceRef.current) {
+          globeInstanceRef.current.pointOfView({ lat: country.lat || 10, lng: country.lng || 10, altitude: 1.4 }, 1200);
+        }
       });
 
-    // Auto rotate
     const controls = globe.controls();
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.6;
+    controls.autoRotateSpeed = 0.5;
     controls.enableZoom = true;
 
     globeInstanceRef.current = globe;
 
-    // Resize handler
     const handleResize = () => {
       if (globeContainerRef.current) {
         globe.width(globeContainerRef.current.clientWidth);
@@ -85,20 +124,17 @@ export default function GlobeExplorer() {
     return () => {
       window.removeEventListener("resize", handleResize);
       try {
-        if (globeInstanceRef.current && globeContainerRef.current) {
-          globeContainerRef.current.innerHTML = "";
-        }
+        if (globeContainerRef.current) globeContainerRef.current.innerHTML = "";
       } catch (e) {
-        // Cleanup
+        // cleanup
       }
     };
-  }, []);
+  }, [countriesGeoJson, selectedCountry, hoveredPolygon]);
 
   const handleZoomIn = () => {
     if (!globeInstanceRef.current) return;
     const pov = globeInstanceRef.current.pointOfView();
     const nextAlt = Math.max(0.8, pov.altitude - 0.4);
-    setZoomLevel(nextAlt);
     globeInstanceRef.current.pointOfView({ ...pov, altitude: nextAlt }, 600);
   };
 
@@ -106,7 +142,6 @@ export default function GlobeExplorer() {
     if (!globeInstanceRef.current) return;
     const pov = globeInstanceRef.current.pointOfView();
     const nextAlt = Math.min(3.5, pov.altitude + 0.4);
-    setZoomLevel(nextAlt);
     globeInstanceRef.current.pointOfView({ ...pov, altitude: nextAlt }, 600);
   };
 
@@ -120,7 +155,7 @@ export default function GlobeExplorer() {
     const country = COUNTRY_DATABASE[countryName];
     if (country && globeInstanceRef.current) {
       setSelectedCountry(country);
-      globeInstanceRef.current.pointOfView({ lat: country.lat, lng: country.lng, altitude: 1.5 }, 1200);
+      globeInstanceRef.current.pointOfView({ lat: country.lat, lng: country.lng, altitude: 1.4 }, 1200);
     }
   };
 
@@ -155,7 +190,7 @@ export default function GlobeExplorer() {
             defaultValue=""
             className="bg-transparent text-white text-xs outline-none cursor-pointer"
           >
-            <option value="" disabled className="bg-gray-900 text-gray-400">Select country to zoom...</option>
+            <option value="" disabled className="bg-gray-900 text-gray-400">Select country to explore...</option>
             {Object.keys(COUNTRY_DATABASE).map(name => (
               <option key={name} value={name} className="bg-gray-900 text-white">
                 {name}
@@ -270,7 +305,7 @@ export default function GlobeExplorer() {
             </div>
           </div>
 
-          {/* Action Button to launch Interactive Map or Quiz */}
+          {/* Action Button to launch Interactive Map */}
           <div className="pt-2">
             <button
               onClick={() => navigate(`/map?lat=${selectedCountry.lat}&lng=${selectedCountry.lng}&from=explorer`)}
