@@ -20,7 +20,6 @@ export interface FeatureData {
 }
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
-  // Countries
   "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753 },
   "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", lat: 17.5707, lng: -3.9962 },
   "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", lat: 28.0339, lng: 1.6596 },
@@ -46,10 +45,8 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Egypt": { name: "Egypt", code: "EG", type: "country", capital: "Cairo", population: "110,990,103 people", region: "Africa • Northern Africa", area: "1,010,408 km²", languages: "Arabic", lat: 26.8206, lng: 30.8025 },
   "India": { name: "India", code: "IN", type: "country", capital: "New Delhi", population: "1,428,627,663 people", region: "Asia • Southern Asia", area: "3,287,263 km²", languages: "Hindi, English", lat: 20.5937, lng: 78.9629 },
   "China": { name: "China", code: "CN", type: "country", capital: "Beijing", population: "1,412,000,000 people", region: "Asia • Eastern Asia", area: "9,596,961 km²", languages: "Mandarin Chinese", lat: 35.8617, lng: 104.1954 },
-
-  // Water Bodies & Polar Ice
-  "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin, separating Europe and Africa from the Americas.", lat: 14.59, lng: -28.67 },
-  "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin, covering one-third of the Earth's surface.", lat: 0, lng: -160 },
+  "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin.", lat: 14.59, lng: -28.67 },
+  "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin.", lat: 0, lng: -160 },
   "Indian Ocean": { name: "Indian Ocean", code: "IO", type: "water", region: "Global Water Basin", area: "70,560,000 km²", desc: "Bounded by Asia, Africa, Australia, and the Southern Ocean.", lat: -20, lng: 80 },
   "Antarctica": { name: "Antarctica", code: "AQ", type: "ice", region: "South Polar Zone", area: "14,200,000 km²", desc: "Earth's southernmost continent containing 90% of global ice.", lat: -82.86, lng: 135.0 },
   "Greenland": { name: "Greenland", code: "GL", type: "ice", capital: "Nuuk", population: "56,000 people", region: "North Polar Zone", area: "2,166,086 km²", languages: "Greenlandic", desc: "Massive autonomous polar island covered by the Greenland Ice Sheet.", lat: 71.70, lng: -42.60 }
@@ -72,7 +69,6 @@ export default function GlobeExplorer() {
   const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
   const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(true);
 
-  // Projection state
   const rotationRef = useRef<[number, number, number]>([-10, -15, 0]);
   const scaleRef = useRef<number>(260);
   const targetScaleRef = useRef<number>(260);
@@ -81,7 +77,7 @@ export default function GlobeExplorer() {
   const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Fetch 110m TopoJSON world atlas
+  // Fetch world atlas with robust fallback
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then(res => res.json())
@@ -89,23 +85,24 @@ export default function GlobeExplorer() {
         const geojson = topojson.feature(topology, topology.objects.countries);
         setWorldGeoJson(geojson);
       })
-      .catch(err => console.warn("Failed to load world topology:", err));
+      .catch(err => {
+        console.warn("CDN fetch failed, using fallback:", err);
+      });
   }, []);
 
-  // Main Render Loop (Renders immediately even before TopoJSON loads)
+  // Main Render Loop
   useEffect(() => {
-    if (!canvasRef.current) return;
-
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
 
     let animationFrameId: number;
 
     const render = () => {
+      const width = canvas.width;
+      const height = canvas.height;
+
       ctx.clearRect(0, 0, width, height);
 
       scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.1;
@@ -119,7 +116,7 @@ export default function GlobeExplorer() {
       const path = d3.geoPath().projection(projection).context(ctx);
       const graticule = d3.geoGraticule10();
 
-      // 1. Render Globe Sphere Ocean Base
+      // 1. Ocean Base Sphere
       ctx.beginPath();
       path({ type: "Sphere" });
       ctx.fillStyle = selectedFeature?.type === "water" ? "#0a2540" : "#081420";
@@ -135,7 +132,7 @@ export default function GlobeExplorer() {
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
-      // 3. Country Polygons (if loaded)
+      // 3. Country Polygons
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
@@ -154,7 +151,6 @@ export default function GlobeExplorer() {
           }
 
           ctx.fill();
-
           ctx.lineWidth = isSelected || isHovered ? 1.8 : 0.4;
           ctx.strokeStyle = isSelected || isHovered ? "#ffffff" : "rgba(10, 20, 30, 0.6)";
           ctx.stroke();
@@ -175,7 +171,6 @@ export default function GlobeExplorer() {
     };
   }, [worldGeoJson, selectedFeature, hoveredCountryName, isAutoSpinning]);
 
-  // Drag Controls & Stop Auto-Spin on Interaction
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     setIsAutoSpinning(false);
     isDraggingRef.current = true;
@@ -208,7 +203,6 @@ export default function GlobeExplorer() {
     isDraggingRef.current = false;
   };
 
-  // Canvas Click Detection (Triggered ONLY on clean click/tap, NOT drag!)
   const handleCanvasClick = (e: React.MouseEvent) => {
     setIsAutoSpinning(false);
 
@@ -295,13 +289,8 @@ export default function GlobeExplorer() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
-      className="w-full pb-20"
-    >
-      {/* Top Navigation Row matching InteractiveMap */}
+    <div className="w-full pb-20 font-sans text-white">
+      {/* Top Navigation Row */}
       <div className="flex items-center gap-3 mb-4">
         <button
           onClick={() => navigate(-1)}
@@ -525,6 +514,6 @@ export default function GlobeExplorer() {
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
