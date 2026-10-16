@@ -91,6 +91,28 @@ export default function GlobeExplorer() {
       .catch(err => console.warn("Failed to load world topology:", err));
   }, []);
 
+  // Native non-passive wheel event listener to guarantee scroll prevention
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsAutoSpinning(false);
+      if (e.deltaY < 0) {
+        targetScaleRef.current = Math.min(550, targetScaleRef.current + 40);
+      } else {
+        targetScaleRef.current = Math.max(140, targetScaleRef.current - 40);
+      }
+    };
+
+    canvas.addEventListener("wheel", onNativeWheel, { passive: false });
+    return () => {
+      canvas.removeEventListener("wheel", onNativeWheel);
+    };
+  }, []);
+
   // Main Render Loop with Smooth Cinematic Interpolation
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -218,18 +240,6 @@ export default function GlobeExplorer() {
 
   const handleMouseUp = () => {
     isDraggingRef.current = false;
-  };
-
-  // Prevent page scroll when zooming on canvas
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsAutoSpinning(false);
-    if (e.deltaY < 0) {
-      targetScaleRef.current = Math.min(550, targetScaleRef.current + 40);
-    } else {
-      targetScaleRef.current = Math.max(140, targetScaleRef.current - 40);
-    }
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -386,7 +396,7 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 2D/3D Canvas Vector Globe with Wheel Event Prevention */}
+        {/* 2D/3D Canvas Vector Globe */}
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
@@ -396,7 +406,6 @@ export default function GlobeExplorer() {
           onTouchStart={handleMouseDown}
           onTouchMove={handleMouseMove}
           onTouchEnd={handleMouseUp}
-          onWheel={handleWheel}
           onClick={handleCanvasClick}
           style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }}
           className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
