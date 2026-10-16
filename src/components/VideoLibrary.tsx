@@ -228,13 +228,18 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
       </div>
 
       {/* Page Title Header */}
-      <header className="mb-6 text-center md:text-left">
-        <h1 className="text-3xl md:text-5xl text-geoCyan font-bold mb-2 tracking-tight">
-          Video Library
-        </h1>
-        <p className="text-gray-300 text-sm md:text-base max-w-2xl leading-relaxed">
-          High-production map animations, frontier documentaries, and geopolitical deep-dives. Filter by region, topic, or search directly.
-        </p>
+      <header className="mb-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div className="lg:col-span-7 text-center lg:text-left">
+          <h1 className="text-3xl md:text-5xl text-geoCyan font-bold mb-2 tracking-tight">
+            Video Library
+          </h1>
+          <p className="text-gray-300 text-sm md:text-base leading-relaxed">
+            High-production map animations, frontier documentaries, and geopolitical deep-dives. Filter by region, topic, or search directly.
+          </p>
+        </div>
+        <div className="lg:col-span-5">
+          <AdBanner slotId="video-library-header-slot" className="my-0" />
+        </div>
       </header>
 
       {/* Google-Style Circular & Transparent Search & Filter Bar */}
@@ -380,9 +385,6 @@ export default function VideoLibrary({ onBack }: VideoLibraryProps) {
           </div>
         </div>
       </div>
-
-      {/* Ad Placement Banner */}
-      <AdBanner slotId="video-library-slot" />
 
       <div ref={catalogTopRef} className="scroll-mt-24" />
 
