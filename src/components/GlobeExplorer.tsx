@@ -22,33 +22,35 @@ export interface FeatureData {
 
 const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   // Countries
-  "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", lat: 9.082, lng: 8.6753 },
-  "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", lat: 17.5707, lng: -3.9962 },
-  "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", lat: 28.0339, lng: 1.6596 },
-  "Niger": { name: "Niger", code: "NE", type: "country", capital: "Niamey", population: "25,250,000 people", region: "Africa • Western Africa", area: "1,267,000 km²", languages: "French, Hausa", lat: 17.6078, lng: 8.0817 },
-  "Chad": { name: "Chad", code: "TD", type: "country", capital: "N'Djamena", population: "17,180,000 people", region: "Africa • Central Africa", area: "1,284,000 km²", languages: "French, Arabic", lat: 15.4542, lng: 18.7322 },
-  "Sudan": { name: "Sudan", code: "SD", type: "country", capital: "Khartoum", population: "45,660,000 people", region: "Africa • Northern Africa", area: "1,886,068 km²", languages: "Arabic, English", lat: 12.8628, lng: 30.2176 },
-  "Senegal": { name: "Senegal", code: "SN", type: "country", capital: "Dakar", population: "16,880,000 people", region: "Africa • Western Africa", area: "196,712 km²", languages: "French, Wolof", lat: 14.4974, lng: -14.4524 },
-  "Ghana": { name: "Ghana", code: "GH", type: "country", capital: "Accra", population: "32,830,000 people", region: "Africa • Western Africa", area: "238,535 km²", languages: "English", lat: 7.9465, lng: -1.0232 },
-  "Morocco": { name: "Morocco", code: "MA", type: "country", capital: "Rabat", population: "37,080,000 people", region: "Africa • Northern Africa", area: "446,550 km²", languages: "Arabic, Berber", lat: 31.7917, lng: -7.0926 },
-  "Ethiopia": { name: "Ethiopia", code: "ET", type: "country", capital: "Addis Ababa", population: "120,300,000 people", region: "Africa • Eastern Africa", area: "1,104,300 km²", languages: "Amharic", lat: 9.145, lng: 40.4897 },
-  "Kenya": { name: "Kenya", code: "KE", type: "country", capital: "Nairobi", population: "53,010,000 people", region: "Africa • Eastern Africa", area: "580,367 km²", languages: "Swahili, English", lat: -0.0236, lng: 37.9062 },
-  "United States of America": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", lat: 37.0902, lng: -95.7129 },
-  "United Kingdom": { name: "United Kingdom", code: "GB", type: "country", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", lat: 55.3781, lng: -3.4360 },
-  "France": { name: "France", code: "FR", type: "country", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", lat: 46.2276, lng: 2.2137 },
-  "Germany": { name: "Germany", code: "DE", type: "country", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", lat: 51.1657, lng: 10.4515 },
-  "Spain": { name: "Spain", code: "ES", type: "country", capital: "Madrid", population: "47,420,000 people", region: "Europe • Southern Europe", area: "505,990 km²", languages: "Spanish", lat: 40.4637, lng: -3.7492 },
-  "Italy": { name: "Italy", code: "IT", type: "country", capital: "Rome", population: "59,110,000 people", region: "Europe • Southern Europe", area: "301,340 km²", languages: "Italian", lat: 41.8719, lng: 12.5674 },
-  "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", lat: 36.2048, lng: 138.2529 },
-  "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", lat: -14.2350, lng: -51.9253 },
-  "Australia": { name: "Australia", code: "AU", type: "country", capital: "Canberra", population: "26,068,792 people", region: "Oceania • Australasia", area: "7,692,024 km²", languages: "English", lat: -25.2744, lng: 133.7751 },
-  "South Africa": { name: "South Africa", code: "ZA", type: "country", capital: "Pretoria / Cape Town", population: "59,392,255 people", region: "Africa • Southern Africa", area: "1,221,037 km²", languages: "Zulu, Xhosa, Afrikaans, English", lat: -30.5595, lng: 22.9375 },
-  "Canada": { name: "Canada", code: "CA", type: "country", capital: "Ottawa", population: "38,250,000 people", region: "Americas • North America", area: "9,984,670 km²", languages: "English, French", lat: 56.1304, lng: -106.3468 },
-  "Egypt": { name: "Egypt", code: "EG", type: "country", capital: "Cairo", population: "110,990,103 people", region: "Africa • Northern Africa", area: "1,010,408 km²", languages: "Arabic", lat: 26.8206, lng: 30.8025 },
-  "India": { name: "India", code: "IN", type: "country", capital: "New Delhi", population: "1,428,627,663 people", region: "Asia • Southern Asia", area: "3,287,263 km²", languages: "Hindi, English", lat: 20.5937, lng: 78.9629 },
-  "China": { name: "China", code: "CN", type: "country", capital: "Beijing", population: "1,412,000,000 people", region: "Asia • Eastern Asia", area: "9,596,961 km²", languages: "Mandarin Chinese", lat: 35.8617, lng: 104.1954 },
-  "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin.", lat: 14.59, lng: -28.67 },
-  "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin.", lat: 0, lng: -160 },
+  "Nigeria": { name: "Nigeria", code: "NG", type: "country", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", desc: "Most people know Nigeria, but few know about its northern neighbor — Niger. It's one of Africa's largest countries, shaped by the Sahara Desert and the mighty Niger River.", lat: 9.082, lng: 8.6753 },
+  "Mali": { name: "Mali", code: "ML", type: "country", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", desc: "A landlocked West African nation rich in history, ancient trading cities like Timbuktu, and vibrant Saharan cultures.", lat: 17.5707, lng: -3.9962 },
+  "Algeria": { name: "Algeria", code: "DZ", type: "country", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", desc: "The largest country in Africa by land area, dominated by the vast Sahara Desert and Mediterranean coastline.", lat: 28.0339, lng: 1.6596 },
+  "Niger": { name: "Niger", code: "NE", type: "country", capital: "Niamey", population: "25,250,000 people", region: "Africa • Western Africa", area: "1,267,000 km²", languages: "French, Hausa", desc: "Most people know Nigeria, but few know about its northern neighbor — Niger. It's one of Africa's largest countries, shaped by the Sahara Desert and the mighty Niger River.", lat: 17.6078, lng: 8.0817 },
+  "Chad": { name: "Chad", code: "TD", type: "country", capital: "N'Djamena", population: "17,180,000 people", region: "Africa • Central Africa", area: "1,284,000 km²", languages: "French, Arabic", desc: "A landlocked country in north-central Africa known for Lake Chad and the Tibesti Mountains.", lat: 15.4542, lng: 18.7322 },
+  "Sudan": { name: "Sudan", code: "SD", type: "country", capital: "Khartoum", population: "45,660,000 people", region: "Africa • Northern Africa", area: "1,886,068 km²", languages: "Arabic, English", desc: "Located where the White and Blue Nile rivers meet, famous for having more pyramids than Egypt.", lat: 12.8628, lng: 30.2176 },
+  "Senegal": { name: "Senegal", code: "SN", type: "country", capital: "Dakar", population: "16,880,000 people", region: "Africa • Western Africa", area: "196,712 km²", languages: "French, Wolof", desc: "The westernmost mainland African country, renowned for Dakar, Teranga hospitality, and rich music.", lat: 14.4974, lng: -14.4524 },
+  "Ghana": { name: "Ghana", code: "GH", type: "country", capital: "Accra", population: "32,830,000 people", region: "Africa • Western Africa", area: "238,535 km²", languages: "English", desc: "A bustling West African country on the Gulf of Guinea known for cocoa, gold, and vibrant Atlantic heritage.", lat: 7.9465, lng: -1.0232 },
+  "Morocco": { name: "Morocco", code: "MA", type: "country", capital: "Rabat", population: "37,080,000 people", region: "Africa • Northern Africa", area: "446,550 km²", languages: "Arabic, Berber", desc: "A North African kingdom defined by Arabian, Berber, and European influences with imperial cities.", lat: 31.7917, lng: -7.0926 },
+  "Ethiopia": { name: "Ethiopia", code: "ET", type: "country", capital: "Addis Ababa", population: "120,300,000 people", region: "Africa • Eastern Africa", area: "1,104,300 km²", languages: "Amharic", desc: "A rugged, landlocked Horn of Africa country divided by the Great Rift Valley, with ancient origins.", lat: 9.145, lng: 40.4897 },
+  "Kenya": { name: "Kenya", code: "KE", type: "country", capital: "Nairobi", population: "53,010,000 people", region: "Africa • Eastern Africa", area: "580,367 km²", languages: "Swahili, English", desc: "An East African nation with coastlines on the Indian Ocean, famous for Maasai Mara wildlife safaris.", lat: -0.0236, lng: 37.9062 },
+  "United States of America": { name: "United States", code: "US", type: "country", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", desc: "A vast North American country spanning 50 states with diverse landscapes from Atlantic to Pacific.", lat: 37.0902, lng: -95.7129 },
+  "United Kingdom": { name: "United Kingdom", code: "GB", type: "country", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", desc: "An island nation in northwestern Europe made up of England, Scotland, Wales, and Northern Ireland.", lat: 55.3781, lng: -3.4360 },
+  "France": { name: "France", code: "FR", type: "country", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", desc: "A Western European nation encompassing medieval cities, alpine villages, and Mediterranean beaches.", lat: 46.2276, lng: 2.2137 },
+  "Germany": { name: "Germany", code: "DE", type: "country", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", desc: "A Western European country with a landscape of forests, rivers, mountain ranges, and 2 millennia of history.", lat: 51.1657, lng: 10.4515 },
+  "Spain": { name: "Spain", code: "ES", type: "country", capital: "Madrid", population: "47,420,000 people", region: "Europe • Southern Europe", area: "505,990 km²", languages: "Spanish", desc: "A European country on the Iberian Peninsula with diverse geography and Mediterranean coastlines.", lat: 40.4637, lng: -3.7492 },
+  "Italy": { name: "Italy", code: "IT", type: "country", capital: "Rome", population: "59,110,000 people", region: "Europe • Southern Europe", area: "301,340 km²", languages: "Italian", desc: "A boot-shaped peninsula in southern Europe with long Mediterranean coastline and rich historical heritage.", lat: 41.8719, lng: 12.5674 },
+  "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", desc: "An island nation in East Asia in the Pacific Ocean with dense cities, imperial palaces, and mountainous national parks.", lat: 36.2048, lng: 138.2529 },
+  "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", desc: "The largest country in South America and Latin America, famous for the Amazon Rainforest and Rio de Janeiro.", lat: -14.2350, lng: -51.9253 },
+  "Australia": { name: "Australia", code: "AU", type: "country", capital: "Canberra", population: "26,068,792 people", region: "Oceania • Australasia", area: "7,692,024 km²", languages: "English", desc: "A continent and country surrounded by the Indian and Pacific oceans, known for the Great Barrier Reef.", lat: -25.2744, lng: 133.7751 },
+  "South Africa": { name: "South Africa", code: "ZA", type: "country", capital: "Pretoria / Cape Town", population: "59,392,255 people", region: "Africa • Southern Africa", area: "1,221,037 km²", languages: "Zulu, Xhosa, Afrikaans, English", desc: "A country on the southernmost tip of the African continent, marked by several distinct ecosystems.", lat: -30.5595, lng: 22.9375 },
+  "Canada": { name: "Canada", code: "CA", type: "country", capital: "Ottawa", population: "38,250,000 people", region: "Americas • North America", area: "9,984,670 km²", languages: "English, French", desc: "The second-largest country in the world by total area, extending from Atlantic to Pacific and Arctic oceans.", lat: 56.1304, lng: -106.3468 },
+  "Egypt": { name: "Egypt", code: "EG", type: "country", capital: "Cairo", population: "110,990,103 people", region: "Africa • Northern Africa", area: "1,010,408 km²", languages: "Arabic", desc: "A transcontinental country spanning the northeast corner of Africa and southwest corner of Asia via Sinai.", lat: 26.8206, lng: 30.8025 },
+  "India": { name: "India", code: "IN", type: "country", capital: "New Delhi", population: "1,428,627,663 people", region: "Asia • Southern Asia", area: "3,287,263 km²", languages: "Hindi, English", desc: "A vast South Asian country with diverse terrain ranging from Himalayan peaks to Indian Ocean coastline.", lat: 20.5937, lng: 78.9629 },
+  "China": { name: "China", code: "CN", type: "country", capital: "Beijing", population: "1,412,000,000 people", region: "Asia • Eastern Asia", area: "9,596,961 km²", languages: "Mandarin Chinese", desc: "A populous nation in East Asia whose vast landscape encompasses grassland, desert, mountains, lakes, rivers.", lat: 35.8617, lng: 104.1954 },
+
+  // Water Bodies & Polar Ice
+  "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin, separating Europe and Africa from the Americas.", lat: 14.59, lng: -28.67 },
+  "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin, covering one-third of the Earth's surface.", lat: 0, lng: -160 },
   "Indian Ocean": { name: "Indian Ocean", code: "IO", type: "water", region: "Global Water Basin", area: "70,560,000 km²", desc: "Bounded by Asia, Africa, Australia, and the Southern Ocean.", lat: -20, lng: 80 },
   "Antarctica": { name: "Antarctica", code: "AQ", type: "ice", region: "South Polar Zone", area: "14,200,000 km²", desc: "Earth's southernmost continent containing 90% of global ice.", lat: -82.86, lng: 135.0 },
   "Greenland": { name: "Greenland", code: "GL", type: "ice", capital: "Nuuk", population: "56,000 people", region: "North Polar Zone", area: "2,166,086 km²", languages: "Greenlandic", desc: "Massive autonomous polar island covered by the Greenland Ice Sheet.", lat: 71.70, lng: -42.60 }
@@ -91,7 +93,7 @@ export default function GlobeExplorer() {
       .catch(err => console.warn("Failed to load world topology:", err));
   }, []);
 
-  // Native non-passive wheel event listener to guarantee scroll prevention
+  // Native non-passive wheel event listener allowing DEEP VECTOR ZOOM (up to 1400 scale)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -101,9 +103,11 @@ export default function GlobeExplorer() {
       e.stopPropagation();
       setIsAutoSpinning(false);
       if (e.deltaY < 0) {
-        targetScaleRef.current = Math.min(550, targetScaleRef.current + 40);
+        // Scroll Up -> Deep Vector Zoom In up to scale 1400!
+        targetScaleRef.current = Math.min(1400, targetScaleRef.current + 80);
       } else {
-        targetScaleRef.current = Math.max(140, targetScaleRef.current - 40);
+        // Scroll Down -> Zoom Out to scale 140
+        targetScaleRef.current = Math.max(140, targetScaleRef.current - 80);
       }
     };
 
@@ -113,7 +117,7 @@ export default function GlobeExplorer() {
     };
   }, []);
 
-  // Main Render Loop with Smooth Cinematic Interpolation
+  // Main Render Loop with Smooth Interpolation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -281,7 +285,7 @@ export default function GlobeExplorer() {
         lng: coords[0]
       };
       setSelectedFeature(country);
-      targetScaleRef.current = 450;
+      targetScaleRef.current = 850; // Deep Zoom In on Country Tap!
       targetRotationRef.current = [-country.lng, -country.lat, 0];
     } else {
       let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
@@ -296,19 +300,19 @@ export default function GlobeExplorer() {
       }
 
       setSelectedFeature(waterFeature);
-      targetScaleRef.current = 380;
+      targetScaleRef.current = 600;
       targetRotationRef.current = [-coords[0], -coords[1], 0];
     }
   };
 
   const handleZoomIn = () => {
     setIsAutoSpinning(false);
-    targetScaleRef.current = Math.min(550, targetScaleRef.current + 60);
+    targetScaleRef.current = Math.min(1400, targetScaleRef.current + 120);
   };
 
   const handleZoomOut = () => {
     setIsAutoSpinning(false);
-    targetScaleRef.current = Math.max(140, targetScaleRef.current - 60);
+    targetScaleRef.current = Math.max(140, targetScaleRef.current - 120);
   };
 
   const handleResetView = () => {
@@ -323,7 +327,7 @@ export default function GlobeExplorer() {
     const country = FEATURE_DATABASE[countryName];
     if (country) {
       setSelectedFeature(country);
-      targetScaleRef.current = 450;
+      targetScaleRef.current = 850;
       targetRotationRef.current = [-country.lng, -country.lat, 0];
     }
   };
@@ -333,7 +337,7 @@ export default function GlobeExplorer() {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
-      className="w-full pb-20"
+      className="w-full pb-20 font-sans text-white"
     >
       {/* Top Navigation Row */}
       <div className="flex items-center gap-3 mb-4">
@@ -354,7 +358,7 @@ export default function GlobeExplorer() {
             Cartographic Atlas
           </div>
           <h1 className="text-3xl md:text-5xl text-white font-extrabold tracking-tight mb-2">
-            3D Globe Explorer
+            3D Vector Globe Atlas
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
             Hover to highlight country borders, click to fill with color and smoothly zoom in.
@@ -413,7 +417,7 @@ export default function GlobeExplorer() {
 
         {/* Control Overlay Instructions */}
         <div className="absolute bottom-5 left-5 z-30 flex items-center gap-2 text-[11px] font-mono text-gray-400 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md pointer-events-none">
-          <span className="text-geoCyan font-bold">hover</span> highlight • <span className="text-geoCyan font-bold">click</span> select & fill • <span className="text-geoCyan font-bold">drag</span> rotate
+          <span className="text-geoCyan font-bold">hover</span> highlight • <span className="text-geoCyan font-bold">click</span> select & fill • <span className="text-geoCyan font-bold">scroll</span> zoom
         </div>
 
         {/* Bottom Left Floating Zoom Buttons */}
@@ -441,33 +445,57 @@ export default function GlobeExplorer() {
           </button>
         </div>
 
-        {/* Compact Popup Card Above Map */}
+        {/* Compact Popup Card Above Map (Matching Screenshot Exact Design!) */}
         {selectedFeature && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="absolute bottom-20 z-30 max-w-sm w-[90%] bg-gray-950/95 text-white rounded-3xl p-4 border border-geoYellow/40 shadow-2xl backdrop-blur-2xl flex items-center gap-4"
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-sm bg-[#080d1a]/95 text-white rounded-2xl p-4 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-3"
           >
-            <div className="w-12 h-12 rounded-2xl bg-black/60 border border-white/20 flex items-center justify-center shrink-0 overflow-hidden">
-              {selectedFeature.type === "country" ? (
-                <img src={`https://flagcdn.com/w320/${selectedFeature.code.toLowerCase()}.png`} alt="" className="w-full h-full object-cover" />
-              ) : selectedFeature.type === "water" ? (
-                <Waves className="w-6 h-6 text-geoCyan" />
-              ) : (
-                <Snowflake className="w-6 h-6 text-cyan-200" />
-              )}
+            {/* Top Row: Region & Category Badges + Close Button */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase">
+                <span className="px-2.5 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
+                  {selectedFeature.region.split("•")[0]?.trim() || "GLOBAL"}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
+                  {selectedFeature.type === "country" ? "COUNTRIES & NATIONS" : selectedFeature.type === "water" ? "WATER BASIN" : "POLAR ICE"}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedFeature(null);
+                  targetScaleRef.current = 280;
+                }}
+                className="text-gray-400 hover:text-white transition-colors p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex-grow min-w-0">
-              <span className="text-[10px] font-bold text-geoYellow uppercase tracking-wider block">{selectedFeature.region}</span>
-              <h4 className="font-extrabold text-sm text-white truncate">{selectedFeature.name}</h4>
-              <p className="text-[11px] text-gray-400 truncate">{selectedFeature.capital || selectedFeature.area}</p>
+
+            {/* Title */}
+            <h3 className="text-xl font-black text-white tracking-tight leading-tight">
+              {selectedFeature.name}
+            </h3>
+
+            {/* Short Overview Box */}
+            <div className="max-h-24 overflow-y-auto video-preview-scroll pr-1 text-xs text-gray-300 leading-relaxed font-normal">
+              {selectedFeature.desc || `${selectedFeature.name} is a sovereign country in ${selectedFeature.region} with capital ${selectedFeature.capital || "N/A"} and a population of ${selectedFeature.population || "N/A"}.`}
             </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold px-3.5 py-2 rounded-full text-xs shrink-0 transition-all cursor-pointer shadow-md"
-            >
-              Read More ➔
-            </button>
+
+            {/* Footer Row: Coordinates + Read More Button */}
+            <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+              <span className="font-mono text-[11px] text-gray-400">
+                📍 {selectedFeature.lat.toFixed(2)}°, {selectedFeature.lng.toFixed(2)}°
+              </span>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="text-geoCyan hover:text-geoYellow font-extrabold uppercase tracking-wider text-xs transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <span>Read More</span>
+                <span>➔</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </div>
