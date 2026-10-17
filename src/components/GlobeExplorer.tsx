@@ -69,6 +69,10 @@ export default function GlobeExplorer() {
   const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Live Autocomplete Search State
+  const [searchInput, setSearchInput] = useState("");
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+
   const rotationRef = useRef<[number, number, number]>([-10, -15, 0]);
   const targetRotationRef = useRef<[number, number, number]>([-10, -15, 0]);
   const scaleRef = useRef<number>(280);
@@ -78,7 +82,10 @@ export default function GlobeExplorer() {
   const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Fetch world atlas GeoJSON
+  const filteredCountryNames = Object.keys(COUNTRY_DATABASE).filter(name =>
+    name.toLowerCase().includes(searchInput.toLowerCase().trim())
+  );
+
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then(res => res.json())
@@ -111,7 +118,7 @@ export default function GlobeExplorer() {
     };
   }, []);
 
-  // Main Render Loop with Modulo 360 Shortest Angle Path
+  // Main Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -264,6 +271,7 @@ export default function GlobeExplorer() {
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     setIsAutoSpinning(false);
+    setIsSearchDropdownOpen(false);
 
     if (hasDraggedRef.current) {
       hasDraggedRef.current = false;
@@ -361,7 +369,7 @@ export default function GlobeExplorer() {
             3D Vector Globe Atlas
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Hover to highlight country borders, click to fill with color and smoothly zoom in.
+            Type or hover to highlight country borders, click to fill with color and smoothly zoom in.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -373,20 +381,56 @@ export default function GlobeExplorer() {
       <div className="relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 h-[650px] md:h-[720px] flex items-center justify-center">
         {/* Top Floating Search & Quiz Bar */}
         <div className="absolute top-5 left-5 right-5 z-30 flex items-center justify-between gap-3 pointer-events-none">
-          <div className="pointer-events-auto hidden md:flex items-center gap-2 bg-gray-900/80 border border-white/15 rounded-full px-4 py-2 backdrop-blur-xl shadow-2xl">
-            <Search className="w-4 h-4 text-gray-400" />
-            <select
-              onChange={(e) => handleSearchSelect(e.target.value)}
-              value={selectedCountry?.name || ""}
-              className="bg-transparent text-white text-xs outline-none cursor-pointer"
-            >
-              <option value="" disabled className="bg-gray-900 text-gray-400">Select country to explore...</option>
-              {Object.keys(COUNTRY_DATABASE).map(name => (
-                <option key={name} value={name} className="bg-gray-900 text-white">
-                  {name}
-                </option>
-              ))}
-            </select>
+          {/* Live Typing Autocomplete Search Input */}
+          <div className="relative pointer-events-auto hidden md:block w-64">
+            <div className="flex items-center gap-2 bg-gray-900/90 border border-white/15 rounded-full px-3.5 py-2 backdrop-blur-xl shadow-2xl focus-within:border-geoCyan/60">
+              <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              <input
+                type="text"
+                value={searchInput}
+                onFocus={() => setIsSearchDropdownOpen(true)}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  setIsSearchDropdownOpen(true);
+                }}
+                placeholder="Type country name..."
+                className="w-full bg-transparent text-white text-xs outline-none placeholder-gray-500 font-medium"
+              />
+              {searchInput && (
+                <button
+                  onClick={() => {
+                    setSearchInput("");
+                    setIsSearchDropdownOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-white p-0.5 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Live Dropdown Results */}
+            {isSearchDropdownOpen && filteredCountryNames.length > 0 && (
+              <div className="absolute top-11 left-0 right-0 max-h-56 overflow-y-auto bg-gray-950/95 border border-white/15 rounded-2xl p-1.5 shadow-2xl backdrop-blur-2xl text-xs space-y-1 video-preview-scroll z-50">
+                {filteredCountryNames.map(name => {
+                  const item = COUNTRY_DATABASE[name];
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => {
+                        handleSearchSelect(name);
+                        setSearchInput(name);
+                        setIsSearchDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-geoCyan/15 hover:text-geoCyan flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <span className="font-bold text-white truncate">{name}</span>
+                      <span className="text-[10px] font-mono text-geoCyan shrink-0 ml-2">{item.code}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="pointer-events-auto ml-auto">
@@ -450,77 +494,89 @@ export default function GlobeExplorer() {
           </button>
         </div>
 
-        {/* Compact Popup Card Above Map */}
+        {/* Compact Refined Popup Card Above Map */}
         {selectedCountry && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-sm bg-[#080d1a]/95 text-white rounded-2xl p-4 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-3"
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-[320px] bg-[#080d1a]/95 text-white rounded-2xl p-3.5 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-2.5"
           >
-            {/* Top Row: Region & Category Badges + Close Button */}
+            {/* Top Row: Region Badge on Left, Flag & Close Button on Right */}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase">
-                <span className="px-2.5 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30">
-                  {selectedCountry.region.split("•")[0]?.trim() || "GLOBAL"}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-geoYellow/15 text-geoYellow border border-geoYellow/30">
-                  COUNTRIES & NATIONS
-                </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30 font-mono text-[10px] font-bold uppercase tracking-wider truncate">
+                {selectedCountry.region.split("•")[0]?.trim() || "GLOBAL"}
+              </span>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Top-Right Flag Image Badge */}
+                <div className="w-8 h-5 rounded overflow-hidden shadow border border-white/20">
+                  <img
+                    src={`https://flagcdn.com/w160/${selectedCountry.code.toLowerCase()}.png`}
+                    alt={selectedCountry.name}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedCountry(null);
+                    targetScaleRef.current = 280;
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors p-0.5 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedCountry(null);
-                  targetScaleRef.current = 280;
-                }}
-                className="text-gray-400 hover:text-white transition-colors p-1 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
-            {/* Title */}
-            <h3 className="text-xl font-black text-white tracking-tight leading-tight">
-              {selectedCountry.name}
-            </h3>
+            {/* Title + As of 2026 Date */}
+            <div>
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="text-lg font-black text-white tracking-tight leading-tight truncate">
+                  {selectedCountry.name}
+                </h3>
+                <span className="text-[10px] text-gray-400 font-mono font-medium shrink-0">(as of 2026)</span>
+              </div>
+            </div>
 
-            {/* Stats Summary Table (Capital, Population, Region, Area, Languages) */}
-            <div className="space-y-1.5 text-xs border-y border-white/10 py-2.5">
+            {/* Compact Stats Table (Capital, Population, Region, Total Area, Languages) */}
+            <div className="space-y-1 text-xs border-y border-white/10 py-2">
               {selectedCountry.capital && (
                 <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Capital</span>
-                  <span className="font-bold text-white">{selectedCountry.capital}</span>
+                  <span className="text-gray-400 font-semibold text-[10px] uppercase">Capital</span>
+                  <span className="font-bold text-white text-[11px] truncate max-w-[140px] text-right">{selectedCountry.capital}</span>
                 </div>
               )}
               {selectedCountry.population && (
                 <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Population</span>
-                  <span className="font-bold text-white">{selectedCountry.population}</span>
+                  <span className="text-gray-400 font-semibold text-[10px] uppercase">Population</span>
+                  <span className="font-bold text-white text-[11px]">{selectedCountry.population}</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-gray-300">
-                <span className="text-gray-400 font-semibold text-[11px] uppercase">Region</span>
-                <span className="font-bold text-geoYellow">{selectedCountry.region}</span>
+                <span className="text-gray-400 font-semibold text-[10px] uppercase">Region</span>
+                <span className="font-bold text-geoYellow text-[11px] truncate max-w-[140px] text-right">{selectedCountry.region}</span>
               </div>
               <div className="flex justify-between items-center text-gray-300">
-                <span className="text-gray-400 font-semibold text-[11px] uppercase">Total Area</span>
-                <span className="font-bold text-white">{selectedCountry.area}</span>
+                <span className="text-gray-400 font-semibold text-[10px] uppercase">Total Area</span>
+                <span className="font-bold text-white text-[11px]">{selectedCountry.area}</span>
               </div>
               {selectedCountry.languages && (
                 <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Language(s)</span>
-                  <span className="font-bold text-white">{selectedCountry.languages}</span>
+                  <span className="text-gray-400 font-semibold text-[10px] uppercase">Language(s)</span>
+                  <span className="font-bold text-white text-[11px] truncate max-w-[140px] text-right">{selectedCountry.languages}</span>
                 </div>
               )}
             </div>
 
             {/* Footer Row: Coordinates + Read More Button */}
-            <div className="pt-1 flex items-center justify-between text-xs">
-              <span className="font-mono text-[11px] text-gray-400">
+            <div className="pt-0.5 flex items-center justify-between text-xs">
+              <span className="font-mono text-[10px] text-gray-400">
                 📍 {selectedCountry.lat.toFixed(2)}°, {selectedCountry.lng.toFixed(2)}°
               </span>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="text-geoCyan hover:text-geoYellow font-extrabold uppercase tracking-wider text-xs transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-geoCyan hover:text-geoYellow font-extrabold uppercase tracking-wider text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span>Read More</span>
                 <span>➔</span>
