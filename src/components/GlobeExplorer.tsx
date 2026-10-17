@@ -75,6 +75,8 @@ export default function GlobeExplorer() {
   const [selectedFeature, setSelectedFeature] = useState<FeatureData | null>(null);
   const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
   const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
+  const [riversGeoJson, setRiversGeoJson] = useState<any | null>(null);
+  const [lakesGeoJson, setLakesGeoJson] = useState<any | null>(null);
   const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(true);
   const [focusMode, setFocusMode] = useState<"all" | "countries" | "water">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,6 +90,7 @@ export default function GlobeExplorer() {
   const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  // Fetch world atlas, rivers, and lakes datasets
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then(res => res.json())
@@ -96,6 +99,16 @@ export default function GlobeExplorer() {
         setWorldGeoJson(geojson);
       })
       .catch(err => console.warn("Failed to load world topology:", err));
+
+    fetch("https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_rivers_lake_centerlines.geojson")
+      .then(res => res.json())
+      .then(data => setRiversGeoJson(data))
+      .catch(err => console.warn("Failed to load rivers:", err));
+
+    fetch("https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_lakes.geojson")
+      .then(res => res.json())
+      .then(data => setLakesGeoJson(data))
+      .catch(err => console.warn("Failed to load lakes:", err));
   }, []);
 
   // Native non-passive wheel event listener allowing DEEP VECTOR ZOOM
@@ -120,7 +133,7 @@ export default function GlobeExplorer() {
     };
   }, []);
 
-  // Main Render Loop with SHORTEST ANGLE PATH (Prevents Unwinding / Spinning Back!)
+  // Main Render Loop with Rivers, Lakes & Ocean Boundary Centerlines
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -145,7 +158,7 @@ export default function GlobeExplorer() {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Shortest modulo 360 angle path interpolation (FIXES SPIN-BACK BUG 100%!)
+      // Shortest modulo 360 angle path interpolation
       let dLat = targetRotationRef.current[1] - rotationRef.current[1];
       let dLng = (targetRotationRef.current[0] - rotationRef.current[0]) % 360;
       if (dLng > 180) dLng -= 360;
@@ -173,14 +186,14 @@ export default function GlobeExplorer() {
       ctx.strokeStyle = focusMode === "water" ? "#00b4d8" : "rgba(66, 194, 203, 0.4)";
       ctx.stroke();
 
-      // 2. Graticule Lines (Latitude & Longitude Grid)
+      // 2. Graticule Lines
       ctx.beginPath();
       path(graticule);
       ctx.lineWidth = 0.5;
-      ctx.strokeStyle = focusMode === "water" ? "rgba(0, 180, 216, 0.18)" : "rgba(255, 255, 255, 0.08)";
+      ctx.strokeStyle = focusMode === "water" ? "rgba(0, 180, 216, 0.25)" : "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
-      // 3. Country & Landmass Polygons
+      // 3. Country Polygons
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
@@ -203,6 +216,30 @@ export default function GlobeExplorer() {
         });
       }
 
+      // 4. Render Lakes (Lake Victoria, Lake Chad, Caspian Sea, Lake Superior, Lake Baikal, etc.)
+      if (lakesGeoJson && lakesGeoJson.features) {
+        lakesGeoJson.features.forEach((feature: any) => {
+          ctx.beginPath();
+          path(feature);
+          ctx.fillStyle = "#0077b6";
+          ctx.fill();
+          ctx.lineWidth = 1.0;
+          ctx.strokeStyle = "#00b4d8";
+          ctx.stroke();
+        });
+      }
+
+      // 5. Render Major World Rivers (River Niger, Nile River, Amazon, Mississippi, Danube, Yangtze, etc.)
+      if (riversGeoJson && riversGeoJson.features) {
+        riversGeoJson.features.forEach((feature: any) => {
+          ctx.beginPath();
+          path(feature);
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = "#00f0ff";
+          ctx.stroke();
+        });
+      }
+
       if (isAutoSpinning && !isDraggingRef.current) {
         targetRotationRef.current[0] += 0.2;
         rotationRef.current[0] = targetRotationRef.current[0];
@@ -217,7 +254,7 @@ export default function GlobeExplorer() {
       window.removeEventListener("resize", updateSize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [worldGeoJson, selectedFeature, hoveredCountryName, isAutoSpinning, focusMode]);
+  }, [worldGeoJson, riversGeoJson, lakesGeoJson, selectedFeature, hoveredCountryName, isAutoSpinning, focusMode]);
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     setIsAutoSpinning(false);
@@ -535,7 +572,7 @@ export default function GlobeExplorer() {
           </button>
         </div>
 
-        {/* Compact Popup Card Above Map */}
+        {/* Compact Popup Card Above Map (Matching Screenshot Exact Design!) */}
         {selectedFeature && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -568,34 +605,9 @@ export default function GlobeExplorer() {
               {selectedFeature.name}
             </h3>
 
-            {/* Stats Summary Table (Capital, Population, Region, Area, Languages) */}
-            <div className="space-y-1.5 text-xs border-y border-white/10 py-2.5">
-              {selectedFeature.capital && (
-                <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Capital</span>
-                  <span className="font-bold text-white">{selectedFeature.capital}</span>
-                </div>
-              )}
-              {selectedFeature.population && (
-                <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Population</span>
-                  <span className="font-bold text-white">{selectedFeature.population}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center text-gray-300">
-                <span className="text-gray-400 font-semibold text-[11px] uppercase">Region</span>
-                <span className="font-bold text-geoYellow">{selectedFeature.region}</span>
-              </div>
-              <div className="flex justify-between items-center text-gray-300">
-                <span className="text-gray-400 font-semibold text-[11px] uppercase">Total Area</span>
-                <span className="font-bold text-white">{selectedFeature.area}</span>
-              </div>
-              {selectedFeature.languages && (
-                <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400 font-semibold text-[11px] uppercase">Language(s)</span>
-                  <span className="font-bold text-white">{selectedFeature.languages}</span>
-                </div>
-              )}
+            {/* Short Overview Box */}
+            <div className="max-h-24 overflow-y-auto video-preview-scroll pr-1 text-xs text-gray-300 leading-relaxed font-normal">
+              {selectedFeature.desc || `${selectedFeature.name} is a sovereign country in ${selectedFeature.region} with capital ${selectedFeature.capital || "N/A"} and a population of ${selectedFeature.population || "N/A"}.`}
             </div>
 
             {/* Footer Row: Coordinates + Read More Button */}
