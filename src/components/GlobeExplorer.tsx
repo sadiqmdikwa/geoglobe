@@ -20,6 +20,8 @@ export interface CountryData {
 }
 
 const COUNTRY_DATABASE: { [key: string]: CountryData } = {
+  "Democratic Republic of the Congo": { name: "Democratic Republic of the Congo", code: "CD", capital: "Kinshasa", population: "99,010,000 people", region: "Africa • Central Africa", area: "2,344,858 km²", languages: "French, Lingala, Swahili", desc: "The second-largest country in Africa by area, dominated by the dense Congo Rainforest and Congo River basin.", lat: -4.0383, lng: 21.7587 },
+  "Congo": { name: "Republic of the Congo", code: "CG", capital: "Brazzaville", population: "5,835,000 people", region: "Africa • Central Africa", area: "342,000 km²", languages: "French, Lingala", desc: "Located on the western bank of the Congo River, opposite Kinshasa.", lat: -0.228, lng: 15.8277 },
   "Colombia": { name: "Colombia", code: "CO", capital: "Bogotá", population: "51,520,000 people", region: "Americas • South America", area: "1,141,748 km²", languages: "Spanish", desc: "A tropical South American nation marked by rainforests, Andes mountains, and coffee plantations.", lat: 4.5709, lng: -74.2973 },
   "Nigeria": { name: "Nigeria", code: "NG", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", desc: "Most people know Nigeria, but few know about its northern neighbor — Niger. It's one of Africa's largest countries.", lat: 9.082, lng: 8.6753 },
   "Mali": { name: "Mali", code: "ML", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", desc: "A landlocked West African nation rich in history, ancient trading cities like Timbuktu, and vibrant Saharan cultures.", lat: 17.5707, lng: -3.9962 },
@@ -369,7 +371,7 @@ export default function GlobeExplorer() {
             3D Vector Globe Atlas
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Type or hover to highlight country borders, click to fill with color and smoothly zoom in.
+            Hover to highlight country borders, click to fill with color and smoothly zoom in.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -381,7 +383,7 @@ export default function GlobeExplorer() {
       <div className="relative rounded-[2.5rem] border border-white/10 bg-gray-900/50 shadow-2xl backdrop-blur-xl overflow-hidden p-0 h-[650px] md:h-[720px] flex items-center justify-center">
         {/* Top Floating Search & Quiz Bar */}
         <div className="absolute top-5 left-5 right-5 z-30 flex items-center justify-between gap-3 pointer-events-none">
-          {/* Live Typing Autocomplete Search Input */}
+          {/* Live Typing Autocomplete Search Input (Press Enter to Search & Zoom!) */}
           <div className="relative pointer-events-auto hidden md:block w-64">
             <div className="flex items-center gap-2 bg-gray-900/90 border border-white/15 rounded-full px-3.5 py-2 backdrop-blur-xl shadow-2xl focus-within:border-geoCyan/60">
               <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -392,6 +394,15 @@ export default function GlobeExplorer() {
                 onChange={(e) => {
                   setSearchInput(e.target.value);
                   setIsSearchDropdownOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && filteredCountryNames.length > 0) {
+                    e.preventDefault();
+                    const firstName = filteredCountryNames[0];
+                    handleSearchSelect(firstName);
+                    setSearchInput(firstName);
+                    setIsSearchDropdownOpen(false);
+                  }
                 }}
                 placeholder="Type country name..."
                 className="w-full bg-transparent text-white text-xs outline-none placeholder-gray-500 font-medium"
@@ -425,7 +436,7 @@ export default function GlobeExplorer() {
                       className="w-full text-left px-3 py-2 rounded-xl hover:bg-geoCyan/15 hover:text-geoCyan flex items-center justify-between transition-colors cursor-pointer"
                     >
                       <span className="font-bold text-white truncate">{name}</span>
-                      <span className="text-[10px] font-mono text-geoCyan shrink-0 ml-2">{item.code}</span>
+                      <span className="text-[10px] font-mono text-geoCyan shrink-0 ml-2">{item?.code || "UN"}</span>
                     </button>
                   );
                 })}
@@ -499,17 +510,12 @@ export default function GlobeExplorer() {
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-[320px] bg-[#080d1a]/95 text-white rounded-2xl p-3.5 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-2.5"
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-[320px] bg-[#080d1a]/95 text-white rounded-2xl p-4 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-3"
           >
-            {/* Top Row: Region Badge on Left, Flag & Close Button on Right */}
+            {/* Top Row: Flag (Increased size with animation) + Close Button */}
             <div className="flex items-center justify-between gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-geoCyan/15 text-geoCyan border border-geoCyan/30 font-mono text-[10px] font-bold uppercase tracking-wider truncate">
-                {selectedCountry.region.split("•")[0]?.trim() || "GLOBAL"}
-              </span>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Top-Right Flag Image Badge */}
-                <div className="w-8 h-5 rounded overflow-hidden shadow border border-white/20">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-6 rounded-md overflow-hidden shadow-md border border-white/20 hover:scale-110 transition-transform duration-300">
                   <img
                     src={`https://flagcdn.com/w160/${selectedCountry.code.toLowerCase()}.png`}
                     alt={selectedCountry.name}
@@ -517,19 +523,21 @@ export default function GlobeExplorer() {
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <button
-                  onClick={() => {
-                    setSelectedCountry(null);
-                    targetScaleRef.current = 280;
-                  }}
-                  className="text-gray-400 hover:text-white transition-colors p-0.5 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <span className="text-[10px] font-mono font-bold text-geoCyan uppercase tracking-widest">{selectedCountry.code}</span>
               </div>
+
+              <button
+                onClick={() => {
+                  setSelectedCountry(null);
+                  targetScaleRef.current = 280;
+                }}
+                className="text-gray-400 hover:text-white transition-colors p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Title + As of 2026 Date */}
+            {/* Title & Date */}
             <div>
               <div className="flex items-baseline justify-between gap-2">
                 <h3 className="text-lg font-black text-white tracking-tight leading-tight truncate">
@@ -539,8 +547,8 @@ export default function GlobeExplorer() {
               </div>
             </div>
 
-            {/* Compact Stats Table (Capital, Population, Region, Total Area, Languages) */}
-            <div className="space-y-1 text-xs border-y border-white/10 py-2">
+            {/* Table: Capital, Population, Continent & Region, Area, Languages */}
+            <div className="space-y-1.5 text-xs border-y border-white/10 py-2.5">
               {selectedCountry.capital && (
                 <div className="flex justify-between items-center text-gray-300">
                   <span className="text-gray-400 font-semibold text-[10px] uppercase">Capital</span>
@@ -554,7 +562,7 @@ export default function GlobeExplorer() {
                 </div>
               )}
               <div className="flex justify-between items-center text-gray-300">
-                <span className="text-gray-400 font-semibold text-[10px] uppercase">Region</span>
+                <span className="text-gray-400 font-semibold text-[10px] uppercase">Continent & Region</span>
                 <span className="font-bold text-geoYellow text-[11px] truncate max-w-[140px] text-right">{selectedCountry.region}</span>
               </div>
               <div className="flex justify-between items-center text-gray-300">
@@ -569,7 +577,7 @@ export default function GlobeExplorer() {
               )}
             </div>
 
-            {/* Footer Row: Coordinates + Read More Button */}
+            {/* Footer Row: Coordinates + Read More */}
             <div className="pt-0.5 flex items-center justify-between text-xs">
               <span className="font-mono text-[10px] text-gray-400">
                 📍 {selectedCountry.lat.toFixed(2)}°, {selectedCountry.lng.toFixed(2)}°
@@ -646,7 +654,7 @@ export default function GlobeExplorer() {
                 {selectedCountry.desc && (
                   <div className="pt-1">
                     <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold block mb-1">Geographic Overview</span>
-                    <p className="text-xs text-gray-300 leading-relaxed">{selectedCountry.desc}</p>
+                    <p className="text-xs text-gray-300 leading-relaxed">{selectedFeatureDesc(selectedCountry)}</p>
                   </div>
                 )}
               </div>
@@ -670,4 +678,8 @@ export default function GlobeExplorer() {
       </AnimatePresence>
     </motion.div>
   );
+}
+
+function selectedFeatureDesc(country: CountryData): string {
+  return country.desc || `${country.name} is a sovereign nation in ${country.region} with capital ${country.capital || "N/A"} and a population of ${country.population || "N/A"}.`;
 }
