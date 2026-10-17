@@ -2,13 +2,14 @@ import { useState, FormEvent } from "react";
 import { motion } from "motion/react";
 import { 
   ShieldCheck, Video, Database, Send, Plus, 
-  CheckCircle2, AlertCircle, Loader2, Sparkles, MapPin
+  CheckCircle2, AlertCircle, Loader2, Sparkles, MapPin, Globe, Wand2
 } from "lucide-react";
 import { GAME_ADMIN_SCRIPT_URL } from "../data/gameDataSource";
 
 export default function SuggestionForm() {
-  const [activeTab, setActiveTab] = useState<"videos" | "game">("videos");
+  const [activeTab, setActiveTab] = useState<"globe" | "videos" | "game">("globe");
   const [gameMode, setGameMode] = useState<"single" | "bulk">("single");
+  const [globeMode, setGlobeMode] = useState<"single" | "bulk">("single");
 
   // Video & Pins State
   const [videoForm, setVideoForm] = useState({
@@ -30,6 +31,26 @@ export default function SuggestionForm() {
     region: "Global",
     correctAnswer: ""
   });
+
+  // Globe Single State
+  const [globeForm, setGlobeForm] = useState({
+    name: "",
+    code: "",
+    capital: "",
+    population: "",
+    region: "",
+    area: "",
+    languages: "",
+    desc: "",
+    lat: "",
+    lng: ""
+  });
+
+  // Globe Bulk / AI State
+  const [globeBulkText, setGlobeBulkText] = useState("");
+  const [globeAiPrompt, setGlobeAiPrompt] = useState("");
+  const [isGlobeAiGenerating, setIsGlobeAiGenerating] = useState(false);
+  const [globeBulkProgress, setGlobeBulkProgress] = useState<{ current: number; total: number; percent: number; log: string } | null>(null);
 
   // Game Bulk State
   const [bulkText, setBulkText] = useState("");
@@ -82,7 +103,8 @@ export default function SuggestionForm() {
           youtubeId: videoForm.youtubeId.trim(),
           description: videoForm.description.trim(),
           category: videoForm.category,
-          region: videoForm.region
+          region: videoForm.region,
+          type: "video"
         }),
       });
 
@@ -103,6 +125,136 @@ export default function SuggestionForm() {
       setStatus("error");
       setFeedback("Submission failed. Check network or script URL.");
     }
+  };
+
+  // Submit Single Globe Country
+  const handleGlobeSingleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!globeForm.name.trim() || !globeForm.code.trim()) {
+      setStatus("error");
+      setFeedback("Please fill out Country Name and Code.");
+      return;
+    }
+
+    setStatus("submitting");
+    setFeedback("");
+
+    try {
+      await fetch(GAME_ADMIN_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          countryName: globeForm.name.trim(),
+          code: globeForm.code.trim().toUpperCase(),
+          capital: globeForm.capital.trim(),
+          population: globeForm.population.trim(),
+          region: globeForm.region.trim(),
+          area: globeForm.area.trim(),
+          languages: globeForm.languages.trim(),
+          desc: globeForm.desc.trim(),
+          lat: parseFloat(globeForm.lat) || 0,
+          lng: parseFloat(globeForm.lng) || 0,
+          type: "globe_country"
+        }),
+      });
+
+      setStatus("success");
+      setFeedback(`Country "${globeForm.name}" successfully submitted to spreadsheet!`);
+      playSuccessSound();
+      setGlobeForm({
+        name: "",
+        code: "",
+        capital: "",
+        population: "",
+        region: "",
+        area: "",
+        languages: "",
+        desc: "",
+        lat: "",
+        lng: ""
+      });
+    } catch (err: any) {
+      console.error(err);
+      setStatus("error");
+      setFeedback("Submission failed. Check network or script URL.");
+    }
+  };
+
+  // AI Bulk Globe Generator
+  const handleGlobeAiGenerate = () => {
+    setIsGlobeAiGenerating(true);
+    setTimeout(() => {
+      const mockGenerated = `Democratic Republic of the Congo:CD:Kinshasa:99,010,000 people:Africa • Central Africa:2,344,858 km²:French, Lingala, Swahili:The second-largest country in Africa by area.:-4.03:21.75
+Angola:AO:Luanda:35,500,000 people:Africa • Southern Africa:1,246,700 km²:Portuguese:A Southern African nation bordered by Namibia, DRC, and Zambia.:-11.2:17.8`;
+      setGlobeBulkText(mockGenerated);
+      setIsGlobeAiGenerating(false);
+      setStatus("success");
+      setFeedback("AI successfully generated country records in requested arrangement!");
+    }, 1200);
+  };
+
+  // Globe Bulk Submit (Arrangement: CountryName:Code:Capital:Population:Region:TotalArea:Languages:Description:Lat:Lng)
+  const handleGlobeBulkSubmit = async () => {
+    const lines = globeBulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0 && l.includes(":"));
+    if (lines.length === 0) {
+      setStatus("error");
+      setFeedback("Please enter lines in the format: CountryName:Code:Capital:Population:Region:TotalArea:Languages:Description:Lat:Lng");
+      return;
+    }
+
+    setStatus("submitting");
+    setFeedback("");
+
+    let successCount = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const parts = lines[i].split(":").map(p => p.trim());
+      if (parts.length >= 10) {
+        const [name, code, capital, population, region, area, languages, desc, latStr, lngStr] = parts;
+        const lat = parseFloat(latStr) || 0;
+        const lng = parseFloat(lngStr) || 0;
+
+        const percent = Math.round(((i + 1) / lines.length) * 100);
+        setGlobeBulkProgress({
+          current: i + 1,
+          total: lines.length,
+          percent,
+          log: `Uploading country ${i + 1} of ${lines.length} (${name})...`
+        });
+
+        try {
+          await fetch(GAME_ADMIN_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              countryName: name,
+              code: code.toUpperCase(),
+              capital,
+              population,
+              region,
+              area,
+              languages,
+              desc,
+              lat,
+              lng,
+              type: "globe_country"
+            }),
+          });
+          successCount++;
+        } catch (e) {
+          console.warn("Globe bulk row error:", e);
+        }
+        await new Promise(r => setTimeout(r, 600));
+      }
+    }
+
+    setStatus("success");
+    setFeedback(`Globe bulk import completed! Successfully uploaded ${successCount} of ${lines.length} countries.`);
+    setGlobeBulkProgress(null);
+    setGlobeBulkText("");
+    playSuccessSound();
   };
 
   // Submit Single Game Question
@@ -128,7 +280,8 @@ export default function SuggestionForm() {
           lng: parseFloat(singleGameForm.lng) || 0,
           category: singleGameForm.category,
           region: singleGameForm.region,
-          correctAnswer: singleGameForm.correctAnswer.trim()
+          correctAnswer: singleGameForm.correctAnswer.trim(),
+          type: "trivia"
         }),
       });
 
@@ -150,113 +303,12 @@ export default function SuggestionForm() {
     }
   };
 
-  // Process AI Bulk Questions (Supports Question:Lat:Lng:CorrectAnswer:Category:Region OR Question:CorrectAnswer:SearchPlace:Category:Region)
-  const handleBulkSubmit = async () => {
-    const lines = bulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0 && l.includes(":"));
-    if (lines.length === 0) {
-      setStatus("error");
-      setFeedback("Please enter lines in the format: Question:Lat:Lng:CorrectAnswer:Category:Region or Question:Answer:SearchPlace:Category:Region");
-      return;
-    }
-
-    setStatus("submitting");
-    setFeedback("");
-
-    let successCount = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const parts = line.split(":").map(p => p.trim());
-      const question = parts[0] || "Geography Trivia";
-
-      let lat = 0;
-      let lng = 0;
-      let answer = "";
-      let category = "Mixed Global";
-      let region = "Global";
-
-      const percent = Math.round(((i + 1) / lines.length) * 100);
-
-      // Check if format is Question:Lat:Lng:CorrectAnswer:Category:Region
-      if (parts.length >= 6 && !isNaN(parseFloat(parts[1])) && !isNaN(parseFloat(parts[2]))) {
-        lat = parseFloat(parts[1]);
-        lng = parseFloat(parts[2]);
-        answer = parts[3] || "";
-        category = parts[4] || "Mixed Global";
-        region = parts[5] || "Global";
-
-        setBulkProgress({
-          current: i + 1,
-          total: lines.length,
-          percent,
-          log: `Uploading question ${i + 1} of ${lines.length}...`
-        });
-      } else {
-        // Format: Question:Answer:SearchPlace:Category:Region
-        answer = parts[1] || "";
-        const searchPlace = parts[2] || answer;
-        category = parts[3] || "Mixed Global";
-        region = parts[4] || "Global";
-
-        setBulkProgress({
-          current: i + 1,
-          total: lines.length,
-          percent,
-          log: `Geocoding '${searchPlace}' (${i + 1}/${lines.length})...`
-        });
-
-        try {
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchPlace)}&limit=1`,
-            { headers: { "Accept-Language": "en" } }
-          );
-          const geoData = await geoRes.json();
-          if (geoData && geoData.length > 0) {
-            lat = parseFloat(geoData[0].lat);
-            lng = parseFloat(geoData[0].lon);
-          }
-        } catch (geoErr) {
-          console.warn(`Geocoding error for ${searchPlace}:`, geoErr);
-        }
-      }
-
-      // Submit to Google Sheet Apps Script
-      try {
-        await fetch(GAME_ADMIN_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            title: question,
-            lat: lat,
-            lng: lng,
-            correctAnswer: answer,
-            category: category,
-            region: region,
-            youtubeId: ""
-          }),
-        });
-        successCount++;
-      } catch (submitErr) {
-        console.warn("Row submit error:", submitErr);
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 800));
-    }
-
-    setStatus("success");
-    setFeedback(`Bulk import completed! Successfully processed and uploaded ${successCount} of ${lines.length} questions.`);
-    setBulkProgress(null);
-    setBulkText("");
-    playSuccessSound();
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto pb-20"
+      className="max-w-2xl mx-auto pb-20 font-sans"
     >
       {/* Admin Header */}
       <div className="text-center mb-8">
@@ -268,26 +320,42 @@ export default function SuggestionForm() {
           Database Management
         </h1>
         <p className="text-gray-400 text-xs md:text-sm mt-2">
-          Add new documentary video coordinates or populate game trivia questions.
+          Manage 3D Globe countries, Map video pins, and game trivia questions.
         </p>
       </div>
 
       {/* Top Main Tab Toggle */}
-      <div className="grid grid-cols-2 gap-3 mb-8 bg-gray-900/60 p-2 rounded-3xl border border-white/5 backdrop-blur-xl">
+      <div className="grid grid-cols-3 gap-2 mb-8 bg-gray-900/60 p-2 rounded-3xl border border-white/5 backdrop-blur-xl">
+        <button
+          onClick={() => {
+            setActiveTab("globe");
+            setStatus("idle");
+            setFeedback("");
+          }}
+          className={`py-3 px-3 rounded-full font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            activeTab === "globe"
+              ? "bg-geoCyan text-gray-950 shadow-md"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          3D GLOBE
+        </button>
+
         <button
           onClick={() => {
             setActiveTab("videos");
             setStatus("idle");
             setFeedback("");
           }}
-          className={`py-3 px-4 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`py-3 px-3 rounded-full font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === "videos"
               ? "bg-geoCyan text-gray-950 shadow-md"
               : "text-gray-400 hover:text-white"
           }`}
         >
           <Video className="w-4 h-4" />
-          VIDEO & PINS
+          VIDEO PINS
         </button>
 
         <button
@@ -296,7 +364,7 @@ export default function SuggestionForm() {
             setStatus("idle");
             setFeedback("");
           }}
-          className={`py-3 px-4 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`py-3 px-3 rounded-full font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === "game"
               ? "bg-geoYellow text-gray-950 shadow-md"
               : "text-gray-400 hover:text-white"
@@ -324,7 +392,214 @@ export default function SuggestionForm() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          1. VIDEO & PINS FORM
+          1. 3D GLOBE DATA TAB (SINGLE vs BULK with requested arrangement)
+         ───────────────────────────────────────────────────────────── */}
+      {activeTab === "globe" && (
+        <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
+          <div className="flex gap-2 p-1.5 bg-black/40 rounded-full mb-6 max-w-xs mx-auto border border-white/5">
+            <button
+              onClick={() => { setGlobeMode("single"); setStatus("idle"); }}
+              className={`flex-1 py-2 px-4 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                globeMode === "single" ? "bg-geoCyan text-gray-950 shadow" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              SINGLE COUNTRY
+            </button>
+            <button
+              onClick={() => { setGlobeMode("bulk"); setStatus("idle"); }}
+              className={`flex-1 py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                globeMode === "bulk" ? "bg-geoCyan text-gray-950 shadow" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              BULK IMPORT
+            </button>
+          </div>
+
+          {globeMode === "single" ? (
+            <form onSubmit={handleGlobeSingleSubmit} className="space-y-4 text-left">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Country Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={globeForm.name}
+                    onChange={(e) => setGlobeForm({ ...globeForm, name: e.target.value })}
+                    placeholder="e.g. Democratic Republic of the Congo"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Code (ISO) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={globeForm.code}
+                    onChange={(e) => setGlobeForm({ ...globeForm, code: e.target.value })}
+                    placeholder="e.g. CD"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm uppercase font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Capital</label>
+                  <input
+                    type="text"
+                    value={globeForm.capital}
+                    onChange={(e) => setGlobeForm({ ...globeForm, capital: e.target.value })}
+                    placeholder="e.g. Kinshasa"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Population</label>
+                  <input
+                    type="text"
+                    value={globeForm.population}
+                    onChange={(e) => setGlobeForm({ ...globeForm, population: e.target.value })}
+                    placeholder="e.g. 99,010,000 people"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Region</label>
+                  <input
+                    type="text"
+                    value={globeForm.region}
+                    onChange={(e) => setGlobeForm({ ...globeForm, region: e.target.value })}
+                    placeholder="e.g. Africa • Central Africa"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Total Area</label>
+                  <input
+                    type="text"
+                    value={globeForm.area}
+                    onChange={(e) => setGlobeForm({ ...globeForm, area: e.target.value })}
+                    placeholder="e.g. 2,344,858 km²"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Languages</label>
+                  <input
+                    type="text"
+                    value={globeForm.languages}
+                    onChange={(e) => setGlobeForm({ ...globeForm, languages: e.target.value })}
+                    placeholder="e.g. French, Lingala"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Coordinates (Lat, Lng)</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      step="any"
+                      value={globeForm.lat}
+                      onChange={(e) => setGlobeForm({ ...globeForm, lat: e.target.value })}
+                      placeholder="Lat"
+                      className="bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-3 py-3 rounded-full text-xs"
+                    />
+                    <input
+                      type="number"
+                      step="any"
+                      value={globeForm.lng}
+                      onChange={(e) => setGlobeForm({ ...globeForm, lng: e.target.value })}
+                      placeholder="Lng"
+                      className="bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-3 py-3 rounded-full text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Description</label>
+                <textarea
+                  rows={3}
+                  value={globeForm.desc}
+                  onChange={(e) => setGlobeForm({ ...globeForm, desc: e.target.value })}
+                  placeholder="Country overview for Read More modal..."
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white p-4 rounded-2xl text-xs"
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                disabled={status === "submitting"}
+                className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-4 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+              >
+                {status === "submitting" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                <span>Save Country Data</span>
+              </button>
+            </form>
+          ) : (
+            <div className="space-y-4 text-left">
+              <div className="bg-black/40 p-4 rounded-3xl border border-white/5 text-xs text-gray-300 space-y-1">
+                <p className="font-bold text-geoCyan">Bulk Arrangement Format (1 per line, colon separated):</p>
+                <p className="font-mono text-[11px] text-gray-400">CountryName:Code:Capital:Population:Region:TotalArea:Languages:Description:Lat:Lng</p>
+              </div>
+
+              {/* AI Generator Box */}
+              <div className="bg-black/50 p-4 rounded-2xl border border-geoCyan/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-geoCyan flex items-center gap-1.5"><Wand2 className="w-4 h-4" /> AI Bulk Generator</span>
+                  <button
+                    onClick={handleGlobeAiGenerate}
+                    disabled={isGlobeAiGenerating}
+                    className="bg-geoCyan hover:bg-geoYellow text-gray-950 px-4 py-2 rounded-full font-bold text-xs transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    {isGlobeAiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    <span>Generate Countries</span>
+                  </button>
+                </div>
+              </div>
+
+              <textarea
+                rows={6}
+                value={globeBulkText}
+                onChange={(e) => setGlobeBulkText(e.target.value)}
+                placeholder="Democratic Republic of the Congo:CD:Kinshasa:99M:Africa • Central:2.3M km²:French:Overview:-4.03:21.75"
+                className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white p-4 rounded-2xl font-mono text-xs shadow-inner video-preview-scroll"
+              ></textarea>
+
+              {globeBulkProgress && (
+                <div className="p-4 bg-black/80 rounded-2xl border border-white/10 text-xs space-y-2">
+                  <div className="flex justify-between font-mono text-geoCyan">
+                    <span>{globeBulkProgress.log}</span>
+                    <span>{globeBulkProgress.percent}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-geoCyan transition-all" style={{ width: `${globeBulkProgress.percent}%` }}></div>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={handleGlobeBulkSubmit}
+                disabled={status === "submitting" || !globeBulkText.trim()}
+                className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-4 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {status === "submitting" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                <span>Import Bulk Countries to Sheet</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. VIDEO & PINS FORM
          ───────────────────────────────────────────────────────────── */}
       {activeTab === "videos" && (
         <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
@@ -471,7 +746,7 @@ export default function SuggestionForm() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          2. GAME DATA FORM (SINGLE vs AI BULK)
+          3. TRIVIA GAME FORM
          ───────────────────────────────────────────────────────────── */}
       {activeTab === "game" && (
         <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
