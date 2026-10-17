@@ -43,20 +43,20 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", desc: "An island nation in East Asia in the Pacific Ocean with dense cities, imperial palaces, and mountainous national parks.", lat: 36.2048, lng: 138.2529 },
   "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", desc: "The largest country in South America and Latin America, famous for the Amazon Rainforest and Rio de Janeiro.", lat: -14.2350, lng: -51.9253 },
 
-  // Water Bodies, Oceans & River Basins
-  "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin, separating Europe and Africa from the Americas. Average depth: 3,646 meters.", lat: 14.59, lng: -28.67 },
-  "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin, covering one-third of the Earth's surface and containing the Mariana Trench.", lat: 0, lng: -160 },
-  "Indian Ocean": { name: "Indian Ocean", code: "IO", type: "water", region: "Global Water Basin", area: "70,560,000 km²", desc: "Bounded by Asia, Africa, Australia, and the Southern Ocean. Known for ancient monsoon sea trading routes.", lat: -20, lng: 80 },
-  "Arctic Ocean": { name: "Arctic Ocean", code: "AO", type: "water", region: "North Polar Zone", area: "14,060,000 km²", desc: "The smallest and shallowest ocean, covered by sea ice year-round and surrounding the North Pole.", lat: 85, lng: 0 },
-  "Southern Ocean": { name: "Southern Ocean", code: "SO", type: "water", region: "South Polar Zone", area: "20,327,000 km²", desc: "Encircles Antarctica with extreme polar currents, marine ecosystems, and iceberg fields.", lat: -65, lng: 0 },
-  "Mediterranean Sea": { name: "Mediterranean Sea", code: "MS", type: "water", region: "Southern Europe • Northern Africa", area: "2,500,000 km²", desc: "Intercontinental sea connected to the Atlantic Ocean, cradling ancient Mediterranean civilizations.", lat: 35, lng: 18 },
-  "Red Sea": { name: "Red Sea", code: "RS", type: "water", region: "Middle East • East Africa", area: "438,000 km²", desc: "Seawater inlet of the Indian Ocean between Africa and Asia, linked to the Suez Canal.", lat: 20, lng: 38 },
-  "Niger River Basin": { name: "Niger River Basin", code: "NR", type: "water", region: "Africa • Western Africa", area: "2,117,700 km²", desc: "The principal river of West Africa, extending 4,180 km through Guinea, Mali, Niger, and Nigeria into the Gulf of Guinea.", lat: 13.8, lng: -0.8 },
-  "Nile River Basin": { name: "Nile River Basin", code: "NR", type: "water", region: "Africa • Eastern & Northern Africa", area: "3,254,555 km²", desc: "The world's longest river system (6,650 km), flowing north through 11 African nations into the Mediterranean Sea.", lat: 15.5, lng: 32.5 },
-  "Amazon River Basin": { name: "Amazon River Basin", code: "AB", type: "water", region: "Americas • South America", area: "7,000,000 km²", desc: "The world's largest river drainage system by discharge volume, draining 40% of South America.", lat: -3.46, lng: -62.21 },
+  // Water Bodies, Oceans & Rivers
+  "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin, separating Europe and Africa from the Americas.", lat: 14.59, lng: -28.67 },
+  "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin, covering one-third of the Earth's surface.", lat: 0, lng: -160 },
+  "Indian Ocean": { name: "Indian Ocean", code: "IO", type: "water", region: "Global Water Basin", area: "70,560,000 km²", desc: "Bounded by Asia, Africa, Australia, and the Southern Ocean.", lat: -20, lng: 80 },
+  "Arctic Ocean": { name: "Arctic Ocean", code: "AO", type: "water", region: "North Polar Zone", area: "14,060,000 km²", desc: "The smallest and shallowest ocean, covered by sea ice year-round.", lat: 85, lng: 0 },
+  "Southern Ocean": { name: "Southern Ocean", code: "SO", type: "water", region: "South Polar Zone", area: "20,327,000 km²", desc: "Encircles Antarctica with extreme polar currents.", lat: -65, lng: 0 },
+  "Mediterranean Sea": { name: "Mediterranean Sea", code: "MS", type: "water", region: "Southern Europe • Northern Africa", area: "2,500,000 km²", desc: "Intercontinental sea connected to the Atlantic Ocean.", lat: 35, lng: 18 },
+  "Red Sea": { name: "Red Sea", code: "RS", type: "water", region: "Middle East • East Africa", area: "438,000 km²", desc: "Seawater inlet of the Indian Ocean between Africa and Asia.", lat: 20, lng: 38 },
+  "Niger River Basin": { name: "Niger River Basin", code: "NR", type: "water", region: "Africa • Western Africa", area: "2,117,700 km²", desc: "The principal river of West Africa, extending 4,180 km into the Gulf of Guinea.", lat: 13.8, lng: -0.8 },
+  "Nile River Basin": { name: "Nile River Basin", code: "NR", type: "water", region: "Africa • Eastern & Northern Africa", area: "3,254,555 km²", desc: "The world's longest river system (6,650 km), flowing north into the Mediterranean Sea.", lat: 15.5, lng: 32.5 },
+  "Amazon River Basin": { name: "Amazon River Basin", code: "AB", type: "water", region: "Americas • South America", area: "7,000,000 km²", desc: "The world's largest river drainage system by discharge volume.", lat: -3.46, lng: -62.21 },
 
   // Ice / Polar Regions
-  "Antarctica": { name: "Antarctica", code: "AQ", type: "ice", region: "South Polar Zone", area: "14,200,000 km²", desc: "Earth's southernmost continent containing 90% of global ice and 70% of Earth's fresh water.", lat: -82.86, lng: 135.0 },
+  "Antarctica": { name: "Antarctica", code: "AQ", type: "ice", region: "South Polar Zone", area: "14,200,000 km²", desc: "Earth's southernmost continent containing 90% of global ice.", lat: -82.86, lng: 135.0 },
   "Greenland": { name: "Greenland", code: "GL", type: "ice", capital: "Nuuk", population: "56,000 people", region: "North Polar Zone", area: "2,166,086 km²", languages: "Greenlandic", desc: "Massive autonomous polar island covered by the Greenland Ice Sheet.", lat: 71.70, lng: -42.60 }
 };
 
@@ -76,7 +76,7 @@ export default function GlobeExplorer() {
   const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
   const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
   const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(true);
-  const [focusMode, setFocusMode] = useState<"countries" | "water">("countries"); // "countries" (Land focus) vs "water" (Oceans focus)
+  const [focusMode, setFocusMode] = useState<"all" | "countries" | "water">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const rotationRef = useRef<[number, number, number]>([-10, -15, 0]);
@@ -120,7 +120,7 @@ export default function GlobeExplorer() {
     };
   }, []);
 
-  // Main Render Loop with Dual Hydrographic / Land Focus Modes
+  // Main Render Loop with SHORTEST ANGLE PATH (Prevents Unwinding / Spinning Back!)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -145,9 +145,15 @@ export default function GlobeExplorer() {
 
       ctx.clearRect(0, 0, width, height);
 
+      // Shortest modulo 360 angle path interpolation (FIXES SPIN-BACK BUG 100%!)
+      let dLat = targetRotationRef.current[1] - rotationRef.current[1];
+      let dLng = (targetRotationRef.current[0] - rotationRef.current[0]) % 360;
+      if (dLng > 180) dLng -= 360;
+      if (dLng < -180) dLng += 360;
+
       scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.08;
-      rotationRef.current[0] += (targetRotationRef.current[0] - rotationRef.current[0]) * 0.08;
-      rotationRef.current[1] += (targetRotationRef.current[1] - rotationRef.current[1]) * 0.08;
+      rotationRef.current[0] += dLng * 0.08;
+      rotationRef.current[1] += dLat * 0.08;
 
       const projection = d3.geoOrthographic()
         .scale(scaleRef.current)
@@ -158,20 +164,20 @@ export default function GlobeExplorer() {
       const path = d3.geoPath().projection(projection).context(ctx);
       const graticule = d3.geoGraticule10();
 
-      // 1. Ocean Base Sphere (Cyan Glow in Water Mode, Dark Blue in Land Mode)
+      // 1. Ocean Base Sphere (Cyan Glow in Water Mode)
       ctx.beginPath();
       path({ type: "Sphere" });
-      ctx.fillStyle = focusMode === "water" ? "#002b4d" : "#081420";
+      ctx.fillStyle = focusMode === "water" ? "#0a2540" : "#081420";
       ctx.fill();
       ctx.lineWidth = focusMode === "water" ? 2.5 : 1.5;
       ctx.strokeStyle = focusMode === "water" ? "#00b4d8" : "rgba(66, 194, 203, 0.4)";
       ctx.stroke();
 
-      // 2. Graticule Lines
+      // 2. Graticule Lines (Latitude & Longitude Grid)
       ctx.beginPath();
       path(graticule);
       ctx.lineWidth = 0.5;
-      ctx.strokeStyle = focusMode === "water" ? "rgba(0, 180, 216, 0.15)" : "rgba(255, 255, 255, 0.08)";
+      ctx.strokeStyle = focusMode === "water" ? "rgba(0, 180, 216, 0.18)" : "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
       // 3. Country & Landmass Polygons
@@ -185,10 +191,8 @@ export default function GlobeExplorer() {
           path(feature);
 
           if (focusMode === "water") {
-            // In Water Mode: Land is muted dark vector outline so oceans take center stage
             ctx.fillStyle = isSelected ? "#F4D03F" : isHovered ? "rgba(66, 194, 203, 0.5)" : "#0f2027";
           } else {
-            // In Land Mode: Bright rich matte country colors
             ctx.fillStyle = isSelected ? "#F4D03F" : isHovered ? "rgba(66, 194, 203, 0.8)" : getCountryColor(countryName);
           }
 
@@ -245,7 +249,6 @@ export default function GlobeExplorer() {
       lastMouseRef.current = { x: clientX, y: clientY };
     }
 
-    // Dynamic Hover Detection (Pointing Finger on Land, Drag Hand on Water)
     if (canvasRef.current && worldGeoJson) {
       const rect = canvasRef.current.getBoundingClientRect();
       const x = clientX - rect.left;
@@ -296,8 +299,7 @@ export default function GlobeExplorer() {
 
     const clickedFeature = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
 
-    if (focusMode === "countries") {
-      // Land Mode: Click on country selects it
+    if (focusMode === "countries" || (focusMode === "all" && clickedFeature)) {
       if (clickedFeature) {
         const rawName = clickedFeature.properties?.name || "";
         const country: FeatureData = FEATURE_DATABASE[rawName] || {
@@ -317,7 +319,6 @@ export default function GlobeExplorer() {
         targetRotationRef.current = [-country.lng, -country.lat, 0];
       }
     } else {
-      // Water Mode: Click on water body selects ocean / sea / river basin
       let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
       if (coords[0] < -100 || coords[0] > 120) {
         waterFeature = FEATURE_DATABASE["Pacific Ocean"];
@@ -368,13 +369,12 @@ export default function GlobeExplorer() {
     }
   };
 
-  // Determine cursor dynamically based on Mode and Hover state
   const getCanvasCursor = () => {
-    if (focusMode === "countries") {
-      // Land Mode: Pointing finger when hovering over land, Grab hand when hovering over water
+    if (focusMode === "all") {
+      return hoveredCountryName ? "cursor-pointer" : "cursor-grab";
+    } else if (focusMode === "countries") {
       return hoveredCountryName ? "cursor-pointer" : "cursor-grab";
     } else {
-      // Water Mode: Pointing finger when hovering over water, Grab hand when hovering over land
       return hoveredCountryName ? "cursor-grab" : "cursor-pointer";
     }
   };
@@ -408,7 +408,7 @@ export default function GlobeExplorer() {
             3D Vector Globe Atlas
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Switch between <strong className="text-geoYellow">Countries & Nations</strong> and <strong className="text-geoCyan">Oceans & Waterways</strong> mode for high-precision 3D cartography.
+            Hover to highlight country borders, click to fill with color and smoothly zoom in.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -437,29 +437,40 @@ export default function GlobeExplorer() {
             </select>
           </div>
 
-          {/* Mode Switcher: Countries & Land vs Oceans & Waterways */}
+          {/* Mode Switcher: All (Land & Water) vs Countries vs Waterways */}
           <div className="pointer-events-auto flex items-center gap-1 bg-black/60 p-1 rounded-full border border-white/15 backdrop-blur-xl shadow-2xl">
             <button
+              onClick={() => setFocusMode("all")}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                focusMode === "all"
+                  ? "bg-geoYellow text-gray-950 shadow-md"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>All</span>
+            </button>
+            <button
               onClick={() => setFocusMode("countries")}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                 focusMode === "countries"
                   ? "bg-geoYellow text-gray-950 shadow-md"
                   : "text-gray-400 hover:text-white"
               }`}
             >
               <Compass className="w-3.5 h-3.5" />
-              <span>Countries & Land</span>
+              <span>Countries</span>
             </button>
             <button
               onClick={() => setFocusMode("water")}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                 focusMode === "water"
                   ? "bg-geoCyan text-gray-950 shadow-md"
                   : "text-gray-400 hover:text-white"
               }`}
             >
               <Waves className="w-3.5 h-3.5" />
-              <span>Oceans & Waterways</span>
+              <span>Waterways</span>
             </button>
           </div>
 
@@ -474,7 +485,7 @@ export default function GlobeExplorer() {
           </div>
         </div>
 
-        {/* 2D/3D Canvas Vector Globe (Cursor switches dynamically between pointing finger and grab hand based on focus mode & land/water position) */}
+        {/* 2D/3D Canvas Vector Globe */}
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
@@ -496,7 +507,7 @@ export default function GlobeExplorer() {
 
         {/* Control Overlay Instructions */}
         <div className="absolute bottom-5 left-5 z-30 flex items-center gap-2 text-[11px] font-mono text-gray-400 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md pointer-events-none">
-          <span className="text-geoCyan font-bold">{focusMode === "countries" ? "Land Mode" : "Waterways Mode"}</span> • <span className="text-geoCyan font-bold">click</span> select • <span className="text-geoCyan font-bold">drag</span> spin
+          <span className="text-geoCyan font-bold">{focusMode === "all" ? "All Mode" : focusMode === "countries" ? "Countries Mode" : "Waterways Mode"}</span> • <span className="text-geoCyan font-bold">click</span> select • <span className="text-geoCyan font-bold">drag</span> spin
         </div>
 
         {/* Bottom Left Floating Zoom Buttons */}
