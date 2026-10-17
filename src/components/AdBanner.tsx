@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, PlayCircle, Globe, Sparkles, ExternalLink } from "lucide-react";
+import { Trophy, PlayCircle, Globe, Sparkles } from "lucide-react";
 
 interface AdBannerProps {
   slotId?: string;
@@ -48,17 +48,21 @@ const HOUSE_ADS = [
   }
 ];
 
-export default function AdBanner({ slotId = "1234567890", adClient = "ca-pub-0000000000000000", format = "auto", className = "" }: AdBannerProps) {
+export default function AdBanner({
+  slotId = "1234567890",
+  adClient = "ca-pub-7053832075827963",
+  format = "auto",
+  className = ""
+}: AdBannerProps) {
   const navigate = useNavigate();
   const [adIndex, setAdIndex] = useState(0);
   const [isAdSenseLoaded, setIsAdSenseLoaded] = useState(false);
 
   useEffect(() => {
-    // Pick a random house ad on mount
     setAdIndex(Math.floor(Math.random() * HOUSE_ADS.length));
 
     try {
-      if (typeof window !== "undefined" && (window as any).adsbygoogle && adClient !== "ca-pub-0000000000000000") {
+      if (typeof window !== "undefined" && (window as any).adsbygoogle) {
         ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
         setIsAdSenseLoaded(true);
       }
@@ -78,11 +82,11 @@ export default function AdBanner({ slotId = "1234567890", adClient = "ca-pub-000
           <Sparkles className="w-3 h-3 text-geoYellow animate-pulse" />
           <span>Sponsoring Partner</span>
         </span>
-        <span className="text-gray-600">Ad #00{adIndex + 1}</span>
+        <span className="text-gray-600">Google AdSense</span>
       </div>
 
       {isAdSenseLoaded ? (
-        /* Google AdSense Unit Container */
+        /* Official Google AdSense Unit Container */
         <div className="min-h-[90px] flex items-center justify-center bg-black/40 rounded-2xl border border-white/5 p-2">
           <ins
             className="adsbygoogle"
@@ -94,7 +98,7 @@ export default function AdBanner({ slotId = "1234567890", adClient = "ca-pub-000
           ></ins>
         </div>
       ) : (
-        /* Functional Interactive Sponsor Card */
+        /* Fallback Functional Interactive Sponsor Card */
         <div
           onClick={() => navigate(currentAd.route)}
           className={`relative rounded-2xl p-4 bg-gradient-to-r ${currentAd.color} border ${currentAd.border} flex items-center justify-between gap-4 cursor-pointer hover:scale-[1.01] transition-all group shadow-inner`}
