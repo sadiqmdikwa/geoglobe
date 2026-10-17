@@ -43,7 +43,7 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Japan": { name: "Japan", code: "JP", type: "country", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", desc: "An island nation in East Asia in the Pacific Ocean with dense cities, imperial palaces, and mountainous national parks.", lat: 36.2048, lng: 138.2529 },
   "Brazil": { name: "Brazil", code: "BR", type: "country", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", desc: "The largest country in South America and Latin America, famous for the Amazon Rainforest and Rio de Janeiro.", lat: -14.2350, lng: -51.9253 },
 
-  // Water Bodies & Ocean Basins with Polygons
+  // Water Bodies & Ocean Basins
   "Atlantic Ocean": { name: "Atlantic Ocean", code: "AO", type: "water", region: "Global Water Basin", area: "106,460,000 km²", desc: "The world's second-largest ocean basin, separating Europe and Africa from the Americas. Average depth: 3,646 meters.", lat: 14.59, lng: -28.67 },
   "Pacific Ocean": { name: "Pacific Ocean", code: "PO", type: "water", region: "Global Water Basin", area: "165,250,000 km²", desc: "The world's largest and deepest ocean basin, covering one-third of the Earth's surface and containing the Mariana Trench.", lat: 0, lng: -160 },
   "Indian Ocean": { name: "Indian Ocean", code: "IO", type: "water", region: "Global Water Basin", area: "70,560,000 km²", desc: "Bounded by Asia, Africa, Australia, and the Southern Ocean. Known for ancient monsoon sea trading routes.", lat: -20, lng: 80 },
@@ -73,61 +73,7 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Greenland": { name: "Greenland", code: "GL", type: "ice", capital: "Nuuk", population: "56,000 people", region: "North Polar Zone", area: "2,166,086 km²", languages: "Greenlandic", desc: "Massive autonomous polar island covered by the Greenland Ice Sheet.", lat: 71.70, lng: -42.60 }
 };
 
-// Ocean GeoJSON Polygons for Hover & Click Fill
-const OCEAN_POLYGONS = [
-  {
-    type: "Feature",
-    properties: { name: "Atlantic Ocean" },
-    geometry: {
-      type: "Polygon",
-      coordinates: [[
-        [-67, -60], [-67, 66], [20, 66], [20, -34.8], [-20, -60], [-67, -60]
-      ]]
-    }
-  },
-  {
-    type: "Feature",
-    properties: { name: "Pacific Ocean" },
-    geometry: {
-      type: "Polygon",
-      coordinates: [[
-        [120, -60], [120, 66], [180, 66], [180, -60], [120, -60]
-      ]]
-    }
-  },
-  {
-    type: "Feature",
-    properties: { name: "Indian Ocean" },
-    geometry: {
-      type: "Polygon",
-      coordinates: [[
-        [20, -60], [20, 25], [147, 25], [147, -60], [20, -60]
-      ]]
-    }
-  },
-  {
-    type: "Feature",
-    properties: { name: "Southern Ocean" },
-    geometry: {
-      type: "Polygon",
-      coordinates: [[
-        [-180, -90], [180, -90], [180, -60], [-180, -60], [-180, -90]
-      ]]
-    }
-  },
-  {
-    type: "Feature",
-    properties: { name: "Arctic Ocean" },
-    geometry: {
-      type: "Polygon",
-      coordinates: [[
-        [-180, 66], [180, 66], [180, 90], [-180, 90], [-180, 66]
-      ]]
-    }
-  }
-];
-
-// Interpolate dense Great Circle geodesic arc points between two coordinates
+// Interpolate dense Great Circle geodesic arc points
 function interpolateGreatCircle(start: [number, number], end: [number, number], steps = 30): [number, number][] {
   const interpolator = d3.geoInterpolate(start, end);
   const points: [number, number][] = [];
@@ -178,6 +124,7 @@ export default function GlobeExplorer() {
   const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  // Fetch datasets
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then(res => res.json())
@@ -198,7 +145,7 @@ export default function GlobeExplorer() {
       .catch(err => console.warn("Failed to load lakes:", err));
   }, []);
 
-  // Native non-passive wheel event listener
+  // Native non-passive wheel event listener allowing DEEP VECTOR ZOOM
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -220,7 +167,7 @@ export default function GlobeExplorer() {
     };
   }, []);
 
-  // Main Render Loop with Ocean Polygon Fill & Hover Highlights
+  // Main Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -267,27 +214,14 @@ export default function GlobeExplorer() {
       // 1. Ocean Base Sphere
       ctx.beginPath();
       path({ type: "Sphere" });
-      ctx.fillStyle = focusMode === "water" || selectedFeature?.type === "water" ? "#0a2540" : "#081420";
+      const isWaterSelected = selectedFeature && selectedFeature.type === "water";
+      ctx.fillStyle = focusMode === "water" || isWaterSelected ? "#0a2540" : "#081420";
       ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "rgba(66, 194, 203, 0.4)";
+      ctx.lineWidth = isWaterSelected ? 2.5 : 1.5;
+      ctx.strokeStyle = isWaterSelected ? "#F4D03F" : "rgba(66, 194, 203, 0.4)";
       ctx.stroke();
 
-      // 2. Ocean Polygons Hover & Click Fill
-      OCEAN_POLYGONS.forEach(oceanFeature => {
-        const oceanName = oceanFeature.properties.name;
-        const isSelected = selectedFeature && selectedFeature.name === oceanName;
-        const isHovered = (focusMode === "water" || focusMode === "all") && hoveredFeatureName === oceanName;
-
-        if (isSelected || isHovered) {
-          ctx.beginPath();
-          path(oceanFeature as any);
-          ctx.fillStyle = isSelected ? "rgba(244, 208, 63, 0.5)" : "rgba(0, 212, 255, 0.4)";
-          ctx.fill();
-        }
-      });
-
-      // 3. Ocean Boundary Separator Lines (Solid White Separators)
+      // 2. Ocean Boundary Separator Lines (Solid White Separators)
       OCEAN_BOUNDARIES.forEach(boundaryCoords => {
         ctx.beginPath();
         path({ type: "LineString", coordinates: boundaryCoords } as any);
@@ -296,19 +230,19 @@ export default function GlobeExplorer() {
         ctx.stroke();
       });
 
-      // 4. Graticule Lines
+      // 3. Graticule Lines
       ctx.beginPath();
       path(graticule);
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = focusMode === "water" ? "rgba(0, 180, 216, 0.18)" : "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
-      // 5. Country Polygons (Hover disabled on land in Waterways mode!)
+      // 4. Country Polygons (NO hover highlight on land in Waterways mode!)
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
           const isSelected = selectedFeature && selectedFeature.type === "country" && (selectedFeature.name === countryName || countryName.includes(selectedFeature.name));
-          const isHovered = focusMode !== "water" && hoveredFeatureName && countryName === hoveredCountryName;
+          const isHovered = focusMode !== "water" && hoveredFeatureName && countryName === hoveredFeatureName;
 
           ctx.beginPath();
           path(feature);
@@ -326,7 +260,7 @@ export default function GlobeExplorer() {
         });
       }
 
-      // 6. Render Lakes
+      // 5. Render Lakes
       if (lakesGeoJson && lakesGeoJson.features) {
         lakesGeoJson.features.forEach((feature: any) => {
           const lakeName = feature.properties?.name || "Lake";
@@ -343,7 +277,7 @@ export default function GlobeExplorer() {
         });
       }
 
-      // 7. Render Rivers
+      // 6. Render Rivers
       if (riversGeoJson && riversGeoJson.features) {
         riversGeoJson.features.forEach((feature: any) => {
           const riverName = feature.properties?.name || "River";
@@ -352,7 +286,7 @@ export default function GlobeExplorer() {
 
           ctx.beginPath();
           path(feature);
-          ctx.lineWidth = isSelected || isHovered ? 3.0 : 1.2;
+          ctx.lineWidth = isSelected || isHovered ? 2.8 : 1.2;
           ctx.strokeStyle = isSelected ? "#F4D03F" : isHovered ? "#ffffff" : "#00f0ff";
           ctx.stroke();
         });
@@ -417,11 +351,11 @@ export default function GlobeExplorer() {
 
       const coords = projection.invert?.([x, y]);
       if (coords) {
-        // Check Rivers hover
+        // 1. Check Rivers hover
         if (riversGeoJson && riversGeoJson.features) {
           const hoveredRiver = riversGeoJson.features.find((f: any) => {
             const centroid = d3.geoCentroid(f);
-            return d3.geoDistance(coords, centroid) < 0.08;
+            return d3.geoDistance(coords, centroid) < 0.1;
           });
           if (hoveredRiver && hoveredRiver.properties?.name) {
             setHoveredFeatureName(hoveredRiver.properties.name);
@@ -429,7 +363,7 @@ export default function GlobeExplorer() {
           }
         }
 
-        // Check Lakes hover
+        // 2. Check Lakes hover
         if (lakesGeoJson && lakesGeoJson.features) {
           const hoveredLake = lakesGeoJson.features.find((f: any) => d3.geoContains(f, coords));
           if (hoveredLake && hoveredLake.properties?.name) {
@@ -439,17 +373,23 @@ export default function GlobeExplorer() {
         }
 
         if (focusMode === "water") {
-          // Check Ocean hover in Waterways mode
-          const hoveredOcean = OCEAN_POLYGONS.find((f: any) => d3.geoContains(f as any, coords));
-          if (hoveredOcean) {
-            setHoveredFeatureName(hoveredOcean.properties.name);
+          // In Waterways Mode: Hover on land is DISABLED! Only rivers, lakes & ocean water
+          const hoveredCountry = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
+          if (hoveredCountry) {
+            setHoveredFeatureName(null); // Land hovering disabled in Waterways mode
             return;
           }
-          setHoveredFeatureName(null);
+
+          let oceanName = "Atlantic Ocean";
+          if (coords[0] < -100 || coords[0] > 120) oceanName = "Pacific Ocean";
+          else if (coords[0] > 40 && coords[0] < 110 && coords[1] < 15) oceanName = "Indian Ocean";
+          else if (coords[1] < -60) oceanName = "Southern Ocean";
+          else if (coords[1] > 70) oceanName = "Arctic Ocean";
+          setHoveredFeatureName(oceanName);
           return;
         }
 
-        // Check Country hover
+        // Check Country hover in Land / All mode
         const hoveredCountry = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
         if (hoveredCountry && hoveredCountry.properties?.name) {
           setHoveredFeatureName(hoveredCountry.properties.name);
@@ -487,11 +427,11 @@ export default function GlobeExplorer() {
     const coords = projection.invert?.([x, y]);
     if (!coords) return;
 
-    // 1. Check River click
+    // 1. Check River click (High sensitivity radius)
     if (riversGeoJson && riversGeoJson.features) {
       const clickedRiver = riversGeoJson.features.find((f: any) => {
         const centroid = d3.geoCentroid(f);
-        return d3.geoDistance(coords, centroid) < 0.12; // Sensitive river click threshold
+        return d3.geoDistance(coords, centroid) < 0.12;
       });
 
       if (clickedRiver && clickedRiver.properties?.name) {
@@ -566,6 +506,12 @@ export default function GlobeExplorer() {
         waterFeature = FEATURE_DATABASE["Southern Ocean"];
       } else if (coords[1] > 70) {
         waterFeature = FEATURE_DATABASE["Arctic Ocean"];
+      } else if (coords[0] > -18 && coords[0] < 15 && coords[1] > 8 && coords[1] < 20) {
+        waterFeature = FEATURE_DATABASE["Niger River Basin"];
+      } else if (coords[0] > 25 && coords[0] < 35 && coords[1] > 3 && coords[1] < 31) {
+        waterFeature = FEATURE_DATABASE["Nile River Basin"];
+      } else if (coords[0] > -80 && coords[0] < -50 && coords[1] > -15 && coords[1] < 5) {
+        waterFeature = FEATURE_DATABASE["Amazon River Basin"];
       }
 
       setSelectedFeature(waterFeature);
@@ -604,7 +550,8 @@ export default function GlobeExplorer() {
   const getCanvasCursor = () => {
     if (focusMode === "water") {
       // In Waterways mode: Cursor over land is ALWAYS Grab Hand (`cursor-grab`)!
-      return hoveredFeatureName && hoveredFeatureName.includes("Ocean") ? "cursor-pointer" : "cursor-grab";
+      // Cursor is Pointing Finger (`cursor-pointer`) ONLY when hovering over rivers/lakes/water!
+      return hoveredFeatureName ? "cursor-pointer" : "cursor-grab";
     } else {
       return hoveredFeatureName ? "cursor-pointer" : "cursor-grab";
     }
