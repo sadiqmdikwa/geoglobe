@@ -3,55 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import * as d3 from "d3-geo";
 import * as topojson from "topojson-client";
-import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin } from "lucide-react";
+import { X, Globe as GlobeIcon, Search, ZoomIn, ZoomOut, RotateCcw, Trophy, ArrowLeft, MapPin, ExternalLink } from "lucide-react";
 import AdBanner from "./AdBanner";
-
-export interface CountryData {
-  name: string;
-  code: string;
-  capital?: string;
-  population?: string;
-  region: string;
-  area: string;
-  languages?: string;
-  desc?: string;
-  lat: number;
-  lng: number;
-}
-
-const COUNTRY_DATABASE: { [key: string]: CountryData } = {
-  "Democratic Republic of the Congo": { name: "Democratic Republic of the Congo", code: "CD", capital: "Kinshasa", population: "99,010,000 people", region: "Africa • Central Africa", area: "2,344,858 km²", languages: "French, Lingala, Swahili", desc: "The second-largest country in Africa by area, dominated by the dense Congo Rainforest and Congo River basin.", lat: -4.0383, lng: 21.7587 },
-  "Congo": { name: "Republic of the Congo", code: "CG", capital: "Brazzaville", population: "5,835,000 people", region: "Africa • Central Africa", area: "342,000 km²", languages: "French, Lingala", desc: "Located on the western bank of the Congo River, opposite Kinshasa.", lat: -0.228, lng: 15.8277 },
-  "Colombia": { name: "Colombia", code: "CO", capital: "Bogotá", population: "51,520,000 people", region: "Americas • South America", area: "1,141,748 km²", languages: "Spanish", desc: "A tropical South American nation marked by rainforests, Andes mountains, and coffee plantations.", lat: 4.5709, lng: -74.2973 },
-  "Nigeria": { name: "Nigeria", code: "NG", capital: "Abuja", population: "218,541,212 people", region: "Africa • Western Africa", area: "923,768 km²", languages: "English", desc: "Most people know Nigeria, but few know about its northern neighbor — Niger. It's one of Africa's largest countries.", lat: 9.082, lng: 8.6753 },
-  "Mali": { name: "Mali", code: "ML", capital: "Bamako", population: "21,900,000 people", region: "Africa • Western Africa", area: "1,240,192 km²", languages: "French, Bambara", desc: "A landlocked West African nation rich in history, ancient trading cities like Timbuktu, and vibrant Saharan cultures.", lat: 17.5707, lng: -3.9962 },
-  "Algeria": { name: "Algeria", code: "DZ", capital: "Algiers", population: "44,900,000 people", region: "Africa • Northern Africa", area: "2,381,741 km²", languages: "Arabic, Berber", desc: "The largest country in Africa by land area, dominated by the vast Sahara Desert and Mediterranean coastline.", lat: 28.0339, lng: 1.6596 },
-  "Niger": { name: "Niger", code: "NE", capital: "Niamey", population: "25,250,000 people", region: "Africa • Western Africa", area: "1,267,000 km²", languages: "French, Hausa", desc: "Shaped by the Sahara Desert and the mighty Niger River. Rich in uranium, gold, coal, and oil.", lat: 17.6078, lng: 8.0817 },
-  "Chad": { name: "Chad", code: "TD", capital: "N'Djamena", population: "17,180,000 people", region: "Africa • Central Africa", area: "1,284,000 km²", languages: "French, Arabic", desc: "A landlocked country in north-central Africa known for Lake Chad and the Tibesti Mountains.", lat: 15.4542, lng: 18.7322 },
-  "Sudan": { name: "Sudan", code: "SD", capital: "Khartoum", population: "45,660,000 people", region: "Africa • Northern Africa", area: "1,886,068 km²", languages: "Arabic, English", desc: "Located where the White and Blue Nile rivers meet, famous for having more pyramids than Egypt.", lat: 12.8628, lng: 30.2176 },
-  "Senegal": { name: "Senegal", code: "SN", capital: "Dakar", population: "16,880,000 people", region: "Africa • Western Africa", area: "196,712 km²", languages: "French, Wolof", desc: "The westernmost mainland African country, renowned for Dakar, Teranga hospitality, and rich music.", lat: 14.4974, lng: -14.4524 },
-  "Ghana": { name: "Ghana", code: "GH", capital: "Accra", population: "32,830,000 people", region: "Africa • Western Africa", area: "238,535 km²", languages: "English", desc: "A bustling West African country on the Gulf of Guinea known for cocoa, gold, and vibrant Atlantic heritage.", lat: 7.9465, lng: -1.0232 },
-  "Morocco": { name: "Morocco", code: "MA", capital: "Rabat", population: "37,080,000 people", region: "Africa • Northern Africa", area: "446,550 km²", languages: "Arabic, Berber", desc: "A North African kingdom defined by Arabian, Berber, and European influences with imperial cities.", lat: 31.7917, lng: -7.0926 },
-  "Ethiopia": { name: "Ethiopia", code: "ET", capital: "Addis Ababa", population: "120,300,000 people", region: "Africa • Eastern Africa", area: "1,104,300 km²", languages: "Amharic", desc: "A rugged, landlocked Horn of Africa country divided by the Great Rift Valley, with ancient origins.", lat: 9.145, lng: 40.4897 },
-  "Kenya": { name: "Kenya", code: "KE", capital: "Nairobi", population: "53,010,000 people", region: "Africa • Eastern Africa", area: "580,367 km²", languages: "Swahili, English", desc: "An East African nation with coastlines on the Indian Ocean, famous for Maasai Mara wildlife safaris.", lat: -0.0236, lng: 37.9062 },
-  "United States of America": { name: "United States", code: "US", capital: "Washington, D.C.", population: "333,287,557 people", region: "Americas • North America", area: "9,833,520 km²", languages: "English", desc: "A vast North American country spanning 50 states with diverse landscapes from Atlantic to Pacific.", lat: 37.0902, lng: -95.7129 },
-  "United Kingdom": { name: "United Kingdom", code: "GB", capital: "London", population: "67,596,281 people", region: "Europe • Northern Europe", area: "242,495 km²", languages: "English", desc: "An island nation in northwestern Europe made up of England, Scotland, Wales, and Northern Ireland.", lat: 55.3781, lng: -3.4360 },
-  "France": { name: "France", code: "FR", capital: "Paris", population: "64,756,584 people", region: "Europe • Western Europe", area: "551,695 km²", languages: "French", desc: "A Western European nation encompassing medieval cities, alpine villages, and Mediterranean beaches.", lat: 46.2276, lng: 2.2137 },
-  "Germany": { name: "Germany", code: "DE", capital: "Berlin", population: "83,369,843 people", region: "Europe • Central Europe", area: "357,022 km²", languages: "German", desc: "A Western European country with a landscape of forests, rivers, mountain ranges, and 2 millennia of history.", lat: 51.1657, lng: 10.4515 },
-  "Spain": { name: "Spain", code: "ES", capital: "Madrid", population: "47,420,000 people", region: "Europe • Southern Europe", area: "505,990 km²", languages: "Spanish", desc: "A European country on the Iberian Peninsula with diverse geography and Mediterranean coastlines.", lat: 40.4637, lng: -3.7492 },
-  "Italy": { name: "Italy", code: "IT", capital: "Rome", population: "59,110,000 people", region: "Europe • Southern Europe", area: "301,340 km²", languages: "Italian", desc: "A boot-shaped peninsula in southern Europe with long Mediterranean coastline and rich historical heritage.", lat: 41.8719, lng: 12.5674 },
-  "Japan": { name: "Japan", code: "JP", capital: "Tokyo", population: "123,951,692 people", region: "Asia • Eastern Asia", area: "377,975 km²", languages: "Japanese", desc: "An island nation in East Asia in the Pacific Ocean with dense cities, imperial palaces, and mountainous national parks.", lat: 36.2048, lng: 138.2529 },
-  "Brazil": { name: "Brazil", code: "BR", capital: "Brasília", population: "215,313,498 people", region: "Americas • South America", area: "8,515,767 km²", languages: "Portuguese", desc: "The largest country in South America and Latin America, famous for the Amazon Rainforest and Rio de Janeiro.", lat: -14.2350, lng: -51.9253 },
-  "Argentina": { name: "Argentina", code: "AR", capital: "Buenos Aires", population: "45,810,000 people", region: "Americas • South America", area: "2,780,400 km²", languages: "Spanish", desc: "A massive South American nation covering Andes mountains, glacial lakes, and Pampas grassland.", lat: -38.4161, lng: -63.6167 },
-  "Peru": { name: "Peru", code: "PE", capital: "Lima", population: "33,720,000 people", region: "Americas • South America", area: "1,285,216 km²", languages: "Spanish, Quechua", desc: "Home to a section of Amazon rainforest and Machu Picchu, an ancient Incan city high in the Andes mountains.", lat: -9.19, lng: -75.0152 },
-  "Chile": { name: "Chile", code: "CL", capital: "Santiago", population: "19,490,000 people", region: "Americas • South America", area: "756,102 km²", languages: "Spanish", desc: "A long, narrow country extending along South America's western edge, with more than 6,000 km of Pacific coastline.", lat: -35.6751, lng: -71.543 },
-  "Australia": { name: "Australia", code: "AU", capital: "Canberra", population: "26,068,792 people", region: "Oceania • Australasia", area: "7,692,024 km²", languages: "English", desc: "A continent and country surrounded by the Indian and Pacific oceans, known for the Great Barrier Reef.", lat: -25.2744, lng: 133.7751 },
-  "South Africa": { name: "South Africa", code: "ZA", capital: "Pretoria / Cape Town", population: "59,392,255 people", region: "Africa • Southern Africa", area: "1,221,037 km²", languages: "Zulu, Xhosa, Afrikaans, English", desc: "A country on the southernmost tip of the African continent, marked by several distinct ecosystems.", lat: -30.5595, lng: 22.9375 },
-  "Canada": { name: "Canada", code: "CA", capital: "Ottawa", population: "38,250,000 people", region: "Americas • North America", area: "9,984,670 km²", languages: "English, French", desc: "The second-largest country in the world by total area, extending from Atlantic to Pacific and Arctic oceans.", lat: 56.1304, lng: -106.3468 },
-  "Egypt": { name: "Egypt", code: "EG", capital: "Cairo", population: "110,990,103 people", region: "Africa • Northern Africa", area: "1,010,408 km²", languages: "Arabic", desc: "A transcontinental country spanning the northeast corner of Africa and southwest corner of Asia via Sinai.", lat: 26.8206, lng: 30.8025 },
-  "India": { name: "India", code: "IN", capital: "New Delhi", population: "1,428,627,663 people", region: "Asia • Southern Asia", area: "3,287,263 km²", languages: "Hindi, English", desc: "A vast South Asian country with diverse terrain ranging from Himalayan peaks to Indian Ocean coastline.", lat: 20.5937, lng: 78.9629 },
-  "China": { name: "China", code: "CN", capital: "Beijing", population: "1,412,000,000 people", region: "Asia • Eastern Asia", area: "9,596,961 km²", languages: "Mandarin Chinese", desc: "A populous nation in East Asia whose vast landscape encompasses grassland, desert, mountains, lakes, rivers.", lat: 35.8617, lng: 104.1954 }
-};
+import { CountryData, COUNTRY_DATABASE, loadLiveGlobeCountries } from "../data/globeDataSource";
 
 const COUNTRY_COLORS = ["#388e3c", "#fbc02d", "#d32f2f", "#1976d2", "#7b1fa2", "#e65100", "#00796b", "#0288d1", "#c2185b", "#512da8"];
 
@@ -65,6 +19,7 @@ export default function GlobeExplorer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
 
+  const [countriesMap, setCountriesMap] = useState<{ [key: string]: CountryData }>(COUNTRY_DATABASE);
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
   const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
   const [worldGeoJson, setWorldGeoJson] = useState<any | null>(null);
@@ -84,7 +39,7 @@ export default function GlobeExplorer() {
   const lastMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const startMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const filteredCountryNames = Object.keys(COUNTRY_DATABASE).filter(name =>
+  const filteredCountryNames = Object.keys(countriesMap).filter(name =>
     name.toLowerCase().includes(searchInput.toLowerCase().trim())
   );
 
@@ -96,6 +51,14 @@ export default function GlobeExplorer() {
         setWorldGeoJson(geojson);
       })
       .catch(err => console.warn("Failed to load world topology:", err));
+
+    loadLiveGlobeCountries()
+      .then(data => {
+        if (data && Object.keys(data).length > 0) {
+          setCountriesMap(data);
+        }
+      })
+      .catch(err => console.warn("Failed to load live globe countries:", err));
   }, []);
 
   // Native non-passive wheel event listener allowing DEEP VECTOR ZOOM
@@ -298,7 +261,7 @@ export default function GlobeExplorer() {
 
     if (clickedCountry) {
       const rawName = clickedCountry.properties?.name || "";
-      const country: CountryData = COUNTRY_DATABASE[rawName] || {
+      const country: CountryData = countriesMap[rawName] || {
         name: rawName || "Selected Territory",
         code: rawName.substring(0, 2).toUpperCase() || "UN",
         capital: "Capital Region",
@@ -334,7 +297,7 @@ export default function GlobeExplorer() {
 
   const handleSearchSelect = (countryName: string) => {
     setIsAutoSpinning(false);
-    const country = COUNTRY_DATABASE[countryName];
+    const country = countriesMap[countryName];
     if (country) {
       setSelectedCountry(country);
       targetScaleRef.current = 850;
@@ -371,7 +334,7 @@ export default function GlobeExplorer() {
             3D Vector Globe Atlas
           </h1>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed">
-            Hover to highlight country borders, click to fill with color and smoothly zoom in.
+            Hover to highlight country borders, click to fill with color and smoothly zoom in. Data updates live from spreadsheet.
           </p>
         </div>
         <div className="lg:col-span-5">
@@ -424,7 +387,7 @@ export default function GlobeExplorer() {
             {isSearchDropdownOpen && filteredCountryNames.length > 0 && (
               <div className="absolute top-11 left-0 right-0 max-h-56 overflow-y-auto bg-gray-950/95 border border-white/15 rounded-2xl p-1.5 shadow-2xl backdrop-blur-2xl text-xs space-y-1 video-preview-scroll z-50">
                 {filteredCountryNames.map(name => {
-                  const item = COUNTRY_DATABASE[name];
+                  const item = countriesMap[name];
                   return (
                     <button
                       key={name}
@@ -547,7 +510,7 @@ export default function GlobeExplorer() {
               </div>
             </div>
 
-            {/* Table: Capital, Population, Continent, Area, Languages */}
+            {/* Table: Capital, Population, Continent ONLY, Area, Languages */}
             <div className="space-y-1 text-xs border-y border-white/10 py-2">
               {selectedCountry.capital && (
                 <div className="flex justify-between items-center text-gray-300">
@@ -678,14 +641,29 @@ export default function GlobeExplorer() {
                   )}
                 </div>
 
-                {/* Detailed Geographic Overview & Description */}
-                <div className="space-y-2">
+                {/* Detailed Geographic Overview & Description + Wikipedia Link */}
+                <div className="space-y-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-geoCyan flex items-center gap-1.5">
                     <span>Geographic & Historical Overview</span>
                   </h4>
                   <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal bg-black/20 p-4 rounded-2xl border border-white/5">
                     {selectedCountry.desc || `${selectedCountry.name} is a sovereign nation located in ${selectedCountry.region}. It has a capital in ${selectedCountry.capital || "N/A"}, a total land area of ${selectedCountry.area}, and a population of ${selectedCountry.population || "N/A"}.`}
                   </p>
+
+                  {/* Wikipedia Research Link */}
+                  {selectedCountry.wikiUrl && (
+                    <div className="pt-2">
+                      <a
+                        href={selectedCountry.wikiUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-bold text-geoCyan hover:text-geoYellow transition-colors bg-geoCyan/10 hover:bg-geoCyan/20 px-4 py-2.5 rounded-xl border border-geoCyan/30"
+                      >
+                        <span>Learn more on Wikipedia</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
 
