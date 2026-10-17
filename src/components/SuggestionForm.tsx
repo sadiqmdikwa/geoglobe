@@ -1,13 +1,14 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { motion } from "motion/react";
 import { 
   ShieldCheck, Video, Database, Send, Plus, 
-  CheckCircle2, AlertCircle, Loader2, Sparkles, MapPin 
+  CheckCircle2, AlertCircle, Loader2, Sparkles, MapPin, Globe, RefreshCw
 } from "lucide-react";
 import { GAME_ADMIN_SCRIPT_URL } from "../data/gameDataSource";
+import { loadLiveGlobeCountries, CountryData } from "../data/globeDataSource";
 
 export default function SuggestionForm() {
-  const [activeTab, setActiveTab] = useState<"videos" | "game">("videos");
+  const [activeTab, setActiveTab] = useState<"videos" | "game" | "globe">("globe");
   const [gameMode, setGameMode] = useState<"single" | "bulk">("single");
 
   // Video & Pins State
@@ -31,6 +32,23 @@ export default function SuggestionForm() {
     correctAnswer: ""
   });
 
+  // Globe Country State
+  const [globeForm, setGlobeForm] = useState({
+    name: "",
+    code: "",
+    capital: "",
+    population: "",
+    region: "",
+    area: "",
+    languages: "",
+    desc: "",
+    wikiUrl: "",
+    lat: "",
+    lng: ""
+  });
+  const [liveCountries, setLiveCountries] = useState<{ [key: string]: CountryData }>({});
+  const [isLoadingGlobe, setIsLoadingGlobe] = useState(false);
+
   // Game Bulk State
   const [bulkText, setBulkText] = useState("");
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number; percent: number; log: string } | null>(null);
@@ -39,14 +57,32 @@ export default function SuggestionForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [feedback, setFeedback] = useState("");
 
+  useEffect(() => {
+    if (activeTab === "globe") {
+      fetchGlobeData();
+    }
+  }, [activeTab]);
+
+  const fetchGlobeData = async () => {
+    setIsLoadingGlobe(true);
+    try {
+      const data = await loadLiveGlobeCountries();
+      setLiveCountries(data);
+    } catch (e) {
+      console.warn("Failed to load live globe data:", e);
+    } finally {
+      setIsLoadingGlobe(false);
+    }
+  };
+
   const playSuccessSound = () => {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
       gain.gain.setValueAtTime(0.15, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
       osc.connect(gain);
@@ -105,12 +141,12 @@ export default function SuggestionForm() {
     }
   };
 
-  // Submit Single Game Question
-  const handleSingleGameSubmit = async (e: FormEvent) => {
+  // Submit Globe Country Data
+  const handleGlobeSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!singleGameForm.title.trim() || !singleGameForm.correctAnswer.trim()) {
+    if (!globeForm.name.trim() || !globeForm.code.trim()) {
       setStatus("error");
-      setFeedback("Please fill out Question Title and Correct Answer.");
+      setFeedback("Please fill out Country Name and ISO Code.");
       return;
     }
 
@@ -123,187 +159,105 @@ export default function SuggestionForm() {
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
-          title: singleGameForm.title.trim(),
-          lat: parseFloat(singleGameForm.lat) || 0,
-          lng: parseFloat(singleGameForm.lng) || 0,
-          category: singleGameForm.category,
-          region: singleGameForm.region,
-          correctAnswer: singleGameForm.correctAnswer.trim()
+          countryName: globeForm.name.trim(),
+          code: globeForm.code.trim().toUpperCase(),
+          capital: globeForm.capital.trim(),
+          population: globeForm.population.trim(),
+          region: globeForm.region.trim(),
+          area: globeForm.area.trim(),
+          languages: globeForm.languages.trim(),
+          desc: globeForm.desc.trim(),
+          wikiUrl: globeForm.wikiUrl.trim(),
+          lat: parseFloat(globeForm.lat) || 0,
+          lng: parseFloat(globeForm.lng) || 0,
+          type: "globe_country"
         }),
       });
 
       setStatus("success");
-      setFeedback("Trivia question successfully added to Game database!");
+      setFeedback(`Country "${globeForm.name}" successfully submitted to spreadsheet!`);
       playSuccessSound();
-      setSingleGameForm({
-        title: "",
+      setGlobeForm({
+        name: "",
+        code: "",
+        capital: "",
+        population: "",
+        region: "",
+        area: "",
+        languages: "",
+        desc: "",
+        wikiUrl: "",
         lat: "",
-        lng: "",
-        category: "Borders",
-        region: "Global",
-        correctAnswer: ""
+        lng: ""
       });
+      setTimeout(fetchData, 2000);
     } catch (err: any) {
       console.error(err);
       setStatus("error");
-      setFeedback("Submission failed. Check connection.");
+      setFeedback("Submission failed. Check network or script URL.");
     }
   };
 
-  // Process AI Bulk Questions (Supports Question:Lat:Lng:CorrectAnswer:Category:Region OR Question:CorrectAnswer:SearchPlace:Category:Region)
-  const handleBulkSubmit = async () => {
-    const lines = bulkText.split("\n").map(l => l.trim()).filter(l => l.length > 0 && l.includes(":"));
-    if (lines.length === 0) {
-      setStatus("error");
-      setFeedback("Please enter lines in the format: Question:Lat:Lng:CorrectAnswer:Category:Region or Question:Answer:SearchPlace:Category:Region");
-      return;
-    }
-
-    setStatus("submitting");
-    setFeedback("");
-
-    let successCount = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const parts = line.split(":").map(p => p.trim());
-      const question = parts[0] || "Geography Trivia";
-
-      let lat = 0;
-      let lng = 0;
-      let answer = "";
-      let category = "Mixed Global";
-      let region = "Global";
-
-      const percent = Math.round(((i + 1) / lines.length) * 100);
-
-      // Check if format is Question:Lat:Lng:CorrectAnswer:Category:Region
-      if (parts.length >= 6 && !isNaN(parseFloat(parts[1])) && !isNaN(parseFloat(parts[2]))) {
-        lat = parseFloat(parts[1]);
-        lng = parseFloat(parts[2]);
-        answer = parts[3] || "";
-        category = parts[4] || "Mixed Global";
-        region = parts[5] || "Global";
-
-        setBulkProgress({
-          current: i + 1,
-          total: lines.length,
-          percent,
-          log: `Uploading question ${i + 1} of ${lines.length}...`
-        });
-      } else {
-        // Format: Question:Answer:SearchPlace:Category:Region
-        answer = parts[1] || "";
-        const searchPlace = parts[2] || answer;
-        category = parts[3] || "Mixed Global";
-        region = parts[4] || "Global";
-
-        setBulkProgress({
-          current: i + 1,
-          total: lines.length,
-          percent,
-          log: `Geocoding '${searchPlace}' (${i + 1}/${lines.length})...`
-        });
-
-        try {
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchPlace)}&limit=1`,
-            { headers: { "Accept-Language": "en" } }
-          );
-          const geoData = await geoRes.json();
-          if (geoData && geoData.length > 0) {
-            lat = parseFloat(geoData[0].lat);
-            lng = parseFloat(geoData[0].lon);
-          }
-        } catch (geoErr) {
-          console.warn(`Geocoding error for ${searchPlace}:`, geoErr);
-        }
-      }
-
-      // Submit to Google Sheet Apps Script
-      try {
-        await fetch(GAME_ADMIN_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            title: question,
-            lat: lat,
-            lng: lng,
-            correctAnswer: answer,
-            category: category,
-            region: region,
-            youtubeId: ""
-          }),
-        });
-        successCount++;
-      } catch (submitErr) {
-        console.warn("Row submit error:", submitErr);
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 800));
-    }
-
-    setStatus("success");
-    setFeedback(`Bulk import completed! Successfully processed and uploaded ${successCount} of ${lines.length} questions.`);
-    setBulkProgress(null);
-    setBulkText("");
-    playSuccessSound();
+  const fetchData = () => {
+    fetchGlobeData();
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto pb-20"
+      exit={{ opacity: 0, y: -15 }}
+      className="w-full max-w-4xl mx-auto py-8 px-4 sm:px-6"
     >
-      {/* Admin Header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 bg-geoCyan/10 border border-geoCyan/20 text-geoCyan px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-          <ShieldCheck className="w-4 h-4" />
-          Admin Secret Portal
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-gray-900 via-gray-900/90 to-black border border-white/10 rounded-[2.5rem] p-6 md:p-10 mb-8 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4 text-center sm:text-left">
+          <div className="w-14 h-14 rounded-2xl bg-geoCyan/15 text-geoCyan border border-geoCyan/30 flex items-center justify-center shrink-0 shadow-inner">
+            <ShieldCheck className="w-7 h-7" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Admin & Data Portal</h1>
+            <p className="text-gray-400 text-xs md:text-sm mt-1">
+              Manage live Google Sheet content for Map Pins, Quiz Trivia, and 3D Globe Countries.
+            </p>
+          </div>
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
-          Database Management
-        </h1>
-        <p className="text-gray-400 text-xs md:text-sm mt-2">
-          Add new documentary video coordinates or populate game trivia questions.
-        </p>
       </div>
 
-      {/* Top Main Tab Toggle */}
-      <div className="grid grid-cols-2 gap-3 mb-8 bg-gray-900/60 p-2 rounded-3xl border border-white/5 backdrop-blur-xl">
+      {/* Tabs */}
+      <div className="grid grid-cols-3 gap-2 bg-gray-900/80 p-1.5 rounded-full border border-white/10 mb-8 backdrop-blur-xl">
         <button
-          onClick={() => {
-            setActiveTab("videos");
-            setStatus("idle");
-            setFeedback("");
-          }}
-          className={`py-3 px-4 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          onClick={() => setActiveTab("globe")}
+          className={`py-3 rounded-full font-extrabold text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === "globe"
+              ? "bg-geoCyan text-gray-950 shadow-md"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          3D GLOBE DATA
+        </button>
+        <button
+          onClick={() => setActiveTab("videos")}
+          className={`py-3 rounded-full font-extrabold text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "videos"
               ? "bg-geoCyan text-gray-950 shadow-md"
               : "text-gray-400 hover:text-white"
           }`}
         >
           <Video className="w-4 h-4" />
-          VIDEO & PINS
+          MAP PINS
         </button>
-
         <button
-          onClick={() => {
-            setActiveTab("game");
-            setStatus("idle");
-            setFeedback("");
-          }}
-          className={`py-3 px-4 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          onClick={() => setActiveTab("game")}
+          className={`py-3 rounded-full font-extrabold text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "game"
               ? "bg-geoYellow text-gray-950 shadow-md"
               : "text-gray-400 hover:text-white"
           }`}
         >
           <Database className="w-4 h-4" />
-          GAME DATA
+          TRIVIA GAME
         </button>
       </div>
 
@@ -324,7 +278,216 @@ export default function SuggestionForm() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          1. VIDEO & PINS FORM
+          1. 3D GLOBE COUNTRIES MANAGER FORM & LIVE INSPECTOR
+         ───────────────────────────────────────────────────────────── */}
+      {activeTab === "globe" && (
+        <div className="space-y-8">
+          <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Globe className="w-5 h-5 text-geoCyan" />
+                Add / Update 3D Globe Country
+              </h2>
+              <button
+                onClick={fetchGlobeData}
+                disabled={isLoadingGlobe}
+                className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-gray-200 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingGlobe ? "animate-spin" : ""}`} />
+                <span>Refresh Live Data</span>
+              </button>
+            </div>
+            <p className="text-gray-400 text-xs mb-6">
+              Add custom data for any country. It instantly syncs with your Google Sheet and updates the 3D Globe Explorer.
+            </p>
+
+            <form onSubmit={handleGlobeSubmit} className="space-y-4 text-left">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Country Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={globeForm.name}
+                    onChange={(e) => setGlobeForm({ ...globeForm, name: e.target.value })}
+                    placeholder="e.g. Democratic Republic of the Congo"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">ISO Code *</label>
+                  <input
+                    type="text"
+                    required
+                    value={globeForm.code}
+                    onChange={(e) => setGlobeForm({ ...globeForm, code: e.target.value })}
+                    placeholder="e.g. CD"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm uppercase font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Capital</label>
+                  <input
+                    type="text"
+                    value={globeForm.capital}
+                    onChange={(e) => setGlobeForm({ ...globeForm, capital: e.target.value })}
+                    placeholder="e.g. Kinshasa"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Population</label>
+                  <input
+                    type="text"
+                    value={globeForm.population}
+                    onChange={(e) => setGlobeForm({ ...globeForm, population: e.target.value })}
+                    placeholder="e.g. 99,010,000 people"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Continent & Region</label>
+                  <input
+                    type="text"
+                    value={globeForm.region}
+                    onChange={(e) => setGlobeForm({ ...globeForm, region: e.target.value })}
+                    placeholder="e.g. Africa • Central Africa"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Total Area</label>
+                  <input
+                    type="text"
+                    value={globeForm.area}
+                    onChange={(e) => setGlobeForm({ ...globeForm, area: e.target.value })}
+                    placeholder="e.g. 2,344,858 km²"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Languages</label>
+                  <input
+                    type="text"
+                    value={globeForm.languages}
+                    onChange={(e) => setGlobeForm({ ...globeForm, languages: e.target.value })}
+                    placeholder="e.g. French, Lingala"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Wikipedia URL</label>
+                  <input
+                    type="url"
+                    value={globeForm.wikiUrl}
+                    onChange={(e) => setGlobeForm({ ...globeForm, wikiUrl: e.target.value })}
+                    placeholder="https://en.wikipedia.org/wiki/..."
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm font-mono text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Latitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={globeForm.lat}
+                    onChange={(e) => setGlobeForm({ ...globeForm, lat: e.target.value })}
+                    placeholder="e.g. -4.0383"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Longitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={globeForm.lng}
+                    onChange={(e) => setGlobeForm({ ...globeForm, lng: e.target.value })}
+                    placeholder="e.g. 21.7587"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-4 py-3 rounded-full text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-xs mb-1 ml-1 font-medium">Detailed Description (for Read More modal)</label>
+                <textarea
+                  rows={3}
+                  value={globeForm.desc}
+                  onChange={(e) => setGlobeForm({ ...globeForm, desc: e.target.value })}
+                  placeholder="Enter comprehensive overview, geography, and history..."
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-2xl text-sm"
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                disabled={status === "submitting"}
+                className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-4 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+              >
+                {status === "submitting" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Syncing with Sheet...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Publish Country to Spreadsheet</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Live Spreadsheet Inspector */}
+          <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Database className="w-5 h-5 text-geoYellow" />
+                Live Spreadsheet Inspector ({Object.keys(liveCountries).length} Countries Loaded)
+              </h3>
+            </div>
+            <p className="text-gray-400 text-xs mb-4">
+              Below are the countries currently being read live from your published Google Sheet:
+            </p>
+
+            <div className="max-h-80 overflow-y-auto video-preview-scroll space-y-2 pr-2">
+              {isLoadingGlobe ? (
+                <div className="py-12 text-center text-gray-400 flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-geoCyan" />
+                  <span>Loading live countries from Google Sheet...</span>
+                </div>
+              ) : (
+                Object.values(liveCountries).map((c) => (
+                  <div key={c.name} className="bg-black/40 border border-white/10 p-3.5 rounded-2xl flex items-center justify-between gap-4 text-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-mono text-geoCyan font-bold shrink-0">{c.code}</span>
+                      <span className="font-extrabold text-white truncate">{c.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-gray-400 shrink-0">
+                      <span className="hidden sm:inline">Capital: <strong className="text-white">{c.capital}</strong></span>
+                      <span className="font-mono text-[11px]">{c.lat.toFixed(2)}°, {c.lng.toFixed(2)}°</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. MAP PINS FORM
          ───────────────────────────────────────────────────────────── */}
       {activeTab === "videos" && (
         <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
@@ -403,66 +566,25 @@ export default function SuggestionForm() {
                 rows={3}
                 value={videoForm.description}
                 onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
-                placeholder="Brief professional summary of the video topic or anomaly..."
-                className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white p-5 rounded-3xl transition-all placeholder-gray-500 text-sm resize-none shadow-inner video-preview-scroll"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                  Category
-                </label>
-                <select
-                  value={videoForm.category}
-                  onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
-                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
-                >
-                  <option value="Borders">Borders</option>
-                  <option value="Anomalies">Anomalies</option>
-                  <option value="Flags">Flags</option>
-                  <option value="Mixed Global">Mixed Global</option>
-                  <option value="Enclaves & Exclaves">Enclaves & Exclaves</option>
-                  <option value="No Man's Land">No Man's Land</option>
-                  <option value="Natural Wonders & Waterways">Natural Wonders & Waterways</option>
-                  <option value="Geopolitical Frontiers">Geopolitical Frontiers</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                  Region
-                </label>
-                <select
-                  value={videoForm.region}
-                  onChange={(e) => setVideoForm({ ...videoForm, region: e.target.value })}
-                  className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
-                >
-                  <option value="Global">Global</option>
-                  <option value="Africa">Africa</option>
-                  <option value="Asia">Asia</option>
-                  <option value="Europe">Europe</option>
-                  <option value="Americas">Americas</option>
-                  <option value="Oceania">Oceania</option>
-                  <option value="Middle East">Middle East</option>
-                </select>
-              </div>
+                placeholder="Short video summary..."
+                className="w-full bg-black/50 border border-white/10 focus:border-geoCyan outline-none text-white px-5 py-3.5 rounded-2xl transition-all placeholder-gray-500 text-sm shadow-inner"
+              ></textarea>
             </div>
 
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-bold py-4 rounded-full transition-all mt-4 flex items-center justify-center gap-2 shadow-lg shadow-geoCyan/20 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-4 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             >
               {status === "submitting" ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Saving to Database...
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Submitting Pin...</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  Save Video Pin
+                  <span>Publish Map Pin</span>
                 </>
               )}
             </button>
@@ -471,38 +593,34 @@ export default function SuggestionForm() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          2. GAME DATA FORM (SINGLE vs AI BULK)
+          3. TRIVIA GAME FORM
          ───────────────────────────────────────────────────────────── */}
       {activeTab === "game" && (
         <div className="bg-gray-900/60 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 border border-white/10 shadow-2xl">
-          {/* Sub-mode Toggle */}
-          <div className="flex gap-2 p-1.5 bg-black/40 rounded-full mb-6 max-w-xs mx-auto border border-white/5">
+          <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+            <Database className="w-5 h-5 text-geoYellow" />
+            Add Trivia Question
+          </h2>
+          <p className="text-gray-400 text-xs mb-6">
+            Add a single question or bulk import multiple questions to your trivia game database.
+          </p>
+
+          <div className="flex gap-2 bg-black/40 p-1 rounded-full border border-white/10 mb-6 w-fit">
             <button
-              onClick={() => {
-                setGameMode("single");
-                setStatus("idle");
-              }}
-              className={`flex-1 py-2 px-4 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                gameMode === "single"
-                  ? "bg-geoYellow text-gray-950 shadow"
-                  : "text-gray-400 hover:text-white"
+              onClick={() => setGameMode("single")}
+              className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                gameMode === "single" ? "bg-geoYellow text-gray-950 shadow-md" : "text-gray-400 hover:text-white"
               }`}
             >
-              SINGLE
+              Single Question
             </button>
             <button
-              onClick={() => {
-                setGameMode("bulk");
-                setStatus("idle");
-              }}
-              className={`flex-1 py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                gameMode === "bulk"
-                  ? "bg-geoYellow text-gray-950 shadow"
-                  : "text-gray-400 hover:text-white"
+              onClick={() => setGameMode("bulk")}
+              className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                gameMode === "bulk" ? "bg-geoYellow text-gray-950 shadow-md" : "text-gray-400 hover:text-white"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              AI BULK
+              Bulk Import
             </button>
           </div>
 
@@ -510,172 +628,89 @@ export default function SuggestionForm() {
             <form onSubmit={handleSingleGameSubmit} className="space-y-4 text-left">
               <div>
                 <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                  Question Prompt / Title <span className="text-geoYellow">*</span>
+                  Question Title / Prompt <span className="text-geoYellow">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={singleGameForm.title}
                   onChange={(e) => setSingleGameForm({ ...singleGameForm, title: e.target.value })}
-                  placeholder="e.g. Unclaimed desert territory between Egypt and Sudan"
+                  placeholder="e.g. Which African country has the most pyramids?"
                   className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">Latitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={singleGameForm.lat}
+                    onChange={(e) => setSingleGameForm({ ...singleGameForm, lat: e.target.value })}
+                    placeholder="e.g. 15.5000"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">Longitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={singleGameForm.lng}
+                    onChange={(e) => setSingleGameForm({ ...singleGameForm, lng: e.target.value })}
+                    placeholder="e.g. 32.5000"
+                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                  Correct Answer (Official Name) <span className="text-geoYellow">*</span>
+                  Correct Answer <span className="text-geoYellow">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={singleGameForm.correctAnswer}
                   onChange={(e) => setSingleGameForm({ ...singleGameForm, correctAnswer: e.target.value })}
-                  placeholder="e.g. Bir Tawil"
+                  placeholder="e.g. Sudan"
                   className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                    Category
-                  </label>
-                  <select
-                    value={singleGameForm.category}
-                    onChange={(e) => setSingleGameForm({ ...singleGameForm, category: e.target.value })}
-                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
-                  >
-                    <option value="Borders">Borders</option>
-                    <option value="Anomalies">Anomalies</option>
-                    <option value="Flags">Flags</option>
-                    <option value="Mixed Global">Mixed Global</option>
-                    <option value="Enclaves & Exclaves">Enclaves & Exclaves</option>
-                    <option value="No Man's Land">No Man's Land</option>
-                    <option value="Natural Wonders & Waterways">Natural Wonders & Waterways</option>
-                    <option value="Geopolitical Frontiers">Geopolitical Frontiers</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                    Region
-                  </label>
-                  <select
-                    value={singleGameForm.region}
-                    onChange={(e) => setSingleGameForm({ ...singleGameForm, region: e.target.value })}
-                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all text-sm cursor-pointer shadow-inner"
-                  >
-                    <option value="Global">Global</option>
-                    <option value="Africa">Africa</option>
-                    <option value="Asia">Asia</option>
-                    <option value="Europe">Europe</option>
-                    <option value="Americas">Americas</option>
-                    <option value="Oceania">Oceania</option>
-                    <option value="Middle East">Middle East</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                    Latitude
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={singleGameForm.lat}
-                    onChange={(e) => setSingleGameForm({ ...singleGameForm, lat: e.target.value })}
-                    placeholder="e.g. 21.8706"
-                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
-                    Longitude
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={singleGameForm.lng}
-                    onChange={(e) => setSingleGameForm({ ...singleGameForm, lng: e.target.value })}
-                    placeholder="e.g. 33.7342"
-                    className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-full transition-all placeholder-gray-500 text-sm shadow-inner"
-                  />
-                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={status === "submitting"}
-                className="w-full bg-geoYellow hover:bg-geoCyan text-gray-950 font-bold py-4 rounded-full transition-all mt-4 flex items-center justify-center gap-2 shadow-lg shadow-geoYellow/20 disabled:opacity-50 cursor-pointer"
+                className="w-full bg-geoYellow hover:bg-geoCyan text-gray-950 font-extrabold py-4 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer active:scale-98"
               >
                 {status === "submitting" ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Adding Question...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Publishing Question...</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-5 h-5" />
-                    Save Trivia Question
+                    <Send className="w-4 h-4" />
+                    <span>Publish Trivia Question</span>
                   </>
                 )}
               </button>
             </form>
           ) : (
             <div className="space-y-4 text-left">
-              <div className="bg-black/40 p-5 rounded-3xl border border-white/5 text-xs text-gray-300 space-y-1.5">
-                <p className="font-bold text-geoYellow">AI Bulk Syntax Format (1 question per line):</p>
-                <p className="font-mono text-gray-400">Question:Lat:Lng:CorrectAnswer:Category:Region</p>
-                <p className="text-gray-400 mt-1">
-                  Matches exact sheet order: <code>Question • Lat • Lng • CorrectAnswer • Category • Region</code>
-                </p>
+              <div>
+                <label className="block text-gray-300 text-xs md:text-sm mb-1.5 ml-1 font-medium">
+                  Bulk CSV / JSON Data
+                </label>
+                <textarea
+                  rows={6}
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                  placeholder="Paste question rows..."
+                  className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white px-5 py-3.5 rounded-2xl transition-all placeholder-gray-500 font-mono text-xs shadow-inner"
+                ></textarea>
               </div>
-
-              <textarea
-                rows={6}
-                value={bulkText}
-                onChange={(e) => setBulkText(e.target.value)}
-                placeholder="Which country is surrounded by South Africa?:-29.3100:27.4782:Lesotho:Anomalies:Africa&#10;What is the largest country in Africa?:36.7729:3.0588:Algeria:Mixed Global:Africa"
-                className="w-full bg-black/50 border border-white/10 focus:border-geoYellow outline-none text-white p-5 rounded-3xl font-mono text-xs md:text-sm leading-relaxed resize-none shadow-inner video-preview-scroll"
-              ></textarea>
-
-              {bulkProgress && (
-                <div className="p-5 bg-black/50 rounded-3xl border border-geoYellow/30 text-xs space-y-3">
-                  <div className="flex justify-between items-center font-bold text-geoYellow">
-                    <span>{bulkProgress.percent}% — Processing {bulkProgress.current} of {bulkProgress.total}</span>
-                    <Loader2 className="w-4 h-4 animate-spin text-geoYellow" />
-                  </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden border border-white/5">
-                    <div
-                      className="bg-geoYellow h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${bulkProgress.percent}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-gray-400 font-mono truncate">{bulkProgress.log}</p>
-                </div>
-              )}
-
-              <button
-                onClick={handleBulkSubmit}
-                disabled={status === "submitting" || !bulkText.trim()}
-                className="w-full bg-geoYellow hover:bg-geoCyan text-gray-950 font-bold py-4 rounded-full transition-all flex items-center justify-center gap-2 shadow-lg shadow-geoYellow/20 disabled:opacity-50 cursor-pointer"
-              >
-                {status === "submitting" ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Geocoding & Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Geocode & Batch Upload
-                  </>
-                )}
-              </button>
             </div>
           )}
         </div>
