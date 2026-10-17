@@ -61,41 +61,43 @@ const FEATURE_DATABASE: { [key: string]: FeatureData } = {
   "Tasman Sea": { name: "Tasman Sea", code: "TS", type: "water", region: "Oceania • South Pacific", area: "2,300,000 km²", desc: "A marginal sea of the South Pacific Ocean, situated between Australia and New Zealand.", lat: -37.0, lng: 160.0 },
 
   // Rivers & Lakes
-  "River Niger": { name: "River Niger", code: "RN", type: "water", region: "Africa • Western Africa", area: "4,180 km length", desc: "The principal river of West Africa, running through Guinea, Mali, Niger, and Nigeria into the Gulf of Guinea.", lat: 13.8, lng: -0.8 },
-  "Nile River": { name: "Nile River", code: "NR", type: "water", region: "Africa • Eastern & Northern Africa", area: "6,650 km length", desc: "The world's longest river system (6,650 km), flowing north into the Mediterranean Sea.", lat: 15.5, lng: 32.5 },
-  "Amazon River": { name: "Amazon River", code: "AR", type: "water", region: "Americas • South America", area: "6,400 km length", desc: "The world's largest river drainage system by discharge volume.", lat: -3.46, lng: -62.21 },
+  "River Niger": { name: "River Niger", code: "RN", type: "water", region: "Africa • Western Africa", area: "4,180 km length", desc: "The principal river of West Africa, extending 4,180 km through Guinea, Mali, Niger, and Nigeria into the Gulf of Guinea.", lat: 13.8, lng: -0.8 },
+  "Nile River": { name: "Nile River", code: "NR", type: "water", region: "Africa • Eastern & Northern Africa", area: "6,650 km length", desc: "The world's longest river system (6,650 km), flowing north through 11 African nations into the Mediterranean Sea.", lat: 15.5, lng: 32.5 },
+  "Amazon River": { name: "Amazon River", code: "AR", type: "water", region: "Americas • South America", area: "6,400 km length", desc: "The world's largest river drainage system by discharge volume of water, draining 40% of South America.", lat: -3.46, lng: -62.21 },
   "Mississippi River": { name: "Mississippi River", code: "MR", type: "water", region: "Americas • North America", area: "3,766 km length", desc: "The chief river of the second-largest drainage system on the North American continent.", lat: 37.0, lng: -89.1 },
   "Danube River": { name: "Danube River", code: "DR", type: "water", region: "Europe • Central & Eastern Europe", area: "2,850 km length", desc: "Europe's second-longest river, flowing through 10 countries into the Black Sea.", lat: 45.2, lng: 29.7 },
-  "Yangtze River": { name: "Yangtze River", code: "YR", type: "water", region: "Asia • China", area: "6,300 km length", desc: "The longest river in Asia and third-longest in the world.", lat: 31.2, lng: 121.5 },
-  "Congo River": { name: "Congo River", code: "CR", type: "water", region: "Africa • Central Africa", area: "4,700 km length", desc: "The world's deepest recorded river (over 220m deep).", lat: -6.0, lng: 12.4 },
-  "Lake Victoria": { name: "Lake Victoria", code: "LV", type: "water", region: "Africa • Eastern Africa", area: "59,947 km²", desc: "Africa's largest lake by surface area.", lat: -1.0, lng: 33.0 },
+  "Yangtze River": { name: "Yangtze River", code: "YR", type: "water", region: "Asia • China", area: "6,300 km length", desc: "The longest river in Asia and third-longest in the world, flowing through China into the East China Sea.", lat: 31.2, lng: 121.5 },
+  "Congo River": { name: "Congo River", code: "CR", type: "water", region: "Africa • Central Africa", area: "4,700 km length", desc: "The world's deepest recorded river (over 220m deep) and second-largest by discharge volume.", lat: -6.0, lng: 12.4 },
+  "Lake Victoria": { name: "Lake Victoria", code: "LV", type: "water", region: "Africa • Eastern Africa", area: "59,947 km²", desc: "Africa's largest lake by surface area and the main reservoir of the River Nile.", lat: -1.0, lng: 33.0 },
   "Lake Chad": { name: "Lake Chad", code: "LC", type: "water", region: "Africa • Central Africa", area: "17,000 km²", desc: "A historically crucial endorheic lake providing fresh water to Chad, Niger, Nigeria, and Cameroon.", lat: 13.0, lng: 14.0 },
-  "Caspian Sea": { name: "Caspian Sea", code: "CS", type: "water", region: "Europe • Asia", area: "371,000 km²", desc: "The world's largest inland body of water.", lat: 41.5, lng: 50.5 },
-  "Lake Superior": { name: "Lake Superior", code: "LS", type: "water", region: "Americas • North America", area: "82,100 km²", desc: "The largest freshwater lake in the world by surface area.", lat: 47.7, lng: -87.5 },
+  "Caspian Sea": { name: "Caspian Sea", code: "CS", type: "water", region: "Europe • Asia", area: "371,000 km²", desc: "The world's largest inland body of water, classed as both a lake and an inland sea.", lat: 41.5, lng: 50.5 },
+  "Lake Superior": { name: "Lake Superior", code: "LS", type: "water", region: "Americas • North America", area: "82,100 km²", desc: "The largest freshwater lake in the world by surface area, located in North America.", lat: 47.7, lng: -87.5 },
 
   // Ice / Polar Regions
   "Antarctica": { name: "Antarctica", code: "AQ", type: "ice", region: "South Polar Zone", area: "14,200,000 km²", desc: "Earth's southernmost continent containing 90% of global ice.", lat: -82.86, lng: 135.0 },
   "Greenland": { name: "Greenland", code: "GL", type: "ice", capital: "Nuuk", population: "56,000 people", region: "North Polar Zone", area: "2,166,086 km²", languages: "Greenlandic", desc: "Massive autonomous polar island covered by the Greenland Ice Sheet.", lat: 71.70, lng: -42.60 }
 };
 
-// Ocean Boundary Divider Paths (Solid White Lines Separating Oceans & Seas)
+// Interpolate dense Great Circle geodesic arc points between two coordinates (makes ocean lines curve naturally around sphere)
+function interpolateGreatCircle(start: [number, number], end: [number, number], steps = 30): [number, number][] {
+  const interpolator = d3.geoInterpolate(start, end);
+  const points: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    points.push(interpolator(i / steps));
+  }
+  return points;
+}
+
+// Ocean Boundary Divider Paths (Curved Geodesic Lines Separating Oceans & Seas)
 const OCEAN_BOUNDARIES = [
-  // Atlantic - Pacific Separator (Cape Horn / Drake Passage 67°W)
-  [[-67, -90], [-67, -56]],
-  // Atlantic - Indian Separator (Cape of Good Hope 20°E)
-  [[20, -90], [20, -34.8]],
-  // Indian - Pacific Separator (Tasmania / Australia 147°E)
-  [[147, -90], [147, -43.6]],
-  // Southern Ocean Boundary Line (60°S Latitude Circle)
-  [[-180, -60], [-120, -60], [-60, -60], [0, -60], [60, -60], [120, -60], [180, -60]],
-  // Arctic Ocean Boundary Line (66°N Latitude Circle)
-  [[-180, 66], [-120, 66], [-60, 66], [0, 66], [60, 66], [120, 66], [180, 66]],
-  // Mediterranean Sea Boundary Line
-  [[-5.6, 36], [-5.6, 35.8]],
-  // Red Sea Boundary Line
-  [[43.3, 12.6], [43.5, 12.8]],
-  // Arabian Sea - Bay of Bengal Separator
-  [[80, 0], [80, 10]]
+  interpolateGreatCircle([-67, -90], [-67, -56]), // Atlantic - Pacific
+  interpolateGreatCircle([[20, -90], [20, -34.8]][0], [[20, -90], [20, -34.8]][1]), // Atlantic - Indian
+  interpolateGreatCircle([[147, -90], [147, -43.6]][0], [[147, -90], [147, -43.6]][1]), // Indian - Pacific
+  interpolateGreatCircle([-180, -60], [180, -60]), // Southern Ocean
+  interpolateGreatCircle([-180, 66], [180, 66]), // Arctic Ocean
+  interpolateGreatCircle([-5.6, 36], [-5.6, 35.8]), // Mediterranean / Gibraltar
+  interpolateGreatCircle([43.3, 12.6], [43.5, 12.8]), // Red Sea / Bab-el-Mandeb
+  interpolateGreatCircle([80, 0], [80, 10]) // Arabian Sea / Bay of Bengal
 ];
 
 const WATER_LABELS = [
@@ -167,7 +169,7 @@ export default function GlobeExplorer() {
       .catch(err => console.warn("Failed to load lakes:", err));
   }, []);
 
-  // Native non-passive wheel listener
+  // Native non-passive wheel event listener allowing DEEP VECTOR ZOOM
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -242,12 +244,12 @@ export default function GlobeExplorer() {
       ctx.strokeStyle = "rgba(66, 194, 203, 0.4)";
       ctx.stroke();
 
-      // 2. Ocean Boundary Separator Lines (Solid White Separators matching reference photo)
+      // 2. Ocean Boundary Separator Lines (Solid Curved White Separators matching reference photo)
       OCEAN_BOUNDARIES.forEach(boundaryCoords => {
         ctx.beginPath();
         path({ type: "LineString", coordinates: boundaryCoords } as any);
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = "#ffffff"; // Crisp white ocean dividers
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = "#ffffff";
         ctx.stroke();
       });
 
@@ -258,7 +260,7 @@ export default function GlobeExplorer() {
       ctx.strokeStyle = focusMode === "water" ? "rgba(0, 180, 216, 0.18)" : "rgba(255, 255, 255, 0.08)";
       ctx.stroke();
 
-      // 4. Country Polygons (Hover disabled on land when in Waterways mode!)
+      // 4. Country Polygons (NO hover highlight in Waterways mode!)
       if (worldGeoJson && worldGeoJson.features) {
         worldGeoJson.features.forEach((feature: any) => {
           const countryName = feature.properties?.name || "Country";
@@ -269,7 +271,7 @@ export default function GlobeExplorer() {
           path(feature);
 
           if (focusMode === "water") {
-            ctx.fillStyle = isSelected ? "#F4D03F" : "#0f2027"; // Dark muted land in Waterways mode
+            ctx.fillStyle = isSelected ? "#F4D03F" : "#0f2027";
           } else {
             ctx.fillStyle = isSelected ? "#F4D03F" : isHovered ? "rgba(66, 194, 203, 0.8)" : getCountryColor(countryName);
           }
@@ -315,7 +317,7 @@ export default function GlobeExplorer() {
 
       // 7. On-Map Water Body Labels
       ctx.font = "bold 11px Inter, sans-serif";
-      ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.textAlign = "center";
       WATER_LABELS.forEach(water => {
         const pt = projection([water.lng, water.lat]);
@@ -370,7 +372,7 @@ export default function GlobeExplorer() {
       lastMouseRef.current = { x: clientX, y: clientY };
     }
 
-    // Dynamic Hover Detection (Strict mode logic)
+    // Dynamic Hover Detection (NO hover on land in Waterways Mode!)
     if (canvasRef.current && worldGeoJson) {
       const rect = canvasRef.current.getBoundingClientRect();
       const x = clientX - rect.left;
@@ -384,7 +386,7 @@ export default function GlobeExplorer() {
       const coords = projection.invert?.([x, y]);
       if (coords) {
         if (focusMode === "water") {
-          // In Waterways Mode: Hover on land is DISABLED! Only hover on water/lakes
+          // In Waterways Mode: Hover on land is DISABLED! Only rivers/lakes
           if (lakesGeoJson && lakesGeoJson.features) {
             const hoveredLake = lakesGeoJson.features.find((f: any) => d3.geoContains(f, coords));
             if (hoveredLake && hoveredLake.properties?.name) {
@@ -434,7 +436,7 @@ export default function GlobeExplorer() {
     const coords = projection.invert?.([x, y]);
     if (!coords) return;
 
-    // Check Lake click
+    // 1. Check Lake click
     if (lakesGeoJson && lakesGeoJson.features) {
       const clickedLake = lakesGeoJson.features.find((f: any) => d3.geoContains(f, coords));
       if (clickedLake && clickedLake.properties?.name) {
@@ -456,30 +458,53 @@ export default function GlobeExplorer() {
       }
     }
 
-    // Check Country click
-    const clickedCountry = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
+    // 2. Check River click (Centroid or distance threshold)
+    if (riversGeoJson && riversGeoJson.features) {
+      const clickedRiver = riversGeoJson.features.find((f: any) => {
+        const centroid = d3.geoCentroid(f);
+        return d3.geoDistance(coords, centroid) < 0.08; // Click near river centerline
+      });
 
-    if (focusMode === "countries" || (focusMode === "all" && clickedCountry)) {
-      if (clickedCountry) {
-        const rawName = clickedCountry.properties?.name || "";
-        const country: FeatureData = FEATURE_DATABASE[rawName] || {
-          name: rawName || "Selected Territory",
-          code: rawName.substring(0, 2).toUpperCase() || "UN",
-          type: rawName === "Antarctica" || rawName === "Greenland" ? "ice" : "country",
-          capital: "Capital Region",
-          population: "Estimated 10M+ people",
-          region: "Global Frontier",
-          area: "50,000+ km²",
-          languages: "Official / Regional",
+      if (clickedRiver && clickedRiver.properties?.name) {
+        const name = clickedRiver.properties.name;
+        const item: FeatureData = FEATURE_DATABASE[name] || {
+          name: name.includes("River") ? name : `${name} River`,
+          code: "RV",
+          type: "water",
+          region: "Major World River System",
+          area: "Trans-continental River Basin",
+          desc: `${name} is a major river system and vital freshwater ecosystem.`,
           lat: coords[1],
           lng: coords[0]
         };
-        setSelectedFeature(country);
-        targetScaleRef.current = 850;
-        targetRotationRef.current = [-country.lng, -country.lat, 0];
+        setSelectedFeature(item);
+        targetScaleRef.current = 650;
+        targetRotationRef.current = [-item.lng, -item.lat, 0];
+        return;
       }
+    }
+
+    // 3. Check Country or Ocean click
+    const clickedCountry = worldGeoJson.features.find((f: any) => d3.geoContains(f, coords));
+
+    if (clickedCountry) {
+      const rawName = clickedCountry.properties?.name || "";
+      const country: FeatureData = FEATURE_DATABASE[rawName] || {
+        name: rawName || "Selected Territory",
+        code: rawName.substring(0, 2).toUpperCase() || "UN",
+        type: rawName === "Antarctica" || rawName === "Greenland" ? "ice" : "country",
+        capital: "Capital Region",
+        population: "Estimated 10M+ people",
+        region: "Global Frontier",
+        area: "50,000+ km²",
+        languages: "Official / Regional",
+        lat: coords[1],
+        lng: coords[0]
+      };
+      setSelectedFeature(country);
+      targetScaleRef.current = 850;
+      targetRotationRef.current = [-country.lng, -country.lat, 0];
     } else {
-      // Water / Ocean Basin selection
       let waterFeature: FeatureData = FEATURE_DATABASE["Atlantic Ocean"];
       if (coords[0] < -100 || coords[0] > 120) {
         waterFeature = FEATURE_DATABASE["Pacific Ocean"];
@@ -532,7 +557,8 @@ export default function GlobeExplorer() {
 
   const getCanvasCursor = () => {
     if (focusMode === "water") {
-      return hoveredFeatureName ? "cursor-grab" : "cursor-pointer";
+      // In Waterways mode: Cursor over land is ALWAYS Grab Hand! Pointer finger only on hovered rivers/lakes
+      return hoveredFeatureName ? "cursor-pointer" : "cursor-grab";
     } else {
       return hoveredFeatureName ? "cursor-pointer" : "cursor-grab";
     }
