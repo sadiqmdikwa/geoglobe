@@ -510,12 +510,12 @@ export default function GlobeExplorer() {
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-[320px] bg-[#080d1a]/95 text-white rounded-2xl p-4 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-3"
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-[310px] bg-[#080d1a]/95 text-white rounded-2xl p-3.5 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-2.5"
           >
-            {/* Top Row: Flag (Increased size with animation) + Close Button */}
+            {/* Top Row: Flag (Increased size with hover zoom) + Close Button */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-6 rounded-md overflow-hidden shadow-md border border-white/20 hover:scale-110 transition-transform duration-300">
+                <div className="w-11 h-7 rounded-md overflow-hidden shadow-md border border-white/20 hover:scale-110 transition-transform duration-300">
                   <img
                     src={`https://flagcdn.com/w160/${selectedCountry.code.toLowerCase()}.png`}
                     alt={selectedCountry.name}
@@ -547,8 +547,8 @@ export default function GlobeExplorer() {
               </div>
             </div>
 
-            {/* Table: Capital, Population, Continent & Region, Area, Languages */}
-            <div className="space-y-1.5 text-xs border-y border-white/10 py-2.5">
+            {/* Table: Capital, Population, Continent, Area, Languages */}
+            <div className="space-y-1 text-xs border-y border-white/10 py-2">
               {selectedCountry.capital && (
                 <div className="flex justify-between items-center text-gray-300">
                   <span className="text-gray-400 font-semibold text-[10px] uppercase">Capital</span>
@@ -562,8 +562,8 @@ export default function GlobeExplorer() {
                 </div>
               )}
               <div className="flex justify-between items-center text-gray-300">
-                <span className="text-gray-400 font-semibold text-[10px] uppercase">Continent & Region</span>
-                <span className="font-bold text-geoYellow text-[11px] truncate max-w-[140px] text-right">{selectedCountry.region}</span>
+                <span className="text-gray-400 font-semibold text-[10px] uppercase">Continent</span>
+                <span className="font-bold text-geoYellow text-[11px] truncate">{selectedCountry.region.split("•")[0]?.trim() || "Global"}</span>
               </div>
               <div className="flex justify-between items-center text-gray-300">
                 <span className="text-gray-400 font-semibold text-[10px] uppercase">Total Area</span>
@@ -594,7 +594,7 @@ export default function GlobeExplorer() {
         )}
       </div>
 
-      {/* Video Preview Modal Style Detail Modal */}
+      {/* Video Preview Modal Style Detail Modal with Circular Stamp from Screenshot 2 */}
       <AnimatePresence>
         {isModalOpen && selectedCountry && (
           <div
@@ -605,71 +605,101 @@ export default function GlobeExplorer() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#080e1a] border border-white/20 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col"
+              className="bg-[#080e1a] border border-white/20 rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Top Banner / Modal Header */}
-              <div className="relative p-6 bg-gradient-to-br from-gray-900 to-black border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-10 rounded-lg overflow-hidden border border-white/20 shadow">
-                    <img src={`https://flagcdn.com/w320/${selectedCountry.code.toLowerCase()}.png`} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-white">{selectedCountry.name}</h3>
-                    <span className="text-xs font-mono text-geoCyan font-bold uppercase">{selectedCountry.region}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              {/* Top Close Button */}
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-5 right-5 z-10 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-              {/* Modal Body Stats */}
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto video-preview-scroll text-sm">
-                {selectedCountry.capital && (
-                  <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Capital</span>
-                    <span className="font-bold text-white">{selectedCountry.capital}</span>
+              <div className="p-6 md:p-8 max-h-[85vh] overflow-y-auto video-preview-scroll space-y-6">
+                {/* Circular Stamp Badge from Screenshot 2 */}
+                <div className="flex flex-col items-center text-center pt-2">
+                  <div className="relative w-40 h-40 rounded-full border-2 border-dashed border-geoYellow/70 flex flex-col items-center justify-center p-3 shadow-inner bg-black/40">
+                    <div className="absolute inset-0 flex items-center justify-center animate-[spin_30s_linear_infinite] pointer-events-none">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 160 160">
+                        <defs>
+                          <path id="modalStampPath" d="M 18, 80 a 62,62 0 1,1 124,0 a 62,62 0 1,1 -124,0" />
+                        </defs>
+                        <text className="text-[10px] font-mono tracking-[0.25em] uppercase" fill="#F4D03F">
+                          <textPath href="#modalStampPath" startOffset="0%">
+                            ★ GEO-GLOBE ★ EXPLORATION ★ DISCOVERY ★
+                          </textPath>
+                        </text>
+                      </svg>
+                    </div>
+
+                    {/* Large Flag Image */}
+                    <div className="w-16 h-11 rounded-lg overflow-hidden shadow-lg border border-white/20 mb-1">
+                      <img
+                        src={`https://flagcdn.com/w320/${selectedCountry.code.toLowerCase()}.png`}
+                        alt={selectedCountry.name}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+
+                    <h2 className="text-xl font-black text-white tracking-tight leading-tight">{selectedCountry.name}</h2>
+                    <span className="text-[10px] font-mono font-bold text-geoCyan uppercase">{selectedCountry.code}</span>
                   </div>
-                )}
-                {selectedCountry.population && (
-                  <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Population</span>
-                    <span className="font-bold text-white">{selectedCountry.population}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                  <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Total Area</span>
-                  <span className="font-bold text-white">{selectedCountry.area}</span>
                 </div>
-                {selectedCountry.languages && (
-                  <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold">Language(s)</span>
-                    <span className="font-bold text-white">{selectedCountry.languages}</span>
+
+                {/* Detailed Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs md:text-sm bg-black/30 p-4 rounded-2xl border border-white/10">
+                  {selectedCountry.capital && (
+                    <div className="flex justify-between items-center pb-2 sm:pb-0 border-b sm:border-b-0 border-white/5">
+                      <span className="text-gray-400 font-semibold uppercase text-[10px]">Capital</span>
+                      <span className="font-bold text-white text-right">{selectedCountry.capital}</span>
+                    </div>
+                  )}
+                  {selectedCountry.population && (
+                    <div className="flex justify-between items-center pb-2 sm:pb-0 border-b sm:border-b-0 border-white/5">
+                      <span className="text-gray-400 font-semibold uppercase text-[10px]">Population</span>
+                      <span className="font-bold text-white text-right">{selectedCountry.population}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pb-2 sm:pb-0 border-b sm:border-b-0 border-white/5">
+                    <span className="text-gray-400 font-semibold uppercase text-[10px]">Continent & Region</span>
+                    <span className="font-bold text-geoYellow text-right text-xs">{selectedCountry.region}</span>
                   </div>
-                )}
-                {selectedCountry.desc && (
-                  <div className="pt-1">
-                    <span className="text-gray-400 uppercase tracking-wider text-xs font-semibold block mb-1">Geographic Overview</span>
-                    <p className="text-xs text-gray-300 leading-relaxed">{selectedFeatureDesc(selectedCountry)}</p>
+                  <div className="flex justify-between items-center pb-2 sm:pb-0 border-b sm:border-b-0 border-white/5">
+                    <span className="text-gray-400 font-semibold uppercase text-[10px]">Total Area</span>
+                    <span className="font-bold text-white text-right">{selectedCountry.area}</span>
                   </div>
-                )}
+                  {selectedCountry.languages && (
+                    <div className="flex justify-between items-center sm:col-span-2 pt-2 border-t border-white/5">
+                      <span className="text-gray-400 font-semibold uppercase text-[10px]">Official Language(s)</span>
+                      <span className="font-bold text-white text-right">{selectedCountry.languages}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Detailed Geographic Overview & Description */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-geoCyan flex items-center gap-1.5">
+                    <span>Geographic & Historical Overview</span>
+                  </h4>
+                  <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal bg-black/20 p-4 rounded-2xl border border-white/5">
+                    {selectedCountry.desc || `${selectedCountry.name} is a sovereign nation located in ${selectedCountry.region}. It has a capital in ${selectedCountry.capital || "N/A"}, a total land area of ${selectedCountry.area}, and a population of ${selectedCountry.population || "N/A"}.`}
+                  </p>
+                </div>
               </div>
 
               {/* Modal Footer Actions */}
-              <div className="p-6 bg-black/40 border-t border-white/10 flex gap-3">
+              <div className="p-5 bg-black/40 border-t border-white/10 flex gap-3">
                 <button
                   onClick={() => {
                     setIsModalOpen(false);
                     navigate(`/map?lat=${selectedCountry.lat}&lng=${selectedCountry.lng}&from=explorer`);
                   }}
-                  className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-3.5 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-geoCyan hover:bg-geoYellow text-gray-950 font-extrabold py-3.5 rounded-full transition-all shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
                   <MapPin className="w-4 h-4" />
-                  View on Interactive Map
+                  <span>View on Interactive Map</span>
                 </button>
               </div>
             </motion.div>
@@ -678,8 +708,4 @@ export default function GlobeExplorer() {
       </AnimatePresence>
     </motion.div>
   );
-}
-
-function selectedFeatureDesc(country: CountryData): string {
-  return country.desc || `${country.name} is a sovereign nation in ${country.region} with capital ${country.capital || "N/A"} and a population of ${country.population || "N/A"}.`;
 }
